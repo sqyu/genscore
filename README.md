@@ -17,6 +17,9 @@ devtools::install_github("sqyu/genscore", build_vignettes=TRUE)
 
 # Usage
 For a complete guide to its usage, please consult the vignette [here](vignettes/gen_vignette.Rmd).
+```R
+vignette("gen_vignette")
+```
 
 # References
 Some parts of the code were initially dervied from https://github.com/linlina/highscore.
