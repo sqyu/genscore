@@ -13,5 +13,8 @@ The code here covers
 install.packages("devtools")
 devtools::install_github("sqyu/genscore")
 
+# Usage
+For a complete guide to its usage, please consult the vignette [here](vignettes/gen_vignette.Rmd).
+
 # References
 Some parts of the code were initially dervied from https://github.com/linlina/highscore.
