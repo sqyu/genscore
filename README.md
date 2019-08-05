@@ -11,7 +11,7 @@ The code here covers
 
 # Installation
 ```R
-install.packages("devtools")
+install.packages(c("devtools", "knitr"))
 devtools::install_github("sqyu/genscore", build_vignettes=TRUE)
 ```
 
