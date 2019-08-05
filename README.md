@@ -12,7 +12,7 @@ The code here covers
 # Installation
 ```R
 install.packages("devtools")
-devtools::install_github("sqyu/genscore")
+devtools::install_github("sqyu/genscore", build_vignettes=TRUE)
 ```
 
 # Usage
