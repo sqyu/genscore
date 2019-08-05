@@ -10,8 +10,10 @@ The code here covers
 1. "a-b models" (Yu et al, 2019).
 
 # Installation
+```R
 install.packages("devtools")
 devtools::install_github("sqyu/genscore")
+```
 
 # Usage
 For a complete guide to its usage, please consult the vignette [here](vignettes/gen_vignette.Rmd).
