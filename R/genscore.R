@@ -54,7 +54,7 @@
 #' \deqn{\boldsymbol{t}_1\equiv\boldsymbol{\Gamma}_{\boldsymbol{\eta\eta}}^{-1}\boldsymbol{g}_{\boldsymbol{\eta}},\quad\boldsymbol{t}_2\equiv\boldsymbol{\Gamma}_{\boldsymbol{\eta\eta}}^{-1}\boldsymbol{\Gamma}_{\mathbf{K}\boldsymbol{\eta}}^{\top},}{t1=\Gamma_{\eta\eta}^(-1)g_{\eta}, t2=\Gamma_{\eta\eta}^(-1)\Gamma_{K\eta}',}
 #' so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{vec}(\hat{\mathbf{K}}).}{\hat{\eta}=t1-t2*vec(\hat{K}).}
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -135,7 +135,7 @@ get_elts_ab <- function(hx, hpx, x, a, b, setting,
 #'   \item{t1,t2}{Returned in the profiled non-centered setting, where the \eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 #' @details For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -206,7 +206,7 @@ get_elts_exp <- function(hx, hpx, x, centered=TRUE, profiled_if_noncenter=TRUE, 
 #'   \item{t1,t2}{Returned in the profiled non-centered setting, where the \eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 #' @details For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -275,7 +275,7 @@ get_elts_gamma <- function(hx, hpx, x, centered=TRUE, profiled_if_noncenter=TRUE
 #'   \item{t1,t2}{Returned in the profiled non-centered setting, where the \eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 #' @details For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -334,7 +334,7 @@ get_elts_trun_gauss <- function(hx, hpx, x, centered=TRUE, profiled_if_noncenter
 #'   \item{t1,t2}{Returned in the profiled non-centered setting, where the\eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 #' @details For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 #' @examples
-#' if (!require(mvtnorm))  install.packages("mvtnorm")
+#' if (!require(mvtnorm))  install.packages("mvtnorm", repos = "http://cran.us.r-project.org")
 #' library(mvtnorm)
 #' n <- 50
 #' p <- 30
@@ -411,8 +411,8 @@ get_elts_gauss <- function(x, centered=TRUE, profiled_if_noncenter=TRUE, scale="
 #' \deqn{\boldsymbol{t}_1\equiv\boldsymbol{\Gamma}_{\boldsymbol{\eta\eta}}^{-1}\boldsymbol{g}_{\boldsymbol{\eta}},\quad\boldsymbol{t}_2\equiv\boldsymbol{\Gamma}_{\boldsymbol{\eta\eta}}^{-1}\boldsymbol{\Gamma}_{\mathbf{K}\boldsymbol{\eta}}^{\top},}{t1=\Gamma_{\eta\eta}^(-1)g_{\eta}, t2=\Gamma_{\eta\eta}^(-1)\Gamma_{K\eta}',}
 #' so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{vec}(\hat{\mathbf{K}}).}{\hat{\eta}=t1-t2*vec(\hat{K}).}
 #' @examples
-#' if (!require(mvtnorm))  install.packages("mvtnorm")
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(mvtnorm))  install.packages("mvtnorm", repos = "http://cran.us.r-project.org")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(mvtnorm)
 #' library(tmvtnorm)
 #' n <- 50
@@ -573,7 +573,7 @@ get_elts <- function(h, hp, x, setting, centered=TRUE, profiled_if_noncenter=TRU
 rexp_gamma_reject_R <- function(n, gamm, eta, K, seed=NULL, burn_in=1000, thinning=1000, max_iter=100000, verbose=TRUE){
   ### If gamm=TRUE, generates from the gamma graphs
   ### If gamm=FALSE, generates from the sqrt exp graphs
-  if (!require(utils)) install.packages("utils")
+  if (!require(utils)) install.packages("utils", repos = "http://cran.us.r-project.org")
   library(utils)
   m <- length(eta)
   if (nrow(K) != m || ncol(K) != m)
@@ -648,7 +648,7 @@ rexp_gamma_reject_R <- function(n, gamm, eta, K, seed=NULL, burn_in=1000, thinni
 rab_arms_R <- function(n, a, b, eta, K, seed=NULL, burn_in=1000, thinning=1000, verbose=TRUE){
   ### If gamm=TRUE, generates from the gamma graphs
   ### If gamm=FALSE, generates from the sqrt exp graphs
-  if (!require(utils))  install.packages("utils")
+  if (!require(utils))  install.packages("utils", repos = "http://cran.us.r-project.org")
   library(utils)
   m <- length(eta)
   if (nrow(K) != m || ncol(K) != m)
@@ -805,7 +805,7 @@ get_h_hp <- function(mode, para=NULL, para2=NULL){
 #'     \item{is_refit,lambda1,maxit,previous_lambda1,symmetric,tol}{Same as in the input.}
 #'     \item{lambda2}{Same as in the input, and returned only if \code{elts$centered == FALSE} and \code{elts$profiled_if_noncenter == FALSE}.}
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -957,7 +957,7 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
 #'     \item{lambda}{A number, the best \code{lambda} that produces the desired number of edges. \code{1e-10} or \code{1e15} is returned if out of bound.}
 #'     \item{cur_res}{A list, results for this \code{lambda}. May be \code{NULL} if \code{lambda} is out of bound.}
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' #n <- 50
 #' #p <- 30
@@ -1027,7 +1027,7 @@ test_lambda_bounds <- function(elts, symmetric, lambda=1, lambda_ratio=1, step=2
 #' @return A number, the best lambda that produces the desired number of edges. \code{1e-10} or \code{1e15} is returned if out of bound.
 #' @details This function calls \code{test_lambda_bounds} three times with \code{step} set to \code{10}, \code{10^(1/4)}, \code{10^(1/16)}, respectively.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -1078,7 +1078,7 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
 #' @param lambda_ratio A positive number (or \code{Inf}), the fixed ratio \eqn{\lambda_{\mathbf{K}}}{\lambda_K} and \eqn{\lambda_{\boldsymbol{\eta}}}{\lambda_\eta}, if \eqn{\lambda_{\boldsymbol{\eta}}\neq 0}{\lambda_\eta!=0} (non-profiled) in the non-centered setting.
 #' @return A number, the smallest lambda that produces the empty graph in the centered case, or that gives zero solutions for \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta} in the non-centered case. If \code{symmetric == "and"}, it is not a tight bound for the empty graph.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -1220,7 +1220,7 @@ output <- function(out, verbose, verbosetext){
 #'    \item{iters}{A vector of integers of length \code{lambda_length}: the number of iterations run for each fit. May contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
 #'    \item{raw_estimate}{An empty list if \code{return_raw == FALSE}, otherwise a list that contains \code{lambda_length} estimates for \code{K} of size \code{ncol(x)}*\code{ncol(x)}. May contain \code{ncol(x)}*\code{ncol(x)} matrices of \code{NA}s for all lambdas after the first lambda that gives the complete graph.}
 #' @examples
-#' if (!require(tmvtnorm)) install.packages("tmvtnorm")
+#' if (!require(tmvtnorm)) install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -1467,7 +1467,7 @@ estimate <- function(x, setting, elts=NULL, centered=TRUE, symmetric="symmetric"
 #' @return A number, the loss of the refitted model.
 #' @details Currently the function only returns \code{Inf} when the maximum node degree is >= the sample size, which is a sufficient and necessary condition for inexistence of a unique solution with probability 1 if \code{symmetric != "symmetric"}. In practice it is also a sufficient and necessary condition for most cases and \code{symmetric == "symmetric"}.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -1526,7 +1526,7 @@ refit <- function(res, elts){
 #' @param gammas Optional. A number of a vector of numbers. The \eqn{\gamma} parameter in eBIC. Default to \code{c(0,0.5,1)}.
 #' @return A vector of length \code{2*length(gammas)}. The first \code{length(gammas)} numbers are the eBIC scores without refitting for each \code{gamma} value, and the rest are those with refitting if \code{BIC_refit == TRUE}, or \code{Inf} if \code{BIC_refit == FALSE}.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -1594,7 +1594,7 @@ eBIC <- function(res, elts, BIC_refit=TRUE, gammas=c(0,0.5,1)){
 #' @return A number, the refitted loss.
 #' @details If \code{previous_res} is provided, \code{exclude} and \code{exclude_eta} must be \code{NULL} or be consistent with the estimated support in \code{previous_res}. If \code{previous_res} and \code{exclude} are both \code{NULL}, assume all edges are present. The same applies to the non-profiled non-centered case when \code{previous_res} and \code{exclude_eta} are both \code{NULL}.
 #' @examples
-#' if (!require(tmvtnorm))  install.packages("tmvtnorm")
+#' if (!require(tmvtnorm))  install.packages("tmvtnorm", repos = "http://cran.us.r-project.org")
 #' library(tmvtnorm)
 #' n <- 50
 #' p <- 30
@@ -1804,7 +1804,7 @@ get_trun <- function(mode, param1, param2){
 #' varhat(0.5, 4, "min_pow", 1, 1, TRUE)
 #' @export
 varhat <- function(mu, sigmasq, mode, param1, param2, est_mu){
-  if (!require(cubature))  install.packages("cubature")
+  if (!require(cubature))  install.packages("cubature", repos = "http://cran.us.r-project.org")
   library(cubature)
   sigma <- sqrt(sigmasq)
   inte <- function(f,from=0,to=Inf){stats::integrate(f,lower=from,upper=to,rel.tol=1e-10)$value}
