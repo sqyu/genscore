@@ -425,9 +425,9 @@ get_elts_gauss <- function(x, centered=TRUE, profiled_if_noncenter=TRUE, scale="
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
-#' get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' get_elts(h_hp, x, setting="trun_gaussian",
 #'   centered=TRUE, scale="norm", diag=1.5)
-#' get_elts(h_hp$h, h_hp$hp, x, setting="ab_0.7_1.2",
+#' get_elts(h_hp, x, setting="ab_0.7_1.2",
 #'   centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
 #'
 #' x <- mvtnorm::rmvnorm(n, mean=mu, sigma=solve(K))
@@ -435,7 +435,7 @@ get_elts_gauss <- function(x, centered=TRUE, profiled_if_noncenter=TRUE, scale="
 #'   profiled=FALSE, scale="center_norm", diag=1.3)
 #' @export
 #' @useDynLib genscore elts_exp_c elts_exp_np elts_exp_p elts_gamma_np elts_gamma_p elts_c elts_nc_np elts_nc_p elts_ab_c elts_ab_np elts_ab_p
-get_elts <- function(h, hp, x, setting, centered=TRUE, profiled_if_noncenter=TRUE, scale="norm", diagonal_multiplier=1, use_C=TRUE, tol=.Machine$double.eps^0.5){
+get_elts <- function(h_hp, x, setting, centered=TRUE, profiled_if_noncenter=TRUE, scale="norm", diagonal_multiplier=1, use_C=TRUE, tol=.Machine$double.eps^0.5){
   ## Note that in the result the diagonals of elts$Gamma_K are without multipliers.
   ## The diagonal entries with multipliers are stored in elts$diagonals_with_multiplier
   if (!(setting %in% c("exp", "gamma", "trun_gaussian", "gaussian") || startsWith(setting, "ab_"))){
@@ -467,8 +467,7 @@ get_elts <- function(h, hp, x, setting, centered=TRUE, profiled_if_noncenter=TRU
     x <- scale(x, center=FALSE)
   }
   if (setting != "gaussian"){
-    hx <- t(apply(x, 1, h))
-    hpx <- t(apply(x, 1, hp))
+    hx_hpx <- h_hp(x); hx <- hx_hpx$hx; hpx <- hx_hpx$hpx
   }
   if (setting == "exp"){
     if (use_C){
@@ -684,7 +683,6 @@ rab_arms_R <- function(n, a, b, eta, K, seed=NULL, burn_in=1000, thinning=1000, 
   return (res)
 }
 
-
 #' Generator of h and hp functions.
 #'
 #' Generator of \code{h} and \code{hp} (\eqn{h'}) functions.
@@ -724,11 +722,27 @@ rab_arms_R <- function(n, a, b, eta, K, seed=NULL, burn_in=1000, thinning=1000, 
 #' get_h_hp("min_softplus")
 #' @export
 get_h_hp <- function(mode, para=NULL, para2=NULL){
-  if (is.null(mode) || mode == "") stop ("Mode must be chosen from one of the following:
-                           asinh, cosh, exp, identity, log_pow, mcp, min_asinh, min_cosh,
-                           min_exp, min_log_pow,
-                           min_pow, min_sinh, min_softplus, pow, scad,
-                           sinh, softplus, tanh, truncated_sin, truncated_tan.")
+  h_hp_matrix <- function(h_hp) {
+    # Takes a h_hp function and returns a function that applies h_hp to each row
+    return (function(x) {
+      if (is.matrix(x)) {
+        hx_hpx <- t(apply(x, 1, h_hp))
+        return (list(hx=hx_hpx[,1:ncol(x)], hpx=hx_hpx[,ncol(x)+1:ncol(x)]))
+      } else {
+        hx_hpx <- h_hp(x)
+        return (list(hx=hx_hpx[,1], hpx=hx_hpx[,2]))
+      }
+    })
+  }
+  return (h_hp_matrix(get_h_hp_vector(mode, para, para2)))
+}
+
+get_h_hp_vector <- function(mode, para=NULL, para2=NULL){
+  if (is.null(mode) || mode == "") 
+    stop ("Mode must be chosen from one of the following:",
+          "asinh, cosh, exp, identity, log_pow, mcp, min_asinh, min_cosh, ",
+          "min_exp, min_log_pow, min_pow, min_sinh, min_softplus, pow, scad, ",
+          "sinh, softplus, tanh, truncated_sin, truncated_tan.")
   number_of_params <- list("asinh"=1, "cosh"=1, "exp"=1, "identity"=0, "log_pow"=1, "mcp"=2,
                            "min_asinh"=2, "min_cosh"=2, "min_exp"=2, "min_log_pow"=2,
                            "min_pow"=2, "min_sinh"=2, "min_softplus"=2, "pow"=1,
@@ -747,38 +761,54 @@ get_h_hp <- function(mode, para=NULL, para2=NULL){
       else {cat("para2 not provided, default to 1."); para2 <- 1}
     } else if (para2 <= 0) {stop("para2 must be strictly positive.")}
   }
-  if (mode == "asinh") return (list(h=function(a){asinh(para*a)},hp=function(a){para/sqrt((para*a)^2+1)}))
-  else if (mode == "cosh") return (list(h=function(a){cosh(para*a)-1},hp=function(a){para*sinh(para*a)}))
-  else if (mode == "exp") {return (list(h=function(a){exp(para*a)-1},hp=function(a){para*exp(para*a)}))}
+  if (mode == "asinh") 
+    return (function(x){cbind(asinh(para*x), para/sqrt((para*x)^2+1))})
+  else if (mode == "cosh") 
+    return (function(x){cbind(cosh(para*x)-1, para*sinh(para*x))})
+  else if (mode == "exp")
+    return (function(x){tmp <- exp(para*x); cbind(tmp-1, para*tmp)})
   #else if (mode == "extpow") {if(para<=0)stop("para must be > 0"); return (list(h=function(a){abs(a)^para},hp=switch((para==0)+1, function(a){para*sign(a)*abs(a)^(para-1)}, function(a){rep(0,length(a))})))}
-  else if (mode == "identity") return (list(h=identity,hp=function(a){rep(1,length(a))}))
-  else if (mode == "log_pow") {return (list(h=function(a){(log(1+a))^para},hp=function(a){para*(log(1+a))^(para-1)/(1+a)}))}
-  #else if (mode == "log_slope") return (list(h=function(a){para*log(1+a)},hp=function(a){para/(1+a)}))
-  else if (mode == "mcp") {lambda<-para; gamma<-para2; return (list(h=function(a){(lambda*a-a^2/2/gamma)*(a<=gamma*lambda)+gamma*lambda^2/2*(a>gamma*lambda)},hp=function(a){pmax(lambda-a/gamma,0)}))} # para,para2 > 0
-  else if (mode == "min_asinh") {return (list(h=function(a){pmin(asinh(para*a),para2)},hp=function(a){(para<=sinh(para2)/a)*para/sqrt((para*a)^2+1)}))}
-  else if (mode == "min_cosh") {return (list(h=function(a){pmin(cosh(para*a)-1,para2)},hp=function(a){(a<=acosh(para2+1)/para)*para*sinh(para*a)}))}
-  else if (mode == "min_exp") {return (list(h=function(a){pmin(exp(para*a)-1,para2)},hp=function(a){(a<=log(para2+1)/para)*para*exp(para*a)}))}
-  #else if (mode == "min_extpow") {if(para<=0)stop("para must be > 0"); return (list(h=function(a){pmin(abs(a),para2)^para},hp=function(a){(abs(a)<para2)*para*abs(a)^(para-1)*sign(a)}))}  #else if (mode == "exp") return (list(h=function(a){exp(a)-1},hp=exp))
-  #else if (mode == "min_log_pow") return (list(h=function(a){(pmin(log(1+a),1))^para},hp=function(a){(a<exp(1)-1)*para*(log(1+a))^(para-1)/(1+a)}))
-  else if (mode == "min_log_pow") {return (list(h=function(a){(pmin(log(1+a),para2))^para},hp=function(a){(a<exp(para2)-1)*para*(log(1+a))^(para-1)/(1+a)}))}
-  #else if (mode == "min_log_slope") return (list(h=function(a){para*pmin(log(1+a),1)},hp=function(a){(a<exp(1)-1)*para/(1+a)}))
-  #else if (mode == "min_pow") return (list(h=function(a){pmin(a,1)^para},hp=function(a){(a<1)*para*a^(para-1)}))
-  else if (mode == "min_pow") {return (list(h=function(a){pmin(a,para2)^para},hp=function(a){(a<para2)*para*a^(para-1)}))}  #else if (mode == "exp") return (list(h=function(a){exp(a)-1},hp=exp))
-  else if (mode == "min_sinh") return (list(h=function(a){pmin(sinh(para*a),para2)},hp=function(a){(para<=asinh(para2)/a)*para*cosh(para*a)}))
-  #else if (mode == "min_slope") return (list(h=function(a){para*pmin(a,1)},hp=function(a){(a<1)*para}))
-  else if (mode == "min_softplus") return (list(h=function(a){pmin(log(1+exp(para*a))-log(2),para2)},hp=function(a){(a<=log(exp(para2)*2-1)/para)*para/(1+exp(-para*a))}))
-  else if (mode == "pow") {return (list(h=function(a){a^para},hp=function(a){para*a^(para-1)}))}
-  #else if (mode == "quad_exp") return (list(h=function(a){a*(para*2-a)*(a<=para) + (a>para)*para^2*exp(para2*(para-a))}, hp=function(a){(a<=para)*2*(para-a) - para2*(a>para)*para^2*exp(para2*(para-a))}))
-  else if (mode == "scad") {if(para2<=1){stop("para2 must be > 1.")};lambda=para;gamma=para2;return (list(h=function(a){(a<=lambda)*lambda*a+(lambda<a&a<gamma*lambda)*(2*gamma*lambda*a-a^2-lambda^2)/(2*(gamma-1))+(a>=gamma*lambda)*lambda^2*(gamma+1)/2},hp=function(a){(a<=lambda)*lambda+(a>lambda)*pmax(gamma*lambda-a,0)/(gamma-1)}))} # para>0, para2>1
-  else if (mode == "sinh") return (list(h=function(a){sinh(para*a)},hp=function(a){para*cosh(para*a)}))
-  #else if (mode == "slope") return (list(h=function(a){para*a},hp=function(a){para*rep(1,length(a))}))
-  else if (mode == "softplus") return (list(h=function(a){log(1+exp(para*a))-log(2)},hp=function(a){para/(1+exp(-para*a))}))
-  else if (mode == "tanh") return (list(h=function(a){tanh(para*a)},hp=function(a){para/cosh(para*a)^2})) # naturally bounded
-  else if (mode == "truncated_sin") {return (list(h=function(a){sin(para*a)*(para*a<=pi/2)+(para*a>pi/2)},hp=function(a){(a<=pi/2/para)*cos(para*a)*para}))}
-  else if (mode == "truncated_tan") {return (list(h=function(a){tan(para*a)*(para*a<=pi/4)+(para*a>pi/4)},hp=function(a){(a<=pi/4/para)/cos(para*a)^2*para}))}
-  else {warning("Mode not supported!");
-  return (list(h=NULL, hp=NULL))}
+  else if (mode == "identity") 
+    return (function(x){cbind(x, 1)})
+  else if (mode == "log_pow")
+    return (function(x){tmp<-log(1+x); cbind(tmp^para, para*tmp^(para-1)/(1+x))})
+  else if (mode == "mcp") {
+    lambda <- para; gamma <- para2
+    return (function(x){cbind((lambda*x-x^2/2/gamma)*(x<=gamma*lambda)+gamma*lambda^2/2*(x>gamma*lambda), pmax(lambda-x/gamma,0))}) # para,para2 > 0
+  } else if (mode == "min_asinh")
+    return (function(x){tmp<-asinh(para*x); cbind(pmin(tmp,para2), (tmp<=para2)*para/sqrt((para*x)^2+1))})
+  else if (mode == "min_cosh") 
+    return (function(x){tmp<-cosh(para*x)-1; cbind(pmin(tmp,para2), (tmp<=para2)*para*sinh(para*x))})
+  else if (mode == "min_exp") 
+    return (function(x){tmp<-exp(para*x)-1; cbind(pmin(tmp,para2), (tmp<=para2)*para*exp(para*x))})
+  else if (mode == "min_log_pow")
+    return (function(x){tmp<-log(1+x); cbind((pmin(tmp,para2))^para, (tmp<=para2)*para*tmp^(para-1)/(1+x))})
+  else if (mode == "min_pow") 
+    return (function(x){cbind(pmin(x,para2)^para, (x<para2)*para*x^(para-1))})
+  else if (mode == "min_sinh") 
+    return (function(x){tmp<-sinh(para*x); cbind(pmin(tmp,para2), (tmp<=para2)*para*cosh(para*x))})
+  else if (mode == "min_softplus") 
+    return (function(x){tmp<-log(1+exp(para*x))-log(2); cbind(pmin(tmp,para2), (tmp<=para2)*para/(1+exp(-para*x)))})
+  else if (mode == "pow") 
+    return (function(x){cbind(x^para, para*x^(para-1))})
+  else if (mode == "scad") {
+    if(para2 <= 1) stop("para2 must be > 1.")
+    lambda <- para; gamma <- para2
+    return (function(x){cbind((x<=lambda)*lambda*x+(lambda<x & x<gamma*lambda)*(2*gamma*lambda*x-x^2-lambda^2)/(2*(gamma-1))+(x>=gamma*lambda)*lambda^2*(gamma+1)/2,  (x<=lambda)*lambda+(x>lambda)*pmax(gamma*lambda-x,0)/(gamma-1))}) # para>0, para2>1
+  } else if (mode == "sinh") 
+    return (function(x){cbind(sinh(para*x), para*cosh(para*x))})
+  else if (mode == "softplus") 
+    return (function(x){cbind(log(1+exp(para*x))-log(2), para/(1+exp(-para*x)))})
+  else if (mode == "tanh") 
+    return (function(x){cbind(tanh(para*x), para/cosh(para*x)^2)}) # naturally bounded
+  else if (mode == "truncated_sin") 
+    return (function(x){tmp<-para*x; cbind(sin(tmp)*(tmp<=pi/2)+(tmp>pi/2), (tmp<=pi/2)*cos(tmp)*para)})
+  else if (mode == "truncated_tan") 
+    return (function(x){tmp<-para*x; cbind(tan(tmp)*(tmp<=pi/4)+(tmp>pi/4), (tmp<=pi/4)/cos(tmp)^2*para)})
+  else
+    stop("Mode not supported!")
 }
+
 
 #' Estimate \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta} using elts from \code{get_elts()} given one \eqn{\lambda_{\mathbf{K}}}{\lambda_K} (and \eqn{\lambda_{\boldsymbol{\eta}}}{\lambda_\eta} if non-profiled non-centered) and applying warm-start with strong screening rules.
 #'
@@ -817,19 +847,19 @@ get_h_hp <- function(mode, para=NULL, para2=NULL){
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
 #'
-#' elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                 centered=FALSE, profiled=FALSE, scale="norm", diag=dm)
 #' test_nc_np <- get_results(elts_NC_NP, symmetric="symmetric", lambda1=0.35,
 #'                 lambda2=2, previous_res=NULL, is_refit=FALSE)
 #' test_nc_np2 <- get_results(elts_NC_NP, symmetric="and", lambda1=0.25,
 #'                  lambda2=2, previous_res=test_nc_np, is_refit=FALSE)
 #'
-#' elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_P <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                centered=FALSE, profiled=TRUE, scale="norm", diag=dm)
 #' test_nc_p <- get_results(elts_NC_P, symmetric="symmetric",
 #'                lambda1=0.35, lambda2=NULL, previous_res=NULL, is_refit=FALSE)
 #'
-#' elts_C <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_C <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                centered=TRUE, scale="norm", diag=dm)
 #' test_c <- get_results(elts_C, symmetric="or", lambda1=0.35,
 #'                lambda2=NULL, previous_res=NULL, is_refit=FALSE)
@@ -969,7 +999,7 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
 #' #       lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #' #       burn.in.samples = 100, thinning = 10)
 #'
-#' #elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' #elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian",
 #' #                centered=FALSE, profiled=FALSE, diag=dm)
 #' #lambda_cur_res <- test_lambda_bounds(elts_NC_NP, "symmetric", lambda=1,
 #' #                       lambda_ratio=1, step=1.5, lower=TRUE, cur_res=NULL)
@@ -1039,7 +1069,7 @@ test_lambda_bounds <- function(elts, symmetric, lambda=1, lambda_ratio=1, step=2
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
 #'
-#' elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                 centered=FALSE, profiled=FALSE, diag=dm)
 #' test_lambda_bounds2(elts_NC_NP, "symmetric", lambda_ratio=2,
 #'      lower=TRUE, lambda_start=NULL)
@@ -1091,7 +1121,7 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
 #'        burn.in.samples = 100, thinning = 10)
 #'
 #'
-#' elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                 centered=FALSE, profiled=FALSE, diag=dm)
 #'
 #' # Exact analytic solution for the smallest lambda such that K and eta are both zero,
@@ -1115,7 +1145,7 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
 #'      lambda_start = lambda_max(elts_NC_NP, "and", 2))
 #'
 #'
-#' elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_P <- get_elts(h_hp, x, setting="trun_gaussian",
 #'               centered=FALSE, profiled=TRUE, diag=dm)
 #' # Exact analytic solution
 #' lambda_max(elts_NC_P, "symmetric")
@@ -1240,10 +1270,9 @@ output <- function(out, verbose, verbosetext){
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' ## Centered estimates, no elts provided, h provided; equivalent to est1
 #' est2 <- estimate(x, "trun_gaussian", elts=NULL, centered=TRUE,
-#'           symmetric="symmetric", lambda1s=lambda1s, h=h_hp$h,
-#'           hp=h_hp$hp, diag=dm, return_raw=TRUE)
+#'           symmetric="symmetric", lambda1s=lambda1s, h_hp=h_hp, diag=dm, return_raw=TRUE)
 #'
-#' elts_C <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_C <- get_elts(h_hp, x, setting="trun_gaussian",
 #'             centered=TRUE, diag=dm)
 #' ## Centered estimates, elts provided; equivalent to est1 and est2
 #' est3 <- estimate(x, "trun_gaussian", elts=elts_C,
@@ -1253,7 +1282,7 @@ output <- function(out, verbose, verbosetext){
 #' ## Noncentered estimates with Inf penalty on eta; equivalent to est1~3
 #' est4 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
 #'           lambda_ratio=0, symmetric="symmetric", lambda1s=lambda1s,
-#'           h=h_hp$h, hp=h_hp$hp, diag=dm, return_raw=TRUE)
+#'           h=h_hp, diag=dm, return_raw=TRUE)
 #' compare_two_results(est1, est2) ## Should be almost all 0
 #' compare_two_results(est1, est3) ## Should be almost all 0
 #' sum(abs(est4$etas)) ## Should be 0 since non-centered with lambda ratio 0 is equivalent to centered
@@ -1269,9 +1298,9 @@ output <- function(out, verbose, verbosetext){
 #' ## Profiled estimates, no elts provided, h provided; equivalent to est5
 #' est6 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
 #'           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-#'           h=h_hp$h, hp=h_hp$hp, diag=dm, return_raw=TRUE)
+#'           h_hp=h_hp, diag=dm, return_raw=TRUE)
 #'
-#' elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_P <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                 centered=FALSE, profiled=TRUE, diag=dm)
 #' ## Profiled estimates, elts provided; equivalent to est5~6
 #' est7 <- estimate(x, "trun_gaussian", elts=elts_NC_P, centered=FALSE,
@@ -1289,9 +1318,9 @@ output <- function(out, verbose, verbosetext){
 #' ## Non-centered estimates, no elts provided, h provided; equivalent to est5
 #' est9 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
 #'           lambda_ratio=2, symmetric="and", lambda_length=100,
-#'           h=h_hp$h, hp=h_hp$hp, diag=dm, return_raw=TRUE)
+#'           h_hp=h_hp, diag=dm, return_raw=TRUE)
 #'
-#' elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian", centered=FALSE,
+#' elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian", centered=FALSE,
 #'                 profiled=FALSE, diag=dm)
 #' ## Non-centered estimates, elts provided; equivalent to est8~9
 #' est10 <- estimate(x, "trun_gaussian", elts=elts_NC_NP,
@@ -1357,32 +1386,26 @@ estimate <- function(x, setting, elts=NULL, centered=TRUE, symmetric="symmetric"
     stop("If lambda1s are not provided, lambda_length must be at least 2.")
   } else
     lambda_length <- as.integer(lambda_length)
-  if (setting != "gaussian" && is.null(elts) && (is.null(mode) || is.null(param1)) && (is.null(h) || is.null(hp)))
-    stop("At least one of 1. elts, 2. mode & param1, or 3. h & hp has to be provided.")
+  if (setting != "gaussian" && is.null(elts) && (is.null(mode) || is.null(param1)) && (is.null(h_hp)))
+    stop("At least one of 1. elts, 2. mode & param1, or 3. h_hp has to be provided.")
   if (setting != "gaussian" && is.null(elts) && !is.null(mode)){
-    if (!is.null(h)){
-      if (is.null(hp))
-        stop("hp must also be provided if h is given.")
-      else{
-        warning("mode and h/hp should not be provided at the same time. Using h/hp instead.\n")
-        if (abs(h(0)) > tol)
-          stop("h(0) must be equal to 0.")
-      }
+    if (!is.null(h_hp)){
+      warning("mode and h_hp should not be provided at the same time. Using h_hp instead.\n")
+      #if (abs(h(0)) > tol)
+      #  stop("h(0) must be equal to 0.")
     } else{
       if (is.null(param1))
         stop("param1 (and param2 optionally) must be provided with mode.")
-      h_hp <- get_h_hp(mode=mode, para=param1, para2=param2); h <- h_hp$h; hp <- h_hp$hp; remove(h_hp)
-      if (is.null(h))
-        stop("Mode not supported.")
-      if (length(h(1))==0)
-        stop("Error occurred in generating h and hp. Possibly due to invalid param1 and/or param2.")
+      h_hp <- get_h_hp(mode=mode, para=param1, para2=param2);
+      if (length(h_hp(1))==0)
+        stop("Error occurred in generating h_hp. Possibly due to invalid param1 and/or param2.")
       #if (abs(h(0)) > tol)
       #  stop(paste("h(0)=", h(0), ", larger than 0. Stopped.", sep=""))
     }
   }
   output("Calculating elements necessary for estimation.", verbose, verbosetext)
   if (is.null(elts))
-    elts <- get_elts(h, hp, x, setting, centered=centered, profiled_if_noncenter = is.infinite(lambda_ratio), scale=scale, diagonal_multiplier=diagonal_multiplier)
+    elts <- get_elts(h_hp, x, setting, centered=centered, profiled_if_noncenter = is.infinite(lambda_ratio), scale=scale, diagonal_multiplier=diagonal_multiplier)
   if (is.null(lambda1s)){
     output("Calculating lower bound for lambda.", verbose, verbosetext)
     lambda_lo <- test_lambda_bounds2(elts, symmetric, lambda_ratio, lower=TRUE, verbose=verbose, tol=tol, maxit=maxit)
@@ -1479,19 +1502,19 @@ estimate <- function(x, setting, elts=NULL, centered=TRUE, symmetric="symmetric"
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
 #'
-#' elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                 centered=FALSE, profiled=FALSE, diag=dm)
 #' res_nc_np <- get_results(elts_NC_NP, symmetric="symmetric",
 #'                lambda1=0.35, lambda2=2, previous_res=NULL, is_refit=FALSE)
 #' refit(res_nc_np, elts_NC_NP)
 #'
-#' elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_P <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                centered=FALSE, profiled=TRUE, diag=dm)
 #' res_nc_p <- get_results(elts_NC_P, symmetric="symmetric",
 #'               lambda1=0.35, lambda2=NULL, previous_res=NULL, is_refit=FALSE)
 #' refit(res_nc_p, elts_NC_P)
 #'
-#' elts_C <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_C <- get_elts(h_hp, x, setting="trun_gaussian",
 #'             centered=TRUE, diag=dm)
 #' res_c <- get_results(elts_C, symmetric="or", lambda1=0.35,
 #'            lambda2=NULL, previous_res=NULL, is_refit=FALSE)
@@ -1538,7 +1561,7 @@ refit <- function(res, elts){
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
 #'
-#' elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                 centered=FALSE, profiled=FALSE, diag=dm)
 #' res_nc_np <- get_results(elts_NC_NP, symmetric="symmetric",
 #'                lambda1=0.35, lambda2=2, previous_res=NULL,
@@ -1606,7 +1629,7 @@ eBIC <- function(res, elts, BIC_refit=TRUE, gammas=c(0,0.5,1)){
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
 #'
-#' elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+#' elts_NC_NP <- get_elts(h_hp, x, setting="trun_gaussian",
 #'                 centered=FALSE, profiled=FALSE, diag=dm)
 #' res_nc_np <- get_results(elts_NC_NP, symmetric="symmetric", lambda1=0.35,
 #'                lambda2=2, previous_res=NULL, is_refit=FALSE)
@@ -1718,9 +1741,9 @@ mu_sigmasqhat <- function(x, mode, param1, param2, mu=NULL, sigmasq=NULL){
   if (!is.null(mu) && !is.null(sigmasq)){
     return (c(mu, sigmasq))
   }
-  h_hp <- get_h_hp(mode,param1,param2)
-  hx <- h_hp$h(x)
-  hpx <- h_hp$hp(x)
+  hx_hpx <- get_h_hp(mode,param1,param2)(x)
+  hx <- hx_hpx[,1]
+  hpx <- hx_hpx[,2]
   if (!is.null(mu)){
     return (c(mu, sum(hx*(x-mu)^2)/sum(hx+hpx*(x-mu))))
   } else if (!is.null(sigmasq)) {
@@ -1810,7 +1833,8 @@ varhat <- function(mu, sigmasq, mode, param1, param2, est_mu){
   inte <- function(f,from=0,to=Inf){stats::integrate(f,lower=from,upper=to,rel.tol=1e-10)$value}
   adaptinte <- function(f,from=0,to=Inf){cubature::adaptIntegrate(function(t){x<-t/(1-t);1/(1-t)^2*f(x)},lowerLimit=from/(from+1),upperLimit=ifelse(is.infinite(to),1,to/(to+1)),tol=1e-10)$integral}
   all_inte <- function(f,from=0,to=Inf){tryCatch(inte(f,from=from,to=to), error=function(e){adaptinte(f,from,to)})}
-  h_hp <- get_h_hp(mode, param1, param2); h <- h_hp$h; hp <- h_hp$hp
+  h_hp <- get_h_hp(mode, param1, param2)
+  h <- function(x){h_hp(x)[,1]}; hp <- function(x){h_hp(x)[,2]}
   right_limit <- sqrt(-(log(1e-20)+log(sigma*sqrt(2*pi)))*sigma^2*2)+mu # such that dnorm(right_limit, mu, sigma) = 1e-20
   if (!mode %in% c("asinh", "cosh", "exp", "identity", "log_pow", "pow", "sinh", "softplus", "tanh")) {
     trun <- get_trun(mode, param1, param2)
