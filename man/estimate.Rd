@@ -4,18 +4,38 @@
 \alias{estimate}
 \title{The main function for the generalized score-matching estimator for graphical models.}
 \usage{
-estimate(x, setting, elts = NULL, centered = TRUE,
-  symmetric = "symmetric", scale = "norm", lambda1s = NULL,
-  lambda_length = NULL, lambda_ratio = Inf, mode = NULL,
-  param1 = NULL, param2 = NULL, h = NULL, hp = NULL,
-  verbose = TRUE, verbosetext = "", tol = 1e-06, maxit = 1000,
-  BIC_refit = TRUE, warmstart = TRUE, diagonal_multiplier = NULL,
-  eBIC_gammas = c(0, 0.5, 1), return_raw = FALSE)
+estimate(
+  x,
+  setting,
+  domain,
+  elts = NULL,
+  centered = TRUE,
+  symmetric = "symmetric",
+  scale = "",
+  lambda1s = NULL,
+  lambda_length = NULL,
+  lambda_ratio = Inf,
+  mode = NULL,
+  param1 = NULL,
+  param2 = NULL,
+  h_hp = NULL,
+  verbose = TRUE,
+  verbosetext = "",
+  tol = 1e-06,
+  maxit = 1000,
+  BIC_refit = TRUE,
+  warmstart = TRUE,
+  diagonal_multiplier = NULL,
+  eBIC_gammas = c(0, 0.5, 1),
+  return_raw = FALSE
+)
 }
 \arguments{
-\item{x}{A matrix, the data.}
+\item{x}{An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.}
 
-\item{setting}{A string that indicates the setting, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"trun_gaussian"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value.}
+\item{setting}{A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value.}
+
+\item{domain}{A list returned from \code{make_domain()} that represents the domain.}
 
 \item{elts}{A list (optional), elements necessary for calculations returned by get_elts().}
 
@@ -23,7 +43,7 @@ estimate(x, setting, elts = NULL, centered = TRUE,
 
 \item{symmetric}{A string. If equals \code{"symmetric"}, estimates the minimizer \eqn{\mathbf{K}}{K} over all symmetric matrices; if \code{"and"} or \code{"or"}, use the "and"/"or" rule to get the support. Default to \code{"symmetric"}.}
 
-\item{scale}{A string indicating the scaling method. If contains \code{"sd"}, columns are scaled by standard deviation; if contains \code{"norm"}, columns are scaled by l2 norm; if contains \code{"center"} and \code{setting == "gaussian"}, columns are centered to have mean zero. Default to \code{"norm"}.}
+\item{scale}{A string indicating the scaling method. If contains \code{"sd"}, columns are scaled by standard deviation; if contains \code{"norm"}, columns are scaled by l2 norm; if contains \code{"center"} and \code{setting == "gaussian" && domain$type == "R"}, columns are centered to have mean zero. Default to \code{"norm"}.}
 
 \item{lambda1s}{A vector of lambdas, the penalty parameter for K.}
 
@@ -31,15 +51,13 @@ estimate(x, setting, elts = NULL, centered = TRUE,
 
 \item{lambda_ratio}{A positive number, the fixed ratio between \eqn{\lambda_{\mathbf{K}}}{\lambda_K} and \eqn{\lambda_{\boldsymbol{\eta}}}{\lambda_\eta}, if \eqn{\lambda_{\boldsymbol{\eta}}\neq 0}{\lambda_\eta!=0} (non-profiled) in the non-centered setting.}
 
-\item{mode}{A string, the class of the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian"}.}
+\item{mode}{A string, the class of the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian" && domain$type == "R"}.}
 
-\item{param1}{A number, the first parameter to the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian"}.}
+\item{param1}{A number, the first parameter to the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian" && domain$type == "R"}.}
 
-\item{param2}{A number, the second parameter (may be optional depending on \code{mode}) to the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian"}.}
+\item{param2}{A number, the second parameter (may be optional depending on \code{mode}) to the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian" && domain$type == "R"}.}
 
-\item{h}{A function, the \eqn{h} function. Must evaluate to 0 at 0. Ignored if \code{elts} is provided, or if \code{setting == "gaussian"}.}
-
-\item{hp}{A function, the derivative of the \eqn{h} function. Must be provided if \code{h} is provided, or if \code{setting == "gaussian"}.}
+\item{h_hp}{A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.}
 
 \item{verbose}{Optional. A boolean, whether to output intermediate results.}
 
@@ -74,12 +92,14 @@ estimate(x, setting, elts = NULL, centered = TRUE,
 The main function for the generalized score-matching estimator for graphical models.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
+# Examples are shown for Gaussian truncated to R+^p only. For other distributions
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, 
+#   as the way to call this function (\code{estimate()}) is exactly the same in those cases.
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
+domain <- make_domain("R+", p=p)
 mu <- rep(0, p)
 K <- diag(p)
 lambda1s <- c(0.01,0.1,0.2,0.3,0.4,0.5)
@@ -89,71 +109,71 @@ x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        burn.in.samples = 100, thinning = 10)
 
 ## Centered estimates, no elts or h provided, mode and params provided
-est1 <- estimate(x, "trun_gaussian", elts=NULL, centered=TRUE,
+est1 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=TRUE,
           symmetric="symmetric", lambda1s=lambda1s, mode="min_pow",
           param1=1, param2=3, diag=dm, return_raw=TRUE)
 
 h_hp <- get_h_hp("min_pow", 1, 3)
 ## Centered estimates, no elts provided, h provided; equivalent to est1
-est2 <- estimate(x, "trun_gaussian", elts=NULL, centered=TRUE,
-          symmetric="symmetric", lambda1s=lambda1s, h=h_hp$h,
-          hp=h_hp$hp, diag=dm, return_raw=TRUE)
+est2 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=TRUE,
+          symmetric="symmetric", lambda1s=lambda1s, h_hp=h_hp, diag=dm, return_raw=TRUE)
+compare_two_results(est1, est2) ## Should be almost all 0
 
-elts_C <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_c <- get_elts(h_hp, x, setting="gaussian", domain=domain,
             centered=TRUE, diag=dm)
 ## Centered estimates, elts provided; equivalent to est1 and est2
-est3 <- estimate(x, "trun_gaussian", elts=elts_C,
-          symmetric="symmetric", lambda1s=lambda1s, diag=NULL,
+## Here diagonal_multiplier will be set to the default value, equal to dm above
+est3 <- estimate(x, "gaussian", domain=domain, elts=elts_gauss_c,
+          symmetric="symmetric", lambda1s=lambda1s, diag=NULL, 
           return_raw=TRUE)
+compare_two_results(est1, est3) ## Should be almost all 0
 
 ## Noncentered estimates with Inf penalty on eta; equivalent to est1~3
-est4 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
+est4 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=0, symmetric="symmetric", lambda1s=lambda1s,
-          h=h_hp$h, hp=h_hp$hp, diag=dm, return_raw=TRUE)
-compare_two_results(est1, est2) ## Should be almost all 0
-compare_two_results(est1, est3) ## Should be almost all 0
+          h=h_hp, diag=dm, return_raw=TRUE)
 sum(abs(est4$etas)) ## Should be 0 since non-centered with lambda ratio 0 is equivalent to centered
 est4$etas <- NULL ## But different from est1 in that the zero etas are returned in est4
 compare_two_results(est1, est4) ## Should be almost all 0
 
 
 ## Profiled estimates, no elts or h provided, mode and params provided
-est5 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
+est5 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
           mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE)
 
 ## Profiled estimates, no elts provided, h provided; equivalent to est5
-est6 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
+est6 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-          h=h_hp$h, hp=h_hp$hp, diag=dm, return_raw=TRUE)
+          h_hp=h_hp, diag=dm, return_raw=TRUE)
+compare_two_results(est5, est6) ## Should be almost all 0
 
-elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_p <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                 centered=FALSE, profiled=TRUE, diag=dm)
 ## Profiled estimates, elts provided; equivalent to est5~6
-est7 <- estimate(x, "trun_gaussian", elts=elts_NC_P, centered=FALSE,
+est7 <- estimate(x, "gaussian", domain=domain, elts=elts_gauss_p, centered=FALSE,
           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
           diagonal_multiplier=NULL, return_raw=TRUE)
-compare_two_results(est5, est6) ## Should be almost all 0
 compare_two_results(est5, est7) ## Should be almost all 0
 
 
 ## Non-centered estimates, no elts or h provided, mode and params provided
-est8 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
+est8 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=2, symmetric="and", lambda_length=100,
           mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE)
 
 ## Non-centered estimates, no elts provided, h provided; equivalent to est5
-est9 <- estimate(x, "trun_gaussian", elts=NULL, centered=FALSE,
+est9 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=2, symmetric="and", lambda_length=100,
-          h=h_hp$h, hp=h_hp$hp, diag=dm, return_raw=TRUE)
+          h_hp=h_hp, diag=dm, return_raw=TRUE)
+compare_two_results(est8, est9) ## Should be almost all 0
 
-elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian", centered=FALSE,
+elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=FALSE,
                 profiled=FALSE, diag=dm)
 ## Non-centered estimates, elts provided; equivalent to est8~9
-est10 <- estimate(x, "trun_gaussian", elts=elts_NC_NP,
+est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np,
            centered=FALSE, lambda_ratio=2, symmetric="and",
            lambda_length=100, diag=NULL, return_raw=TRUE)
-compare_two_results(est8, est9) ## Should be almost all 0
 compare_two_results(est8, est10) ## Should be almost all 0
 
 }

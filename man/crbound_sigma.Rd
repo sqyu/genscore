@@ -2,7 +2,7 @@
 % Please edit documentation in R/genscore.R
 \name{crbound_sigma}
 \alias{crbound_sigma}
-\title{The Cramér-Rao lower bound (times \code{n}) for estimating the variance parameter from a univariate truncated normal sample with known mean parameter.}
+\title{The Cram\'er-Rao lower bound (times \code{n}) for estimating the variance parameter from a univariate truncated normal sample with known mean parameter.}
 \usage{
 crbound_sigma(mu, sigmasq)
 }
@@ -12,11 +12,11 @@ crbound_sigma(mu, sigmasq)
 \item{sigmasq}{The variance parameter.}
 }
 \value{
-A number, the Cramér-Rao lower bound .
+A number, the Cram\'er-Rao lower bound .
 }
 \description{
-The Cramér-Rao lower bound (times \code{n}) on the variance for estimating the variance parameter \code{sigmasq} from a univariate truncated normal sample, assuming the true mean parameter \code{mu} is known.
+The Cram\'er-Rao lower bound (times \code{n}) on the variance for estimating the variance parameter \code{sigmasq} from a univariate truncated normal sample, assuming the true mean parameter \code{mu} is known.
 }
 \details{
-The Cramér-Rao lower bound in this case is defined as \eqn{4\sigma^8/var((X-\mu)^2)}.
+The Cram\'er-Rao lower bound in this case is defined as \eqn{4\sigma^8/var((X-\mu)^2)}.
 }

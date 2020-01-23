@@ -4,31 +4,39 @@
 \alias{get_elts}
 \title{The function wrapper to get the elements necessary for calculations for all settings.}
 \usage{
-get_elts(h, hp, x, setting, centered = TRUE,
-  profiled_if_noncenter = TRUE, scale = "norm",
-  diagonal_multiplier = 1, use_C = TRUE,
-  tol = .Machine$double.eps^0.5)
+get_elts(
+  h_hp,
+  x,
+  setting,
+  domain,
+  centered = TRUE,
+  profiled_if_noncenter = TRUE,
+  scale = "",
+  diagonal_multiplier = 1,
+  use_C = TRUE,
+  tol = .Machine$double.eps^0.5
+)
 }
 \arguments{
-\item{h}{A function, the \eqn{h} function. Must evaluate to 0 at 0. Ignored if \code{elts} is provided.}
+\item{h_hp}{A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.}
 
-\item{hp}{A function, the derivative of the \eqn{h} function. Must be provided if \code{h} is provided.}
+\item{x}{An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.}
 
-\item{x}{A matrix, the data matrix.}
+\item{setting}{A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value. If \code{domain$type == "simplex"}, only \code{"log_log"} and \code{"log_log_sum0"} are supported, and on the other hand \code{"log_log_sum0"} is supported for \code{domain$type == "simplex"} only.}
 
-\item{setting}{A string that indicates the setting, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"trun_gaussian"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value.}
+\item{domain}{A list returned from \code{make_domain()} that represents the domain.}
 
 \item{centered}{A boolean, whether in the centered setting(assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.}
 
-\item{profiled_if_noncenter}{A boolean, whether in the profiled setting (\eqn{\lambda_{\boldsymbol{\eta}}=0}{\lambda_\eta=0}) if noncentered. Parameter ignored if \code{centered=TRUE}. Default to \code{TRUE}.}
+\item{profiled_if_noncenter}{A boolean, whether in the profiled setting (\eqn{\lambda_{\boldsymbol{\eta}}=0}{\lambda_\eta=0}) if noncentered. Parameter ignored if \code{centered=TRUE}. Default to \code{TRUE}. Can only be \code{FALSE} if \code{setting == "log_log_sum0" && centered == FALSE}.}
 
-\item{scale}{A string indicating the scaling method. If contains \code{"sd"}, columns are scaled by standard deviation; if contains \code{"norm"}, columns are scaled by l2 norm; if contains \code{"center"} and \code{setting == "gaussian"}, columns are centered to have mean zero. Default to \code{"norm"}.}
+\item{scale}{A string indicating the scaling method. If contains \code{"sd"}, columns are scaled by standard deviation; if contains \code{"norm"}, columns are scaled by l2 norm; if contains \code{"center"} and \code{setting == "gaussian" && domain$type == "R"}, columns are centered to have mean zero. Default to \code{"norm"}.}
 
 \item{diagonal_multiplier}{A number >= 1, the diagonal multiplier.}
 
-\item{use_C}{Optional. A boolean, use C (\code{TRUE}) or R (\code{FALSE}) functions for computation. Default to \code{TRUE}. Ignored if \code{setting == "gaussian"}.}
+\item{use_C}{Optional. A boolean, use C (\code{TRUE}) or R (\code{FALSE}) functions for computation. Default to \code{TRUE}. Ignored if \code{setting == "gaussian" && domain$type == "R"}.}
 
-\item{tol}{Optional. A positive number. If \code{setting != "gaussian"}, function stops if any entry if smaller than -tol, and all entries between -tol and 0 are set to tol, for numerical stability and to avoid violating the assumption that \eqn{h(\mathbf{x})>0}{h(x)>0} almost surely.}
+\item{tol}{Optional. A positive number. If \code{setting != "gaussian" || domain$type != "R"}, function stops if any entry if smaller than -tol, and all entries between -tol and 0 are set to tol, for numerical stability and to avoid violating the assumption that \eqn{h(\mathbf{x})>0}{h(x)>0} almost surely.}
 }
 \value{
 A list that contains the elements necessary for estimation.
@@ -38,13 +46,19 @@ A list that contains the elements necessary for estimation.
   \item{scale}{The scaling method. Same as input.}
   \item{diagonal_multiplier}{The diagonal multiplier. Same as input.}
   \item{diagonals_with_multiplier}{A vector that contains the diagonal entries of \eqn{\boldsymbol{\Gamma}}{\Gamma} after applying the multiplier.}
+  \item{domain_type}{The domain type. Same as domain$type in the input.}
   \item{setting}{The setting. Same as input.}
-  \item{g_K}{The \eqn{\boldsymbol{g}}{g} vector. In the non-profiled non-centered setting, this is the \eqn{\boldsymbol{g}}{g} sub-vector corresponding to \eqn{\mathbf{K}}{K}. A \eqn{p^2}-vector. Not returned if \code{setting == "gaussian"} since it is just \eqn{diag(p)}.}
-  \item{Gamma_K}{The \eqn{\boldsymbol{\Gamma}}{Gamma} matrix with no diagonal multiplier. In the non-profiled non-centered setting, this is the \eqn{\boldsymbol{\Gamma}}{\Gamma} sub-matrix corresponding to \eqn{\mathbf{K}}{K}. A vector of length \eqn{p^2} if \code{setting == "gaussian"} or \eqn{p^3} otherwise.}
-  \item{g_eta}{Returned in the non-profiled non-centered setting. The \eqn{\boldsymbol{g}}{g} sub-vector corresponding to \eqn{\boldsymbol{\eta}}{\eta}. A \eqn{p}-vector. Not returned if \code{setting == "gaussian"} since it is just \eqn{numeric(p)}.}
-  \item{Gamma_K_eta}{Returned in the non-profiled non-centered setting. The \eqn{\boldsymbol{\Gamma}}{\Gamma} sub-matrix corresponding to interaction between \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta}. If \code{setting == "gaussian"}, returns a vector of length \eqn{p}, or \eqn{p^2} otherwise.}
-  \item{Gamma_eta}{Returned in the non-profiled non-centered setting. The \eqn{\boldsymbol{\Gamma}}{\Gamma} sub-matrix corresponding to \eqn{\boldsymbol{\eta}}{\eta}. A \eqn{p}-vector. Not returned if \code{setting == "gaussian"} since it is just \code{rep(1,p)}.}
+  \item{g_K}{The \eqn{\boldsymbol{g}}{g} vector. In the non-profiled non-centered setting, this is the \eqn{\boldsymbol{g}}{g} sub-vector corresponding to \eqn{\mathbf{K}}{K}. A \eqn{p^2}-vector. Not returned if \code{setting == "gaussian" && domain$type == "R"} since it is just \eqn{diag(p)}.}
+  \item{Gamma_K}{The \eqn{\boldsymbol{\Gamma}}{Gamma} matrix with no diagonal multiplier. In the non-profiled non-centered setting, this is the \eqn{\boldsymbol{\Gamma}}{\Gamma} sub-matrix corresponding to \eqn{\mathbf{K}}{K}. A vector of length \eqn{p^2} if \code{setting == "gaussian" && domain$type == "R"} or \eqn{p^3} otherwise.}
+  \item{g_eta}{Returned in the non-profiled non-centered setting. The \eqn{\boldsymbol{g}}{g} sub-vector corresponding to \eqn{\boldsymbol{\eta}}{\eta}. A \eqn{p}-vector. Not returned if \code{setting == "gaussian" && domain$type == "R"} since it is just \eqn{numeric(p)}.}
+  \item{Gamma_K_eta}{Returned in the non-profiled non-centered setting. The \eqn{\boldsymbol{\Gamma}}{\Gamma} sub-matrix corresponding to interaction between \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta}. If \code{setting == "gaussian" && domain$type == "R"}, returns a vector of length \eqn{p}, or \eqn{p^2} otherwise.}
+  \item{Gamma_eta}{Returned in the non-profiled non-centered setting. The \eqn{\boldsymbol{\Gamma}}{\Gamma} sub-matrix corresponding to \eqn{\boldsymbol{\eta}}{\eta}. A \eqn{p}-vector. Not returned if \code{setting == "gaussian" && domain$type == "R"} since it is just \code{rep(1,p)}.}
   \item{t1,t2}{Returned in the profiled non-centered setting, where the \eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
+If \code{domain$type == "simplex", the following are also returned.}
+  \item{Gamma_K_jp}{A matrix of size \code{p} by \code{p(p-1)}. The \code{(j-1)*p+1} through \code{j*p} columns represent the interaction matrix between the \code{j}-th column and the \code{m}-th column of \code{K}.}
+  \item{Gamma_Kj_etap}{Non-centered only. A matrix of size \code{p} by \code{p(p-1)}. The \code{j}-th column represents the interaction between the \code{j}-th column of \code{K} and \code{eta[p]}.}
+  \item{Gamma_Kp_etaj}{Non-centered only. A matrix of size \code{p} by \code{p(p-1)}. The \code{j}-th column represents the interaction between the \code{p}-th column of \code{K} and \code{eta[j]}. Note that it is equal to \code{Gamma_Kj_etap} if \code{setting} does not contain substring \code{"sum0"}.}
+  \item{Gamma_eta_jp}{Non-centered only. A vector of size \code{p-1}. The \code{j}-th component represents the interaction between \code{eta[j]} and \code{eta[p]}.}
 }
 \description{
 The function wrapper to get the elements necessary for calculations for all settings.
@@ -69,30 +83,108 @@ In the profiled non-centered setting, the function also returns \eqn{t_1}{t1} an
 so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{vec}(\hat{\mathbf{K}}).}{\hat{\eta}=t1-t2*vec(\hat{K}).}
 }
 \examples{
-if (!requireNamespace("mvtnorm", quietly = TRUE)){
-  stop("Please install package \\"mvtnorm\\" first.", call. = FALSE)
-}
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(mvtnorm)
-require(tmvtnorm)
+if (!requireNamespace("mvtnorm", quietly = TRUE))
+   stop("Please install package \"mvtnorm\".")
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
-mu <- rep(0, p)
+eta <- rep(0, p)
 K <- diag(p)
-diagonal_multiplier <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
-x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
+dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
+
+# Gaussian on R^p:
+x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
+domain <- make_domain("R", p=p)
+get_elts(NULL, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
+get_elts(NULL, x, "gaussian", domain, FALSE, profiled=FALSE, scale="sd", diag=dm)
+
+# Gaussian on R_+^p:
+domain <- make_domain("R+", p=p)
+x <- tmvtnorm::rtmvnorm(n, mean = solve(K, eta), sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 h_hp <- get_h_hp("min_pow", 1, 3)
-get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
-  centered=TRUE, scale="norm", diag=1.5)
-get_elts(h_hp$h, h_hp$hp, x, setting="ab_0.7_1.2",
-  centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
+get_elts(h_hp, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 
-x <- mvtnorm::rmvnorm(n, mean=mu, sigma=solve(K))
-get_elts(NULL, NULL, x, setting="gaussian", centered=FALSE,
-  profiled=FALSE, scale="center_norm", diag=1.3)
+# Gaussian on sum(x^2) > 1 && sum(x^(1/3)) > 1 with x allowed to be negative
+domain <- make_domain("polynomial", p=p, rule="1 && 2",
+       ineqs=list(list("expression"="sum(x^2)>1", abs=FALSE, nonnegative=FALSE),
+                      list("expression"="sum(x^(1/3))>1", abs=FALSE, nonnegative=FALSE)))
+xinit <- rep(sqrt(2/p), p)
+x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta, K=K,
+       domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+h_hp <- get_h_hp("min_pow", 1, 3)
+get_elts(h_hp, x, "gaussian", domain, centered=FALSE,
+       profiled_if_noncenter=TRUE, scale="", diag=dm)
+
+# exp on ([0, 1] v [2,3])^p
+domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
+x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=eta,
+       K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+h_hp <- get_h_hp("min_pow", 1.5, 3)
+get_elts(h_hp, x, "exp", domain, centered=TRUE, scale="", diag=dm)
+get_elts(h_hp, x, "exp", domain, centered=FALSE,
+       profiled_if_noncenter=FALSE, scale="", diag=dm)
+
+# gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
+domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
+       ineqs=list(list("expression"="x1>1", abs=FALSE, nonnegative=TRUE),
+                      list("expression"="x2<1", abs=FALSE, nonnegative=TRUE),
+                      list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=TRUE)))
+set.seed(1)
+xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
+x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
+       domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+h_hp <- get_h_hp("min_pow", 1.5, 3)
+get_elts(h_hp, x, "gamma", domain, centered=TRUE, scale="", diag=dm)
+get_elts(h_hp, x, "gamma", domain, centered=FALSE,
+       profiled_if_noncenter=FALSE, scale="", diag=dm)
+
+# a0.6_b0.7 on {x in R_+^p: sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
+domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
+       ineqs=list(list("expression"="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
+                      list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
+                      list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
+xinit <- rep(1, p)
+x <- gen(n, a_numer=6, a_denom=10, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K,
+       domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+h_hp <- get_h_hp("min_pow", 1.4, 3)
+get_elts(h_hp, x, "ab_0.6_0.7", domain, centered=TRUE, scale="", diag=dm)
+get_elts(h_hp, x, "ab_0.6_0.7", domain, centered=FALSE,
+       profiled_if_noncenter=TRUE, scale="", diag=dm)
+
+# log_log model on {x in R_+^p: sum_j j * xj <= 1}
+domain <- make_domain("polynomial", p=p, 
+       ineqs=list(list("expression"=paste(paste(sapply(1:p,
+                           function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
+                     abs=FALSE, nonnegative=TRUE)))
+x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
+       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, 
+       thinning=100, verbose=TRUE)
+h_hp <- get_h_hp("min_pow", 2, 3)
+get_elts(h_hp, x, "log_log", domain, centered=TRUE, scale="", diag=dm)
+get_elts(h_hp, x, "log_log", domain, centered=FALSE,
+       profiled_if_noncenter=FALSE, scale="", diag=dm)
+
+# log_log model on the simplex with K having row and column sums 0 (Aitchison model)
+domain <- make_domain("simplex", p=p)
+K <- -cov_cons("band", p=p, spars=3, eig=1)
+diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
+eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
+x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
+       K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+h_hp <- get_h_hp("min_pow", 2, 3)
+h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
+
+# Does not assume K has 0 row and column sums
+elts_simplex_0 <- get_elts(h_hp, x, "log_log", domain, centered=TRUE, profiled=FALSE,
+       scale="", diag=1.5)
+
+# If want K to have row sums and column sums equal to 0 (Aitchison); estimate off-diagonals only
+elts_simplex_1 <- get_elts(h_hp, x, "log_log_sum0", domain, centered=FALSE,
+       profiled=FALSE, scale="", diag=1.5)
+# All entries corresponding to the diagonals of K should be 0:
+max(abs(sapply(1:p, function(j){c(elts_simplex_1$Gamma_K[j, (j-1)*p+1:p],
+       elts_simplex_1$Gamma_K[, (j-1)*p+j])})))
+max(abs(diag(elts_simplex_1$Gamma_K_eta)))
+max(abs(diag(matrix(elts_simplex_1$g_K, nrow=p))))
 }

@@ -1,4 +1,4 @@
-/* Compile with R CMD SHLIB arms.c utils.c set_ops.c domain.c genscore.c sampling.c tests.c -o genscore.so
+/* Compile with R CMD SHLIB arms.c utils.c set_ops.c domain.c genscore.c sampling.c tests.c simplex_genscore.c -o genscore.so
  Update in 1002 from 0928: added sampler for the general a/b setting; in gibbs_one_round with gamma FALSE, A = Theta[j] now becomes Theta[j] * 2, reflecting the fact that the linear part in the formulation of the exp density changed from Theta%*%sqrt(x) to (Theta%*%((x^1/2-1)/(1/2))), as in the general a/b setting
  Thus, 1002.rsqrt_gibbs_one_round(...,Theta,...) is the same as 0928.rsqrt_gibbs_one_round(...,Theta*2,...)
  Update in genscore on 20190415: renamed rsqrt_gibbs_one_round to rexp_gamma_reject and renamed rsqrt_gibbs_one_round_ab to rab_arms
@@ -18,15 +18,15 @@
 
 double EPS = 1-1E-14;
 
-// elts for centered
-void elts_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier){
+// elts for centered Gaussian
+void elts_gauss_c(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier){
 	//// d is here although center, because we can reuse its calculation in forming g1
 	int n = *nIn, p = *pIn, j,k,l, jn, lp, ln, jpp;
-	// g1 <- crossprod(hpx, x)/n; d <- colMeans(hx); diag(g1) <- diag(g1) + d
+	// g1 <- crossprod(hpdx, x)/n; d <- colMeans(hdx); diag(g1) <- diag(g1) + d
 	for (j=0; j<p; j++){ // Column
-		d[j] = sum(n, hx+j*n) / n;
+		d[j] = sum(n, hdx+j*n) / n;
 		for (k=0; k<p; k++){ // Column
-			g1[j*p+k] = in_order_dot_prod(n, hpx+(k*n), x+j*n) / n;
+			g1[j*p+k] = in_order_dot_prod(n, hpdx+(k*n), x+j*n) / n;
 		}
 		g1[j*p+j] += d[j];
 	}
@@ -36,27 +36,27 @@ void elts_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, 
 		jpp = j*p*p; jn = j*n;
 		for (l=0; l<p; l++){
 			lp = l*p; ln = l*n;
-			for (k=0; k<p; k++){
-				Gamma[jpp+lp+k] = in_order_tri_dot_prod(n, x+k*n, x+ln, hx+jn) / n;
+			for (k=l; k<p; k++){
+				Gamma[jpp+lp+k] = Gamma[jpp+k*p+l] = in_order_tri_dot_prod(n, x+k*n, x+ln, hdx+jn) / n;
 			}
 			diagonals_with_multiplier[j*p+l] = *diagonal_multiplier * Gamma[jpp+lp+l]; //Gamma[jpp+lp+l] *= *diagonal_multiplier;
 		}
 	}
 }
 
-// elts for non-centered and non-profiled; calls elts_c
-void elts_nc_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+// elts for non-centered and non-profiled Gaussian; calls elts_gauss_c
+void elts_gauss_np(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
 	int n = *nIn, p = *pIn, j, k;
-	elts_c(nIn, pIn, hx, hpx, x, g1, d, Gamma, diagonal_multiplier, diagonals_with_multiplier);
-	// Gamma12flat <- -crossprod(x,hx)/n
+	elts_gauss_c(nIn, pIn, hdx, hpdx, x, g1, d, Gamma, diagonal_multiplier, diagonals_with_multiplier);
+	// Gamma12flat <- -crossprod(x,hdx)/n
 	for (j=0; j<p; j++){
 		for (k=0; k<p; k++){
-			Gamma12[j*p+k] = -in_order_dot_prod(n, x+k*n, hx+j*n) / n;
+			Gamma12[j*p+k] = -in_order_dot_prod(n, x+k*n, hdx+j*n) / n;
 		}
 	}
-	// g2 = -colMeans(hpx)
+	// g2 = -colMeans(hpdx)
 	for (j=0; j<p; j++){ // Column
-		g2[j] = -sum(n, hpx+j*n) / n;
+		g2[j] = -sum(n, hpdx+j*n) / n;
 	}
 }
 
@@ -92,44 +92,45 @@ void make_profile(int *pIn, double *g1, double *g2, double *d, double *Gamma, do
 }
 
 
-void elts_ab_c(int *nIn, int *pIn, double *a, double *hx, double *hpx, double *x, double *g1, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier){
+void elts_ab_c(int *nIn, int *pIn, double *a, double *hdx, double *hpdx, double *x, double *g1, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier){
 	// NOTE THAT b IS NOT NEEDED
-	// NOTE THAT UNLIKE elts_c for gaussian, d IS NOT IN THE ARGUMENT LIST because we cannot reuse it in g1
+	// NOTE THAT UNLIKE elts_gauss_c for gaussian, d IS NOT IN THE ARGUMENT LIST because we cannot reuse it in g1
 	int n = *nIn, p = *pIn, j, k, l, jn, lp, ln, jpp;
 	double A = *a;
 	for (j=0; j<p; j++){
 		jpp = j*p*p; jn = j*n;
 		for (l=0; l<p; l++){
 			lp = l*p; ln = l*n;
-			for (k=0; k<p; k++){
+			for (k=l; k<p; k++){
 				Gamma[jpp+lp+k] = 0;
 				for (int i=0; i<n; i++)
-					Gamma[jpp+lp+k] += pow(x[k*n+i]*x[ln+i], A)*hx[jn+i]*pow(x[jn+i], 2*A-2);
+					Gamma[jpp+lp+k] += pow(x[k*n+i]*x[ln+i], A)*hdx[jn+i]*pow(x[jn+i], 2*A-2);
 				Gamma[jpp+lp+k] /= n;
+				Gamma[jpp+k*p+l] = Gamma[jpp+lp+k];
 			}
 			diagonals_with_multiplier[j*p+l] = *diagonal_multiplier * Gamma[jpp+lp+l]; //Gamma[jpp+lp+l] *= *diagonal_multiplier;
-			g1[j*p+l] = (in_order_tri_dot_prod_pow(n, hpx+j*n, x+j*n, x+l*n, 1, A-1, A)
-						 +(A-1)*in_order_tri_dot_prod_pow(n, hx+j*n, x+j*n, x+l*n, 1, A-2, A)) / n;
+			g1[j*p+l] = (in_order_tri_dot_prod_pow(n, hpdx+j*n, x+j*n, x+l*n, 1, A-1, A)
+						 +(A-1)*in_order_tri_dot_prod_pow(n, hdx+j*n, x+j*n, x+l*n, 1, A-2, A)) / n;
 		}
-		g1[j*p+j] += A*in_order_dot_prod_pow(n, hx+j*n, x+j*n, 1, 2*A-2) / n;
+		g1[j*p+j] += A*in_order_dot_prod_pow(n, hdx+j*n, x+j*n, 1, 2*A-2) / n;
 	}
 }
 
-// elts for generalized a/b setting; this function is based on elts_nc_np
-void elts_ab_np(int *nIn, int *pIn, double *a, double *b, double *hx, double *hpx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+// elts for generalized a/b setting; this function is based on elts_gauss_np
+void elts_ab_np(int *nIn, int *pIn, double *a, double *b, double *hdx, double *hpdx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
 	int n = *nIn, p = *pIn, j, k;
 	double A = *a, B = *b;
-	elts_ab_c(nIn, pIn, a, hx, hpx, x, g1, Gamma, diagonal_multiplier, diagonals_with_multiplier);
+	elts_ab_c(nIn, pIn, a, hdx, hpdx, x, g1, Gamma, diagonal_multiplier, diagonals_with_multiplier);
 	for (j=0; j<p; j++){
-		d[j] = in_order_dot_prod_pow(n, hx+j*n, x+j*n, 1, 2*B-2) / n;
-		g2[j] -= (in_order_dot_prod_pow(n, hpx+j*n, x+j*n, 1, B-1) + (B-1)*in_order_dot_prod_pow(n, hx+j*n, x+j*n, 1, B-2)) / n;
+		d[j] = in_order_dot_prod_pow(n, hdx+j*n, x+j*n, 1, 2*B-2) / n;
+		g2[j] -= (in_order_dot_prod_pow(n, hpdx+j*n, x+j*n, 1, B-1) + (B-1)*in_order_dot_prod_pow(n, hdx+j*n, x+j*n, 1, B-2)) / n;
 		for (k=0; k<p; k++){
-			Gamma12[j*p+k] = -in_order_tri_dot_prod_pow(n, x+k*n, hx+j*n, x+j*n, A, 1, A+B-2) / n;
+			Gamma12[j*p+k] = -in_order_tri_dot_prod_pow(n, x+k*n, hdx+j*n, x+j*n, A, 1, A+B-2) / n;
 		}
 	}
 }
 
-void elts_exp_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier){
+void elts_exp_c(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier){
 	// Note that although we treat the centered case here, we include d here because it's needed for g1; g2 is also included b/c it's convenient
 	// Also used for elts_gamma_np since it's the same; g2 and d are just ignored
 	int n = *nIn, p = *pIn, j, k, l, jn, lp, ln, jpp;
@@ -138,8 +139,8 @@ void elts_exp_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *
 		for (k=0; k<p; k++) // Column
 			g1[j*p+k] = 0;
 		for (int i=0; i<n; i++){
-			tmp2 = hx[j*n+i]/x[j*n+i];
-			tmp = (hpx[j*n+i]-0.5*tmp2)/sqrt(x[j*n+i]);
+			tmp2 = hdx[j*n+i]/x[j*n+i];
+			tmp = (hpdx[j*n+i]-0.5*tmp2)/sqrt(x[j*n+i]);
 			d[j] += tmp2; g2[j] -= tmp;
 			for (k=0; k<p; k++)
 				g1[j*p+k] += tmp*sqrt(x[k*n+i]);
@@ -153,11 +154,12 @@ void elts_exp_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *
 		jpp = j*p*p; jn = j*n;
 		for (l=0; l<p; l++){
 			lp = l*p; ln = l*n;
-			for (k=0; k<p; k++){
+			for (k=l; k<p; k++){
 				Gamma[jpp+lp+k] = 0;
 				for (int i=0; i<n; i++)
-					Gamma[jpp+lp+k] += sqrt(x[k*n+i]*x[ln+i])*hx[jn+i]/x[jn+i];
+					Gamma[jpp+lp+k] += sqrt(x[k*n+i]*x[ln+i])*hdx[jn+i]/x[jn+i];
 				Gamma[jpp+lp+k] /= n;
+				Gamma[jpp+k*p+l] = Gamma[jpp+lp+k];
 			}
 			diagonals_with_multiplier[j*p+l] = *diagonal_multiplier * Gamma[jpp+lp+l]; //Gamma[jpp+lp+l] *= *diagonal_multiplier;
 		}
@@ -165,66 +167,117 @@ void elts_exp_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *
 }
 
 // elts for sqrt exp graphical models; corresponds to a = b = 1/2
-void elts_exp_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+void elts_exp_np(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
 	int n = *nIn, p = *pIn, j, k;
-	elts_exp_c(nIn, pIn, hx, hpx, x, g1, g2, d, Gamma, diagonal_multiplier, diagonals_with_multiplier);
+	elts_exp_c(nIn, pIn, hdx, hpdx, x, g1, g2, d, Gamma, diagonal_multiplier, diagonals_with_multiplier);
 	for (j=0; j<p; j++){
 		for (k=0; k<p; k++){
 			Gamma12[j*p+k] = 0;
 			for (int i=0; i<n; i++)
-				Gamma12[j*p+k] -= sqrt(x[k*n+i])*hx[j*n+i]/x[j*n+i];
+				Gamma12[j*p+k] -= sqrt(x[k*n+i])*hdx[j*n+i]/x[j*n+i];
 			Gamma12[j*p+k] /= n;
 		}
 	}
 }
 
 // elts for gamma graphical models; corresponds to a = 1/2, b = 0
-void elts_gamma_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
-	elts_exp_c(nIn, pIn, hx, hpx, x, g1, g2, d, Gamma, diagonal_multiplier, diagonals_with_multiplier);
+void elts_gamma_np(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+	elts_exp_c(nIn, pIn, hdx, hpdx, x, g1, g2, d, Gamma, diagonal_multiplier, diagonals_with_multiplier);
 	int n = *nIn, p = *pIn, j, k;
 	for (j=0; j<p; j++){
 		for (k=0; k<p; k++){
 			Gamma12[j*p+k] = 0;
 			for (int i=0; i<n; i++)
-				Gamma12[j*p+k] -= sqrt(x[k*n+i]/x[j*n+i])*hx[j*n+i]/x[j*n+i];
+				Gamma12[j*p+k] -= sqrt(x[k*n+i]/x[j*n+i])*hdx[j*n+i]/x[j*n+i];
 			Gamma12[j*p+k] /= n;
 		}
 	}
 	for (j=0; j<p; j++){ // Column
 		g2[j] = 0; d[j] = 0;
 		for (int i=0; i<n; i++){
-			g2[j] -= (hpx[j*n+i]-hx[j*n+i]/x[j*n+i])/x[j*n+i];
-			d[j] += hx[j*n+i]/x[j*n+i]/x[j*n+i];
+			g2[j] -= (hpdx[j*n+i]-hdx[j*n+i]/x[j*n+i])/x[j*n+i];
+			d[j] += hdx[j*n+i]/x[j*n+i]/x[j*n+i];
 		}
 		g2[j] /= n; d[j] /= n;
 	}
 }
 
-// elts for non-centered and profiled; calls elts_nc_np and make_profile
-void elts_nc_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
-	elts_nc_np(nIn, pIn, hx, hpx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
+void elts_loglog_c(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier,
+				   double *logx, double *h_over_xsq, double *hp_over_x){
+	// NOTE THAT b IS NOT NEEDED
+	// NOTE THAT UNLIKE elts_gauss_c for gaussian, d IS NOT IN THE ARGUMENT LIST because we cannot reuse it in g1
+	int n = *nIn, p = *pIn, j, k, l, jn, lp, ln, jpp;
+	for (int i=0; i<n; i++)
+		for (int j=0; j<p; j++) {
+			int idx = j*n+i;
+			logx[idx] = log(x[idx]);
+			h_over_xsq[idx] = hdx[idx] / x[idx] / x[idx];
+			hp_over_x[idx] = hpdx[idx] / x[idx];
+		}
+	for (j=0; j<p; j++){
+		jpp = j*p*p; jn = j*n;
+		for (l=0; l<p; l++){
+			lp = l*p; ln = l*n;
+			for (k=l; k<p; k++)
+				Gamma[jpp+lp+k] = Gamma[jpp+k*p+l] = in_order_tri_dot_prod(n, logx+k*n, logx+ln, h_over_xsq+jn) / n;
+			g1[j*p+l] = (in_order_dot_prod(n, hp_over_x+j*n, logx+l*n) -
+						 in_order_dot_prod(n, h_over_xsq+j*n, logx+l*n)) / n;
+		}
+		d[j] = sum(n, h_over_xsq+j*n) / n;
+		g1[j*p+j] += d[j];
+	}
+	for (j=0; j<p; j++) {
+		double *Gamma_j_diag = Gamma + j*p*p;
+		for (l=0; l<p; l++) {
+			*diagonals_with_multiplier++ = *diagonal_multiplier * (*Gamma_j_diag);
+			Gamma_j_diag += p+1;
+		}
+	}
+}
+
+void elts_loglog_np(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+	int n = *nIn, p = *pIn, j, k;
+	double *logx = (double*)malloc(n*p*sizeof(double));
+	double *h_over_xsq = (double*)malloc(n*p*sizeof(double));
+	double *hp_over_x = (double*)malloc(n*p*sizeof(double));
+	elts_loglog_c(nIn, pIn, hdx, hpdx, x, g1, d, Gamma, diagonal_multiplier, diagonals_with_multiplier, logx, h_over_xsq, hp_over_x);
+	for (j=0; j<p; j++){
+		g2[j] = d[j] - sum(n, hp_over_x+j*n) / n;
+		for (k=0; k<p; k++)
+			Gamma12[j*p+k] = -in_order_dot_prod(n, logx+k*n, h_over_xsq+j*n) / n;
+	}
+	free(logx); free(h_over_xsq); free(hp_over_x);
+}
+
+// elts for non-centered and profiled; calls elts_gauss_np and make_profile
+void elts_gauss_p(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+	elts_gauss_np(nIn, pIn, hdx, hpdx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
 	make_profile(pIn, g1, g2, d, Gamma, Gamma12, diagonals_with_multiplier);
 }
 
 // elts for non-centered and profiled; calls elts_ab and make_profile
-void elts_ab_p(int *nIn, int *pIn, double *a, double *b, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
-	elts_ab_np(nIn, pIn, a, b, hx, hpx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
+void elts_ab_p(int *nIn, int *pIn, double *a, double *b, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+	elts_ab_np(nIn, pIn, a, b, hdx, hpdx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
 	make_profile(pIn, g1, g2, d, Gamma, Gamma12, diagonals_with_multiplier);
 }
 
 // elts for non-centered and profiled; calls elts_exp and make_profile
-void elts_exp_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
-	elts_exp_np(nIn, pIn, hx, hpx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
+void elts_exp_p(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+	elts_exp_np(nIn, pIn, hdx, hpdx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
 	make_profile(pIn, g1, g2, d, Gamma, Gamma12, diagonals_with_multiplier);
 }
 
 // elts for non-centered and profiled; calls elts_gamma and make_profile
-void elts_gamma_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
-	elts_gamma_np(nIn, pIn, hx, hpx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
+void elts_gamma_p(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+	elts_gamma_np(nIn, pIn, hdx, hpdx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
 	make_profile(pIn, g1, g2, d, Gamma, Gamma12, diagonals_with_multiplier);
 }
 
-
+// elts for non-centered and profiled; calls elts_gamma and make_profile
+void elts_loglog_p(int *nIn, int *pIn, double *hdx, double *hpdx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier){
+	elts_loglog_np(nIn, pIn, hdx, hpdx, x, g1, g2, d, Gamma, Gamma12, diagonal_multiplier, diagonals_with_multiplier);
+	make_profile(pIn, g1, g2, d, Gamma, Gamma12, diagonals_with_multiplier);
+}
 
 inline double shrink(double a, double b) {
 	if (b < fabs(a)) {
@@ -245,6 +298,10 @@ inline int lindx(int r, int c, int p) {
 	
 }
 
+inline double set_KKT_bound(double bound, double tol){
+	return ((bound * EPS >= 10*tol) ? (bound * (EPS)) : (bound - 10*tol));
+}
+
 // Loss for centered, or non-centered profiled estimator
 // If used for refit eBIC, no penalty included
 // Also works for an asymmetric K, assuming Gamma_K is "symmetric"
@@ -263,7 +320,8 @@ double loss_profiled (int p, double *Gamma_K, double *g_K, double *K, double *di
 			for (j=0; j<p; j++){
 				crit2 += K[k*p+j]*K[k*p+j]*diagonals_with_multiplier[k*p+j]; // Quadratic terms on Kji
 			}
-			crit4 += abs_sum(p, K+k*p) - fabs(K[k*p+k]); // sum(abs(K)) off diagonal
+			if (diagonals_with_multiplier != NULL) // If not refit (lambda1 = 0 if refit)
+				crit4 += abs_sum(p, K+k*p) - fabs(K[k*p+k]); // sum(abs(K)) off diagonal
 		}
 	}
 	for (k=0; k<p; k++){
@@ -272,6 +330,10 @@ double loss_profiled (int p, double *Gamma_K, double *g_K, double *K, double *di
 		}
 	}
 	return (crit1 + crit2/2 + crit3 + crit4 * lambda1);
+}
+
+void test_loss_profiled(double *crit, int *p, double *Gamma_K, double *g_K, double *K, double *diagonals_with_multiplier, double *lambda1) {
+	*crit = loss_profiled (*p, Gamma_K, g_K, K, diagonals_with_multiplier, *lambda1);
 }
 
 // Loss for centered, or non-centered profiled estimator for UNTRUNCATED gaussian, assuming Gamma_K is of size p*p and g_K = c(diag(p))
@@ -290,7 +352,8 @@ double loss_profiled_gauss (int p, double *Gamma_K, double *K, double *diagonals
 			for (j=0; j<p; j++){
 				crit2 += K[k*p+j]*K[k*p+j]*diagonals_with_multiplier[j]; // Quadratic terms on Kji
 			}
-			crit4 += abs_sum(p, K+k*p) - fabs(K[k*p+k]); // sum(abs(K)) off diagonal
+			if (diagonals_with_multiplier != NULL) // If not refit (lambda1 = 0 if refit)
+				crit4 += abs_sum(p, K+k*p) - fabs(K[k*p+k]); // sum(abs(K)) off diagonal
 		}
 	}
 	for (k=0; k<p; k++)
@@ -308,9 +371,13 @@ double loss_full_penalized (int p, double *Gamma_K, double *Gamma_K_eta, double 
 	// Line above: -eta[j]*g_eta[j]: linear term on eta_j
 	// eta[j] * in_order_dot_prod(p, Gamma_K_eta+j*p, K+j*p): Cross term between eta_j and Kkj, over k=0:(p-1)
 	crit += in_order_tri_dot_prod(p, Gamma_eta, eta, eta) / 2; // Quadratic terms with eta_i; no interaction between different etas
-	if (diagonals_with_multiplier != NULL) // If not refit
+	if (diagonals_with_multiplier != NULL) // If not refit (lambda2 = 0 if refit)
 		crit += lambda2 * abs_sum(p, eta);
 	return (crit);
+}
+
+void test_loss_full_penalized(double *crit, int *p, double *Gamma_K, double *Gamma_K_eta, double *Gamma_eta, double *g_K, double *g_eta, double *K, double *eta, double *diagonals_with_multiplier, double *lambda1, double *lambda2) {
+	*crit = loss_full_penalized(*p, Gamma_K, Gamma_K_eta, Gamma_eta, g_K, g_eta, K, eta, diagonals_with_multiplier, *lambda1, *lambda2);
 }
 
 // Loss for non-centered non-profiled estimator for UNTRUNCATED gaussian, assuming Gamma_K is of size p*p, g_K = c(diag(p)) and g_eta = numeric(p)
@@ -325,11 +392,8 @@ double loss_full_penalized_gauss (int p, double *Gamma_K, double *Gamma_K_eta, d
 	return (crit);
 }
 
-double set_KKT_bound(double bound, double tol){
-	return ((bound * EPS >= 10*tol) ? (bound * (EPS)) : (bound - 10*tol));
-}
-
-void estimator_profiled (int *pIn, double *Gamma_K, double *g_K, double *K, double *lambda1In, double *tol, int *maxit, int *iters, int *converged, int *exclude, double *diagonals_with_multiplier, int *gauss){ // gauss: untruncated Gaussian if True
+void estimator_profiled (int *pIn, double *Gamma_K, double *g_K, double *K, double *lambda1In, double *tol, int *maxit, int *iters, int *converged, int *exclude, double *diagonals_with_multiplier, int *gauss){
+	// gauss: untruncated Gaussian if True
 	int i,j;
 	int p = *pIn;
 	double lambda = *lambda1In;
@@ -340,14 +404,13 @@ void estimator_profiled (int *pIn, double *Gamma_K, double *g_K, double *K, doub
 	
 	double *oldK;
 	oldK = (double*)malloc(tp*sizeof(double)); // Only need upper triangular to save space
-	
 	//double pen = 0;
-	if (oldK ==0){
+	if (oldK == 0){
 		Rprintf("Out of Memory!\n");
 		return;
 	}
-	for (i=0; i<p; i++){
-		for (j=i; j<p; j++){
+	for (i = 0; i < p; i++){
+		for (j = i; j < p; j++){
 			oldK[lindx(i,j,p)] = K[i*p+j];
 			//if (j != i) {pen += fabs(K[i*p+j]);} ////
 		}
@@ -361,7 +424,8 @@ void estimator_profiled (int *pIn, double *Gamma_K, double *g_K, double *K, doub
 		maxdiff = 0;
 		//pen = 0; ////
 		
-		for (i=0; i<p; i++){
+		// update diagonal elements of K
+		for (i = 0; i < p; i++){
 			int ip = ((*gauss) ? 0 : i*p), ipp = ip*p;
 			s1 = -in_order_dot_prod(p, K+i*p, Gamma_K+ipp+i*p);
 			s1 += K[i*p+i] * Gamma_K[ipp+i*p+i] + ((*gauss) ? 1 : g_K[i*p+i]);
@@ -436,9 +500,16 @@ void profiled(int *pIn, double *Gamma_K, double *g_K, double *K, double *lambda1
 							continue;
 						double grad = 0.0;
 						if (*gauss)
-							grad = (-in_order_dot_prod(p, Gamma_K+i*p, K+j*p) - in_order_dot_prod(p, Gamma_K+j*p, K+i*p)) / 2;
+							grad = (-in_order_dot_prod(p, Gamma_K+i*p, K+j*p) -
+									in_order_dot_prod(p, Gamma_K+j*p, K+i*p) +
+									(Gamma_K[i*p+i] - diagonals_with_multiplier[i]) * K[j*p+i] +
+									(Gamma_K[j*p+j] - diagonals_with_multiplier[j]) * K[i*p+j]) / 2;
 						else
-							grad = (g_K[j*p+i] + g_K[i*p+j] - in_order_dot_prod(p, Gamma_K+j*p*p+i*p, K+j*p) - in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p)) / 2;
+							grad = (g_K[j*p+i] + g_K[i*p+j] -
+									in_order_dot_prod(p, Gamma_K+j*p*p+i*p, K+j*p) -
+									in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p) +
+									(Gamma_K[j*p*p+i*p+i] - diagonals_with_multiplier[j*p+i]) * K[j*p+i] +
+									(Gamma_K[i*p*p+j*p+j]-diagonals_with_multiplier[i*p+j]) * K[i*p+j]) / 2;
 						if (fabs(grad) > KKT_bound){
 							need_rerun = 1; exclude[j*p+i] = 0; exclude[i*p+j] = 0;
 						}
@@ -447,7 +518,7 @@ void profiled(int *pIn, double *Gamma_K, double *g_K, double *K, double *lambda1
 				if (!first_time && !need_rerun)
 					break;
 			}
-			estimator_profiled(pIn, Gamma_K, g_K, K, lambda1In, tol, maxit, iters, converged, exclude, diagonals_with_multiplier,  gauss);
+			estimator_profiled(pIn, Gamma_K, g_K, K, lambda1In, tol, maxit, iters, converged, exclude, diagonals_with_multiplier, gauss);
 			total_iters += *iters;
 			first_time = 0; KKT_bound = KKT_bound_new;
 		}
@@ -470,7 +541,6 @@ void estimator_full_penalized (int *pIn, double *Gamma_K, double *Gamma_K_eta, d
 	double sSum,s1,s2;
 	double maxdiff=1.;
 	
-	
 	double *oldK, *oldeta;
 	oldK = (double*)malloc(tp*sizeof(double)); // Only need upper triangular to save space
 	oldeta = (double*)malloc(p*sizeof(double));
@@ -478,9 +548,10 @@ void estimator_full_penalized (int *pIn, double *Gamma_K, double *Gamma_K_eta, d
 		Rprintf("Out of Memory!\n");
 		return;
 	}
-	for (i=0; i<p; i++){
+	for (i = 0; i < p; i++){
 		oldeta[i] = eta[i];
-		for (j=i; j<p; j++){
+		for (j = i; j < p; j++){
+			// Ignore diag if not estimating diagonals
 			oldK[lindx(i,j,p)] = K[i*p+j];
 		}
 	}
@@ -488,13 +559,12 @@ void estimator_full_penalized (int *pIn, double *Gamma_K, double *Gamma_K_eta, d
 	//*crit = loss_full_penalized(p, Gamma_K, Gamma_K_eta, Gamma_eta, g_K, g_eta, K, eta); ////
 	//Rprintf("Crit %f \n", *crit); ////
 	
-	
 	*iters = 0;
 	while (*iters < *maxit){
 		(*iters)++;
 		maxdiff = 0;
 		
-		// update off-diagonal elements of K
+		// update diagonal elements of K
 		for (i = 0; i < p; i++){
 			int ip = ((*gauss) ? 0 : i*p), ipp = ip*p;
 			s1 = -in_order_dot_prod(p, K+i*p, Gamma_K+ipp+i*p);
@@ -507,6 +577,7 @@ void estimator_full_penalized (int *pIn, double *Gamma_K, double *Gamma_K_eta, d
 			maxdiff = fmax2(maxdiff,fabs(oldK[lindx(i,i,p)]-K[i*p+i]));
 			oldK[lindx(i,i,p)] = K[i*p+i];
 		}
+		// update off-diagonal elements of K
 		for (i = 0; i < (p-1); i++){
 			for (j = i+1; j < p; j++){
 				if (exclude != NULL && exclude[i*p+j])
@@ -564,11 +635,10 @@ void full(int *pIn, double *Gamma_K, double *Gamma_K_eta, double *Gamma_eta, dou
 	if (*is_refit){ // If refit, directly estimate with support restricted to exclude
 		*lambda1In = *lambda2In = 0;
 		estimator_full_penalized (pIn, Gamma_K, Gamma_K_eta, Gamma_eta, g_K, g_eta, K, eta, lambda1In, lambda2In, tol, maxit, iters, converged, exclude, exclude_eta, NULL, gauss);
-		if (gauss)
+		if (*gauss)
 			*crit = loss_full_penalized_gauss(p, Gamma_K, Gamma_K_eta, K, eta, NULL, 0, 0);
 		else
 			*crit = loss_full_penalized(p, Gamma_K, Gamma_K_eta, Gamma_eta, g_K, g_eta, K, eta, NULL, 0, 0);
-		
 	}
 	else {
 		double KKT_bound1 = set_KKT_bound(2*(*lambda1In)-(*previous_lambda1), *tol),
@@ -584,9 +654,18 @@ void full(int *pIn, double *Gamma_K, double *Gamma_K_eta, double *Gamma_eta, dou
 							continue;
 						double grad = 0.0;
 						if (*gauss)
-							grad = ((-in_order_dot_prod(p, Gamma_K+i*p, K+j*p) - in_order_dot_prod(p, Gamma_K+j*p, K+i*p) - Gamma_K_eta[j]*eta[i] - Gamma_K_eta[i]*eta[j]))/2;
+							grad = ((-in_order_dot_prod(p, Gamma_K+i*p, K+j*p) -
+									 in_order_dot_prod(p, Gamma_K+j*p, K+i*p) +
+									 (Gamma_K[i*p+i]-diagonals_with_multiplier[i]) * K[j*p+i] +
+									 (Gamma_K[j*p+j] - diagonals_with_multiplier[j]) * K[i*p+j] -
+									 Gamma_K_eta[j] * eta[i] - Gamma_K_eta[i]*eta[j]))/2;
 						else
-							grad = ((g_K[j*p+i] + g_K[i*p+j] - in_order_dot_prod(p, Gamma_K+j*p*p+i*p, K+j*p) - in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p) - Gamma_K_eta[i*p+j]*eta[i] - Gamma_K_eta[j*p+i]*eta[j]))/2;
+							grad = ((g_K[j*p+i] + g_K[i*p+j] -
+									 in_order_dot_prod(p, Gamma_K+j*p*p+i*p, K+j*p) -
+									 in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p) +
+									 (Gamma_K[j*p*p+i*p+i] - diagonals_with_multiplier[j*p+i]) * K[j*p+i] +
+									 (Gamma_K[i*p*p+j*p+j]-diagonals_with_multiplier[i*p+j]) * K[i*p+j] -
+									 Gamma_K_eta[i*p+j] * eta[i] - Gamma_K_eta[j*p+i] * eta[j]))/2;
 						if (fabs(grad) > KKT_bound1){  // Currently does not check the KKT conditions for eta, as a final round will be run
 							need_rerun += 1; exclude[j*p+i] = 0; exclude[i*p+j] = 0;
 						}
@@ -621,23 +700,24 @@ void estimator_profiled_asymm (int *pIn, double *Gamma_K, double *g_K, double *K
 	double *oldK;
 	oldK = (double*)malloc(tp*sizeof(double)); // Only need upper triangular to save space
 	//double pen = 0;
-	if (oldK ==0){
+	if (oldK == 0){
 		Rprintf("Out of Memory!\n");
 		return;
 	}
-	for (i=0; i<p; i++){
-		for (j=0; j<p; j++){ // Kji
+	for (i = 0; i < p; i++){
+		for (j = 0; j < p; j++){ // Kji
 			oldK[i*p+j] = K[i*p+j];
 			//if (j != i) {pen += fabs(K[i*p+j]);} ////
 		}
 	}
+	
 	//*crit = loss_profiled(p, Gamma_K, g_K, K); ////
 	//Rprintf("Initial crit %f \n", *crit+pen*2*lambda); ////
 	*iters = 0;
 	while (*iters < *maxit){
 		(*iters)++;
 		maxdiff = 0;
-		// update all elements of K, diagonal or off-diagonal
+		// update all elements of K, off-diagonal and also diagonal
 		for (i = 0; i < p; i++){ // Kji
 			for (j = 0; j < p; j++){
 				if (i != j && exclude != NULL && exclude[i*p+j])
@@ -695,9 +775,11 @@ void profiled_asymm (int *pIn, double *Gamma_K, double *g_K, double *K, double *
 							continue;
 						double grad = 0.0;
 						if (*gauss)
-							grad = -in_order_dot_prod(p, Gamma_K+j*p, K+i*p);
+							grad = (-in_order_dot_prod(p, Gamma_K+j*p, K+i*p) +
+							(Gamma_K[j*p+j]-diagonals_with_multiplier[j])*K[i*p+j]);
 						else
-							grad = g_K[i*p+j] - in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p);
+							grad = (g_K[i*p+j] - in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p) +
+							(Gamma_K[i*p*p+j*p+j]-diagonals_with_multiplier[i*p+j]) * K[i*p+j]);
 						if (fabs(grad) > KKT_bound){
 							need_rerun = 1; exclude[i*p+j] = 0;
 						}
@@ -719,7 +801,7 @@ void profiled_asymm (int *pIn, double *Gamma_K, double *g_K, double *K, double *
 	}
 }
 
-void estimator_full_penalized_asymm (int *pIn, double *Gamma_K, double *Gamma_K_eta, double *Gamma_eta, double *g_K, double *g_eta, double *K, double *eta, double *lambda1In, double *lambda2In, double *tol, int *maxit, int *iters, int *converged, int *exclude, int *exclude_eta, double *diagonals_with_multiplier,  int *gauss){
+void estimator_full_penalized_asymm (int *pIn, double *Gamma_K, double *Gamma_K_eta, double *Gamma_eta, double *g_K, double *g_eta, double *K, double *eta, double *lambda1In, double *lambda2In, double *tol, int *maxit, int *iters, int *converged, int *exclude, int *exclude_eta, double *diagonals_with_multiplier, int *gauss){
 	int i,j;
 	int p = *pIn;
 	double lambda1 = *lambda1In, lambda2 = *lambda2In;
@@ -734,16 +816,15 @@ void estimator_full_penalized_asymm (int *pIn, double *Gamma_K, double *Gamma_K_
 		Rprintf("Out of Memory!\n");
 		return;
 	}
-	for (i=0; i<p; i++){
+	for (i = 0; i < p; i++){
 		oldeta[i] = eta[i];
-		for (j=i; j<p; j++){ // Kji
+		for (j = 0; j < p; j++){ // Kji
 			oldK[i*p+j] = K[i*p+j];
 		}
 	}
-	
+
 	//*crit = loss_full_penalized(p, Gamma_K, Gamma_K_eta, Gamma_eta, g_K, g_eta, K, eta); ////
 	//Rprintf("Crit %f \n", *crit); ////
-	
 	
 	*iters = 0;
 	while (*iters < *maxit){
@@ -823,9 +904,13 @@ void full_asymm(int *pIn, double *Gamma_K, double *Gamma_K_eta, double *Gamma_et
 							continue;
 						double grad = 0.0;
 						if (*gauss)
-							grad = -in_order_dot_prod(p, Gamma_K+j*p, K+i*p) - Gamma_K_eta[j]*eta[i];
+							grad = (-in_order_dot_prod(p, Gamma_K+j*p, K+i*p) +
+							(Gamma_K[j*p+j]-diagonals_with_multiplier[j]) * K[i*p+j] -
+							Gamma_K_eta[j]*eta[i]);
 						else
-							grad = g_K[i*p+j] - in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p) - Gamma_K_eta[i*p+j]*eta[i];
+							grad = (g_K[i*p+j] - in_order_dot_prod(p, Gamma_K+i*p*p+j*p, K+i*p) +
+							(Gamma_K[i*p*p+j*p+j]-diagonals_with_multiplier[i*p+j]) * K[i*p+j] -
+							Gamma_K_eta[i*p+j] * eta[i]);
 						if (fabs(grad) > KKT_bound1){ // Currently does not check the KKT conditions for eta, as a final round will be run
 							need_rerun += 1; exclude[i*p+j] = 0;
 						}

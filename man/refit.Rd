@@ -21,12 +21,14 @@ Refits an unpenalized model restricted to the estimated edges, with \code{lambda
 Currently the function only returns \code{Inf} when the maximum node degree is >= the sample size, which is a sufficient and necessary condition for inexistence of a unique solution with probability 1 if \code{symmetric != "symmetric"}. In practice it is also a sufficient and necessary condition for most cases and \code{symmetric == "symmetric"}.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
+# Examples are shown for Gaussian truncated to R+^p only. For other distributions
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, 
+#   as the way to call this function (\code{refit()}) is exactly the same in those cases.
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
+domain <- make_domain("R+", p=p)
 h_hp <- get_h_hp("min_pow", 1, 3)
 mu <- rep(0, p)
 K <- diag(p)
@@ -35,22 +37,22 @@ x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 
-elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                 centered=FALSE, profiled=FALSE, diag=dm)
-res_nc_np <- get_results(elts_NC_NP, symmetric="symmetric",
+res_nc_np <- get_results(elts_gauss_np, symmetric="symmetric",
                lambda1=0.35, lambda2=2, previous_res=NULL, is_refit=FALSE)
-refit(res_nc_np, elts_NC_NP)
+refit(res_nc_np, elts_gauss_np)
 
-elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_p <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                centered=FALSE, profiled=TRUE, diag=dm)
-res_nc_p <- get_results(elts_NC_P, symmetric="symmetric",
+res_nc_p <- get_results(elts_gauss_p, symmetric="symmetric",
               lambda1=0.35, lambda2=NULL, previous_res=NULL, is_refit=FALSE)
-refit(res_nc_p, elts_NC_P)
+refit(res_nc_p, elts_gauss_p)
 
-elts_C <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_c <- get_elts(h_hp, x, setting="gaussian", domain=domain,
             centered=TRUE, diag=dm)
-res_c <- get_results(elts_C, symmetric="or", lambda1=0.35,
+res_c <- get_results(elts_gauss_c, symmetric="or", lambda1=0.35,
            lambda2=NULL, previous_res=NULL, is_refit=FALSE)
-refit(res_c, elts_C)
+refit(res_c, elts_gauss_c)
 
 }

@@ -4,8 +4,12 @@
 \alias{get_crit_nopenalty}
 \title{Minimized loss for unpenalized restricted asymmetric models.}
 \usage{
-get_crit_nopenalty(elts, exclude = NULL, exclude_eta = NULL,
-  previous_res = NULL)
+get_crit_nopenalty(
+  elts,
+  exclude = NULL,
+  exclude_eta = NULL,
+  previous_res = NULL
+)
 }
 \arguments{
 \item{elts}{A list, elements necessary for calculations returned by get_elts().}
@@ -26,12 +30,14 @@ Analytic solution of the minimized loss for an unpenalized asymmetric model rest
 If \code{previous_res} is provided, \code{exclude} and \code{exclude_eta} must be \code{NULL} or be consistent with the estimated support in \code{previous_res}. If \code{previous_res} and \code{exclude} are both \code{NULL}, assume all edges are present. The same applies to the non-profiled non-centered case when \code{previous_res} and \code{exclude_eta} are both \code{NULL}.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
+# Examples are shown for Gaussian truncated to R+^p only. For other distributions
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
+#   way to call this function (\code{get_crit_nopenalty()}) is exactly the same in those cases.
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
+domain <- make_domain("R+", p=p)
 h_hp <- get_h_hp("min_pow", 1, 3)
 mu <- rep(0, p)
 K <- diag(p)
@@ -40,9 +46,9 @@ x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 
-elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                 centered=FALSE, profiled=FALSE, diag=dm)
-res_nc_np <- get_results(elts_NC_NP, symmetric="symmetric", lambda1=0.35,
+res_nc_np <- get_results(elts_gauss_np, symmetric="symmetric", lambda1=0.35,
                lambda2=2, previous_res=NULL, is_refit=FALSE)
-get_crit_nopenalty(elts_NC_NP, previous_res=res_nc_np)
+get_crit_nopenalty(elts_gauss_np, previous_res=res_nc_np)
 }

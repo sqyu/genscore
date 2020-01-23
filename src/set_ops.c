@@ -1,4 +1,4 @@
-/* Compile with R CMD SHLIB arms.c utils.c set_ops.c domain.c sampling.c genscore.c tests.c -o genscore.so
+/* 
  Written by Shiqing Yu.
  */
 

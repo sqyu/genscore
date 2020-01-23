@@ -17,8 +17,9 @@ Suggests:
     zoo,
     knitr,
     rmarkdown,
-    cubature
+    cubature,
+    stringr
 Imports: Rdpack
 RdMacros: Rdpack
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 VignetteBuilder: knitr

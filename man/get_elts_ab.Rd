@@ -4,22 +4,31 @@
 \alias{get_elts_ab}
 \title{The R implementation to get the elements necessary for calculations for general a and b.}
 \usage{
-get_elts_ab(hx, hpx, x, a, b, setting, centered = TRUE,
-  profiled_if_noncenter = TRUE, scale = "norm",
-  diagonal_multiplier = 1)
+get_elts_ab(
+  hdx,
+  hpdx,
+  x,
+  a,
+  b,
+  setting,
+  centered = TRUE,
+  profiled_if_noncenter = TRUE,
+  scale = "",
+  diagonal_multiplier = 1
+)
 }
 \arguments{
-\item{hx}{A matrix, \eqn{h(\mathbf{x})}{h(x)}, should be of the same dimension as \code{x}.}
+\item{hdx}{A matrix, \eqn{h(\mathbf{x})}{h(x)} applied to the distance of x from the boundary of the domain, should be of the same dimension as \code{x}.}
 
-\item{hpx}{A matrix, \eqn{h'(\mathbf{x})}{h'(x)}, should be of the same dimension as \code{x}.}
+\item{hpdx}{A matrix, \eqn{h'(\mathbf{x})}{h\'(x)} applied to the distance of x from the boundary of the domain, should be of the same dimension as \code{x}.}
 
-\item{x}{A matrix, the data matrix.}
+\item{x}{An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.}
 
 \item{a}{A number, must be strictly larger than \eqn{b/2}.}
 
 \item{b}{A number, must be >= 0.}
 
-\item{setting}{A string that indicates the setting. Returned without being checked or used in the function body.}
+\item{setting}{A string that indicates the distribution type. Returned without being checked or used in the function body.}
 
 \item{centered}{A boolean, whether in the centered setting (assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.}
 
@@ -68,23 +77,19 @@ In the profiled non-centered setting, the function also returns \eqn{t_1}{t1} an
 so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{vec}(\hat{\mathbf{K}}).}{\hat{\eta}=t1-t2*vec(\hat{K}).}
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
-mu <- rep(0, p)
+eta <- rep(0, p)
 K <- diag(p)
-x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
-       lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
-       burn.in.samples = 100, thinning = 10)
-h_hp <- get_h_hp("min_pow", 1, 3)
-hx <- t(apply(x, 1, h_hp$h))
-hpx <- t(apply(x, 1, h_hp$hp))
-get_elts_ab(hx, hpx, x, a=0.5, b=0.5, setting="trun_gaussian",
+domain <- make_domain("R+", p=p)
+x <- gen(n, a_numer=1, a_denom=2, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K, 
+       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+h_hp <- get_h_hp("min_pow", 1.5, 3)
+h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
+get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
             centered=TRUE, scale="norm", diag=1.5)
-get_elts_ab(hx, hpx, x, a=0.7, b=1.2, setting="ab_0.7_1.2",
-            centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
+get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+            centered=FALSE, profiled_if_noncenter=TRUE, scale="norm", diag=1.7)
+get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+            centered=FALSE, profiled_if_noncenter=FALSE, scale="norm", diag=1.9)
 }

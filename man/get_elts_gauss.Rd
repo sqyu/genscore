@@ -2,13 +2,18 @@
 % Please edit documentation in R/genscore.R
 \name{get_elts_gauss}
 \alias{get_elts_gauss}
-\title{The R implementation to get the elements necessary for calculations for the untruncated gaussian setting.}
+\title{The R implementation to get the elements necessary for calculations for the gaussian setting on R^p.}
 \usage{
-get_elts_gauss(x, centered = TRUE, profiled_if_noncenter = TRUE,
-  scale = "norm", diagonal_multiplier = 1)
+get_elts_gauss(
+  x,
+  centered = TRUE,
+  profiled_if_noncenter = TRUE,
+  scale = "",
+  diagonal_multiplier = 1
+)
 }
 \arguments{
-\item{x}{A matrix, the data matrix.}
+\item{x}{An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.}
 
 \item{centered}{A boolean, whether in the centered setting (assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.}
 
@@ -32,19 +37,16 @@ A list that contains the elements necessary for estimation.
   \item{t1,t2}{Returned in the profiled non-centered setting, where the\eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 }
 \description{
-The R implementation to get the elements necessary for calculations for the untruncated gaussian setting.
+The R implementation to get the elements necessary for calculations for the gaussian setting on R^p.
 }
 \details{
 For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 }
 \examples{
-if (!requireNamespace("mvtnorm", quietly = TRUE)){
-  stop("Please install package \\"mvtnorm\\" first.", call. = FALSE)
-}
-require(mvtnorm)
+if (!requireNamespace("mvtnorm", quietly = TRUE))
+   stop("Please install package \"mvtnorm\".")
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
 mu <- rep(0, p)
 K <- diag(p)
 x <- mvtnorm::rmvnorm(n, mean=mu, sigma=solve(K))

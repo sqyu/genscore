@@ -2,18 +2,24 @@
 % Please edit documentation in R/genscore.R
 \name{get_elts_trun_gauss}
 \alias{get_elts_trun_gauss}
-\title{The R implementation to get the elements necessary for calculations for the truncated gaussian setting (a=1, b=1).}
+\title{The R implementation to get the elements necessary for calculations for the gaussian setting (a=1, b=1) on domains other than R^p.}
 \usage{
-get_elts_trun_gauss(hx, hpx, x, centered = TRUE,
-  profiled_if_noncenter = TRUE, scale = "norm",
-  diagonal_multiplier = 1)
+get_elts_trun_gauss(
+  hdx,
+  hpdx,
+  x,
+  centered = TRUE,
+  profiled_if_noncenter = TRUE,
+  scale = "",
+  diagonal_multiplier = 1
+)
 }
 \arguments{
-\item{hx}{A matrix, \eqn{h(\mathbf{x})}{h(x)}, should be of the same dimension as \code{x}.}
+\item{hdx}{A matrix, \eqn{h(\mathbf{x})}{h(x)} applied to the distance of x from the boundary of the domain, should be of the same dimension as \code{x}.}
 
-\item{hpx}{A matrix, \eqn{h'(\mathbf{x})}{h'(x)}, should be of the same dimension as \code{x}.}
+\item{hpdx}{A matrix, \eqn{h'(\mathbf{x})}{h\'(x)} applied to the distance of x from the boundary of the domain, should be of the same dimension as \code{x}.}
 
-\item{x}{A matrix, the data matrix.}
+\item{x}{An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.}
 
 \item{centered}{A boolean, whether in the centered setting (assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.}
 
@@ -31,7 +37,7 @@ A list that contains the elements necessary for estimation.
   \item{scale}{The scaling method. Same as input.}
   \item{diagonal_multiplier}{The diagonal multiplier. Same as input.}
   \item{diagonals_with_multiplier}{A vector that contains the diagonal entries of \eqn{\boldsymbol{\Gamma}}{\Gamma} after applying the multiplier.}
-  \item{setting}{The setting \code{"trun_gaussian"}.}
+  \item{setting}{The setting \code{"gaussian"}.}
   \item{g_K}{The \eqn{\boldsymbol{g}}{g} vector. In the non-profiled non-centered setting, this is the \eqn{\boldsymbol{g}}{g} sub-vector corresponding to \eqn{\mathbf{K}}{K}.}
   \item{Gamma_K}{The \eqn{\boldsymbol{\Gamma}}{\Gamma} matrix with no diagonal multiplier. In the non-profiled non-centered setting, this is the \eqn{\boldsymbol{\Gamma}}{\Gamma} sub-matrix corresponding to \eqn{\mathbf{K}}{K}.}
   \item{g_eta}{Returned in the non-profiled non-centered setting. The \eqn{\boldsymbol{g}}{g} sub-vector corresponding to \eqn{\boldsymbol{\eta}}{\eta}.}
@@ -40,27 +46,27 @@ A list that contains the elements necessary for estimation.
   \item{t1,t2}{Returned in the profiled non-centered setting, where the \eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 }
 \description{
-The R implementation to get the elements necessary for calculations for the truncated gaussian setting (a=1, b=1).
+The R implementation to get the elements necessary for calculations for the gaussian setting (a=1, b=1) on domains other than R^p.
 }
 \details{
 For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
 mu <- rep(0, p)
 K <- diag(p)
-x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
-       lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
-       burn.in.samples = 100, thinning = 10)
+eta <- K \%*\% mu
+domain <- make_domain("R+", p=p)
+x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta, K=K,
+       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1, 3)
-hx <- t(apply(x, 1, h_hp$h))
-hpx <- t(apply(x, 1, h_hp$hp))
-get_elts_trun_gauss(hx, hpx, x, centered=TRUE, scale="norm", diag=1.5)
-get_elts_trun_gauss(hx, hpx, x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
+h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
+get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
+get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE,
+       profiled_if_noncenter=TRUE, scale="norm", diag=1.7)
+get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE,
+       profiled_if_noncenter=FALSE, scale="norm", diag=1.9)
 }

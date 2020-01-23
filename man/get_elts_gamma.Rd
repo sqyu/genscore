@@ -4,16 +4,22 @@
 \alias{get_elts_gamma}
 \title{The R implementation to get the elements necessary for calculations for the gamma setting (a=0.5, b=0).}
 \usage{
-get_elts_gamma(hx, hpx, x, centered = TRUE,
-  profiled_if_noncenter = TRUE, scale = "norm",
-  diagonal_multiplier = 1)
+get_elts_gamma(
+  hdx,
+  hpdx,
+  x,
+  centered = TRUE,
+  profiled_if_noncenter = TRUE,
+  scale = "",
+  diagonal_multiplier = 1
+)
 }
 \arguments{
-\item{hx}{A matrix, \eqn{h(\mathbf{x})}{h(x)}, should be of the same dimension as \code{x}.}
+\item{hdx}{A matrix, \eqn{h(\mathbf{x})}{h(x)} applied to the distance of x from the boundary of the domain, should be of the same dimension as \code{x}.}
 
-\item{hpx}{A matrix, \eqn{h'(\mathbf{x})}{h'(x)}, should be of the same dimension as \code{x}.}
+\item{hpdx}{A matrix, \eqn{h'(\mathbf{x})}{h\'(x)} applied to the distance of x from the boundary of the domain, should be of the same dimension as \code{x}.}
 
-\item{x}{A matrix, the data matrix.}
+\item{x}{An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.}
 
 \item{centered}{A boolean, whether in the centered setting (assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.}
 
@@ -46,21 +52,18 @@ The R implementation to get the elements necessary for calculations for the gamm
 For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
-mu <- rep(0, p)
+eta <- rep(0, p)
 K <- diag(p)
-x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
-       lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
-       burn.in.samples = 100, thinning = 10)
-h_hp <- get_h_hp("min_pow", 1, 3)
-hx <- t(apply(x, 1, h_hp$h))
-hpx <- t(apply(x, 1, h_hp$hp))
-get_elts_gamma(hx, hpx, x, centered=TRUE, scale="norm", diag=1.5)
-get_elts_gamma(hx, hpx, x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
+domain <- make_domain("R+", p=p)
+x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
+       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+h_hp <- get_h_hp("min_pow", 1.5, 3)
+h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
+get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
+get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=TRUE,
+       scale="norm", diag=1.7)
+get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=FALSE,
+       scale="norm", diag=1.9)
 }

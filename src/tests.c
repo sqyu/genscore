@@ -14,6 +14,7 @@
 #include "sampling.h"
 #include "utils.h"
 #include "domain.h"
+#include "set_ops.h"
 
 void shunting_yard_test(int *num_eqs, const char **infix, int *errno) {
 	char *postfix;
@@ -61,7 +62,7 @@ void logic_domain_test(int *num_eqs, const char **infix, int *num_intervals_list
 }
 
 void frac_pow_test(double *num, int *power_numer, int *power_denom, int *abs, int *errno) {
-	double res = frac_pow(*num, *power_numer, *power_denom, *abs, errno);
+	double res = frac_pow(*num, *power_numer, *power_denom, *abs, TRUE, errno);
 	if (*errno) {Rprintf("!!!Error encountered in frac_pow() called from frac_pow_test()!!!\n"); return;}
 	Rprintf("Res = %f.\n", res);
 }
@@ -92,6 +93,34 @@ void setunion_test(const int *A_num_intervals, double *A_lefts, double *A_rights
 		Rprintf("Interval %d: [%f, %f]\n", i, res_lefts[i], res_rights[i]);
 }
 
+void rand_init_test(int *num_intervals, double *lefts, double *rights, int *left_inf, int *right_inf, double *res) {
+	if (*left_inf) lefts[0] = -INFINITY;
+	if (*right_inf) rights[*num_intervals - 1] = INFINITY;
+	*res = rand_init(num_intervals, lefts, rights);
+}
+
+void laplace_center_test(double *A, double *B, double *C, int *a_numer, int *a_denom, int *b_numer, int *b_denom, int *abs, double *res){
+	struct ab_parm *ab_data = (struct ab_parm*)malloc(sizeof(struct ab_parm));
+	ab_data -> A = *A;
+	ab_data -> B = *B;
+	ab_data -> C = *C;
+	ab_data -> abs = *abs;
+	ab_data -> base.a_numer = *a_numer;
+	ab_data -> base.a_denom = *a_denom;
+	reduce_gcd(&(ab_data -> base.a_numer), &(ab_data -> base.a_denom));
+	ab_data -> base.b_numer = *b_numer;
+	ab_data -> base.b_denom = *b_denom;
+	reduce_gcd(&(ab_data -> base.b_numer), &(ab_data -> base.b_denom));
+	*res = laplace_center(ab_data);
+}
+
+
+void random_init_laplace_test(int *num_intervals, double *lefts, double *rights, int *left_inf, int *right_inf, double *center, double *res) {
+	if (*left_inf) lefts[0] = -INFINITY;
+	if (*right_inf) rights[*num_intervals - 1] = INFINITY;
+	*res = random_init_laplace(num_intervals, lefts, rights, center);
+}
+
 void domain_1d_for_R_test(int *idx, int *m, double *x,
 						  const int *num_char_params, const char **char_params,
 						  const int *num_int_params, int *int_params,
@@ -103,8 +132,10 @@ void domain_1d_for_R_test(int *idx, int *m, double *x,
 			  &num_intervals, &lefts, &rights, NULL, errno);
 	if (num_intervals == 0)
 		Rprintf("!!!No feasible point found using domain_1d()!!!\n");
-	if (*errno)
+	if (*errno) {
 		Rprintf("!!!Error occurred when calling domain_1d() in domain_1d_for_R()!!!\n");
+		return;
+	}
 	for (int i = 0; i < num_intervals; i++)
 		Rprintf("Interval %d: [%f, %f].\n", i, lefts[i], rights[i]);
 }

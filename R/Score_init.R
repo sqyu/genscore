@@ -48,7 +48,7 @@ ran_mat <- function (p, ev = stats::runif(p, 0, 10), seed=NULL) {
 #' The function generates an inverse covariance matrix according to the \code{mode} argument as follows. The diagonal entries of the matrix are set to the same value such that the minimum eigenvalue of the returned matrix is equal to \code{eig}.
 #'     \item{"random"}{Takes the \code{Q} matrix from the \code{QR} decomposition of a \code{p} by \code{p} random matrix with independent \eqn{Normal(0,1)} entries, and calculates \eqn{Q' diag(ev) Q}. Randomly zeros out its upper triangular entries using independent uniform Bernoulli(\code{spars}) variables, and then symmetrizes the matrix using the upper triangular part.}
 #'     \item{"sub"}{Constructs a block diagonal matrix with \code{subgraphs} disconnected subgraphs with equal number of nodes. In each subgraph, takes each entry independently from \eqn{Uniform(0.5,1)}, and randomly zeros out its upper triangular entries using independent uniform Bernoulli(\code{spars}) variables, and finally symmetrizes the matrix using the upper triangular part. The construction from Section 4.2 of \insertCite{lin16;textual}{genscore}.}
-#'     \item{"er"}{Constructs an Erdős–Rényi game with probability \code{spars}, and sets the edges to independent \eqn{Uniform(0.5,1)} variables, and finally symmetrizes the matrix using the lower triangular entries.}
+#'     \item{"er"}{Constructs an Erd\\H{o}s-R\'enyi game with probability \code{spars}, and sets the edges to independent \eqn{Uniform(0.5,1)} variables, and finally symmetrizes the matrix using the lower triangular entries.}
 #'     \item{"band"}{Constructs a banded matrix so that the \code{(i,j)}-th matrix is nonzero if and only if \eqn{|i-j|<=spars}, and is equal to \eqn{1-|i-j|/(spars+1)} if \eqn{i!=j}.}
 #'     \item{"chain"}{A chain graph, where the \code{(i,j)}-th matrix is nonzero if and only if \eqn{|i-j|<=1}, and is equal to 0.5 if \eqn{|i-j|==1}. A special case of the \code{"band"} construction with \code{spars} equal to 1.}
 #' }
@@ -76,8 +76,8 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
     K <- K + diag(p) * (eig - min(eigen(K)$values))
   } else if (mode == "sub"){ # From Section 4.2 of Lin et al (2016)
     ## spars: p in binomial for each subgraph
-    if (!require(Matrix)) install.packages('Matrix', repos = "http://cran.us.r-project.org")
-    library(Matrix)
+    if (!requireNamespace("Matrix", quietly=TRUE))
+      stop("Please install package \"Matrix\".")
     if (subgraphs < 1 || p %% subgraphs) {stop("subgraphs must be a positive integer and p must be an exact multiple of subgraphs.")}
     p_sub <- p / subgraphs
     K <- as.matrix(Matrix::bdiag(lapply(1:subgraphs, function(x){mat <- matrix(stats::runif(p_sub^2, 0.5, 1) * stats::rbinom(p_sub^2, 1, spars), p_sub, p_sub);
@@ -85,8 +85,8 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
       mat <- mat + diag(p_sub) * (eig - min(eigen(mat)$values))})))
   } else if (mode == "er"){
     ## spars: p in binomial for the whole graph
-    if (!require(igraph)) install.packages('igraph', repos = "http://cran.us.r-project.org")
-    library(igraph)
+    if (!requireNamespace("igraph", quietly = TRUE))
+      stop("Please install package \"igraph\".")
     K <- as.matrix(igraph::get.adjacency(igraph::erdos.renyi.game(p, spars))) # Not sure why t(K) below would cause an error otherwise
     K <- K * matrix(stats::runif(p^2, 0.5, 1), p, p); K[upper.tri(K)] <- 0; K <- K + t(K)
     K <- K + diag(p) * (eig - min(eigen(K)$values))
@@ -124,10 +124,11 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
 #' true_edges <- which(abs(K) > tol & diag(p) == 0)
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 #' set.seed(1)
+#' domain <- make_domain("R+", p=p)
 #' x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
-#' est <- estimate(x, "trun_gaussian", elts=NULL, centered=TRUE,
+#' est <- estimate(x, setting="gaussian", elts=NULL, domain=domain, centered=TRUE,
 #'          symmetric="symmetric", lambda_length=100, mode="min_pow",
 #'          param1=1, param2=3, diagonal_multiplier=dm,)
 #' # Apply tp_fp to each estimated edges set for each lambda
@@ -168,10 +169,11 @@ tp_fp <- function(edges, true_edges, p){
 #' true_edges <- which(abs(K) > tol & diag(p) == 0)
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 #' set.seed(1)
+#' domain <- make_domain("R+", p=p)
 #' x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
-#' est <- estimate(x, "trun_gaussian", elts=NULL, centered=TRUE,
+#' est <- estimate(x, setting="gaussian", elts=NULL, domain=domain, centered=TRUE,
 #'          symmetric="symmetric", lambda_length=100, mode="min_pow",
 #'          param1=1, param2=3, diagonal_multiplier=dm)
 #' # Apply tp_fp to each estimated edges set for each lambda
@@ -185,8 +187,8 @@ tp_fp <- function(edges, true_edges, p){
 #' points(c(0,1), c(0,1), type = "l", lty = 2)
 #' @export
 AUC <- function(tpfp){
-  if (!require(zoo)) install.packages('zoo', repos = "http://cran.us.r-project.org")
-  library(zoo)
+  if (!requireNamespace("zoo", quietly = TRUE))
+    stop("Please install package \"zoo\".")
   if (min(tpfp) < 0 || max(tpfp) > 1) {stop("All values in tpfp must be between 0 and 1.")}
   if (ncol(tpfp) != 2) {stop("tpfp must be a matrix of two columns, namely the true and false positive rates.")}
   tpfp <- tpfp[order(tpfp[,2]), ]
@@ -239,6 +241,7 @@ find_max_ind <- function(vals, target, start=1){
 #' p <- 50
 #' mu <- rep(0, p)
 #' tol <- 1e-8
+#' domain <- make_domain("R+", p=p)
 #' K <- cov_cons(mode="sub", p=p, seed=1, spars=0.2, eig=0.1, subgraphs=10)
 #' true_edges <- which(abs(K) > tol & diag(p) == 0)
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
@@ -249,7 +252,7 @@ find_max_ind <- function(vals, target, start=1){
 #'   x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
 #'          lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'          burn.in.samples = 100, thinning = 10)
-#'   est <- estimate(x, "trun_gaussian", elts=NULL, centered=TRUE,
+#'   est <- estimate(x, setting="gaussian", elts=NULL, domain=domain, centered=TRUE,
 #'            symmetric="symmetric", lambda_length=100, mode="min_pow",
 #'            param1=1, param2=3, diag=dm)
 #'   # Apply tp_fp to each estimated edges set for each lambda
@@ -311,14 +314,15 @@ avgrocs <- function(rocs, num_true_edges, p){
 #' @param relative A boolean, default to \code{FALSE}. If \code{TRUE}, returns the relative difference (sum of absolute differences divided by the elementwise minimum between \code{l1} and \code{l2}).
 #' @return The sum of (relative) absolute differences in \code{l1} and \code{l2}, or a positive integer if two vectors differ in length or hold \code{NA}, \code{NULL} or \code{Inf} values in different places.
 diff_vecs <- function(l1, l2, relative=FALSE){
+  if (length(l1) == length(l2)) {return (0)}
   if (length(l1) != length(l2)) {return (abs(length(l1)-length(l2)))}
   tmp1 <- which(is.null(l1) | is.na(l1) | is.infinite(l1))
   tmp2 <- which(is.null(l2) | is.na(l2) | is.infinite(l2))
   if (length(tmp1) != length(tmp2) || (length(tmp1) && length(tmp2) && any(tmp1 != tmp2))) {return(abs(length(tmp1)-length(tmp2))+abs(sum(tmp1)-sum(tmp2)))}
   if (relative)
-    return (sum(abs((l1[-tmp1]-l2[-tmp2])/pmin(abs(l1[-tmp1]), abs(l2[-tmp2])))))
+    return (sum(abs((l1[setdiff(1:length(l1), tmp1)]-l2[setdiff(1:length(l1), tmp2)]) / pmin(abs(l1[setdiff(1:length(l1), tmp1)]), abs(l2[setdiff(1:length(l1), tmp2)])))))
   else
-    return (sum(abs(l1[-tmp1]-l2[-tmp2])))
+    return (sum(abs(l1[setdiff(1:length(l1), tmp1)]-l2[setdiff(1:length(l1), tmp2)])))
 }
 
 #' Computes the sum of absolute differences between two lists.

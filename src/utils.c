@@ -60,12 +60,36 @@ inline double in_order_dot_prod(int len, const double *l, const double *r){
 	return (total0 + total1 + total2 + total3 + total4 + total5 + total6 + total7);
 }
 
+inline double dot_prod_by_row(int len, const double *m, const double *v){
+	// Computes dot product between a row of square matrix m and a vector v
+	// Specifically, computes m[0]*v[0] + m[len]*v[1] + ... + m[len*(len-1)]*v[len-1]
+	double total0 = 0, total1 = 0, total2 = 0, total3 = 0, total4 = 0, total5 = 0, total6 = 0, total7 = 0;
+	int i = 0;
+	while (i < len - len % UNIT) {
+		total0 += m[0] * v[0]; total1 += m[len] * v[1];
+		total2 += m[2*len] * v[2]; total3 += m[3*len] * v[3];
+		total4 += m[4*len] * v[4]; total5 += m[5*len] * v[5];
+		total6 += m[6*len] * v[6]; total7 += m[7*len] * v[7];
+		i += UNIT; m += UNIT * len; v += UNIT;
+	}
+	for (; i < len; i++){ // Leftovers
+		total7 += (*m) * (*(v++));
+		m += len;
+	}
+	return (total0 + total1 + total2 + total3 + total4 + total5 + total6 + total7);
+}
+
 /* ********************************************************************* */
 inline int gcd(int a, int b) {
 	return b ? gcd(b, a % b) : a;
 }
 
+void x(double *c, double *a, double *b){
+	*c = INFINITY;
+}
+
 inline void reduce_gcd(int *a, int *b){
+	if (*b == 0) return; // If log or exp, do nothing
 	int c = gcd(*a, *b); // c returned may be negative
 	*a = *a / c; *b = *b / c;
 	if (*b < 0) {
@@ -73,29 +97,30 @@ inline void reduce_gcd(int *a, int *b){
 	}
 }
 
-inline double frac_pow(double num, int power_numer, int power_denom, int abs, int *errno) {
+inline double frac_pow(double num, int power_numer, int power_denom, int abs, int print_error, int *errno) {
 /*
  Returns |num| ^ (power_numer / power_denom) if abs == 1 or else num ^ (power_numer / power_denom).
  When one of power_numer and power_denom is 0:
- 1. x^(0/0) is understood as log(x), and x^(1/0) is treated as exp(x).
- 2. x^(0/n) returns 1 for any x and n != 0. Note that 0^0 = 1.
- 3. x^(n/0) is not allowed for any n != 0 && n != 1.
+ 1. x^(0/0) is understood as log(x).
+ 2. x^(n/0) is treated as exp(n*x) for n != 0.
+ 3. x^(0/n) returns 1 for any x and n != 0. Note that 0^0 = 1.
  Otherwise, if num is negative, power_denom must be odd, and num ^ (power_numer / power_denom) = (-1) ^ power_numer * (-num)^(power_numer / power_denom).
  If num is 0 and power_numer / power_denom is negative, NAN will be returned.
+ 
+ print_error should be set to FALSE when frac_pow is used in calculating the sum of other coordinates in calculating the boundary, since
+ the current x may be out of domain for the current equation (but should at least be in domain for one equation) and it is thus not guaranteed
+ that frac_pow is well-defined.
  */
 	if (power_denom == 0) {
 		if (power_numer == 0) {
 			if (abs) return log(fabs(num));
 			if (num > 0) return (log(num));
 			*errno = 1;
-			Rprintf("!!!x^(0/0) is treated as log(x), but x = %f < 0 is provided!!!\n");
+			if (print_error)
+				Rprintf("!!!x^(0/0) is treated as log(x), but x = %f < 0 is provided!!!\n", num);
 			return NAN;
-		} else if (power_numer == 1) {
-			return abs ? exp(fabs(num)) : exp(num);
-		}
-		*errno = 1;
-		Rprintf("!!!x^(a/0) undefined for n other than 0 (log) or 1 (exp). Got a = %d!!!\n", power_numer);
-		return NAN;
+		} else
+			return abs ? exp(power_numer * fabs(num)) : exp(power_numer * num);
 	}
 	if (power_numer == 0)
 		return 1;
@@ -105,7 +130,8 @@ inline double frac_pow(double num, int power_numer, int power_denom, int abs, in
 	else if (num == 0) {
 		if (power <= 0) {
 			*errno = 1;
-			Rprintf("!!!0^(%d/%d) encountered!!!\n", power_numer, power_denom);
+			if (print_error)
+				Rprintf("!!!0^(%d/%d) encountered!!!\n", power_numer, power_denom);
 			return NAN;
 		}
 		return 0;
@@ -114,7 +140,8 @@ inline double frac_pow(double num, int power_numer, int power_denom, int abs, in
 		return (pow(-num, power));
 	if (power_denom % 2 == 0) { // If num < 0 but need to take an even root, error
 		*errno = 1;
-		Rprintf("!!!A negative number (%f) cannot be raised to a power with even denominator (%d/%d)!! Returning NAN!!!\n", num, power_numer, power_denom);
+		if (print_error)
+			Rprintf("!!!A negative number (%f) cannot be raised to a power with even denominator (%d/%d)!! Returning NAN!!!\n", num, power_numer, power_denom);
 		return NAN;
 	}
 	if (power_numer % 2) // If power numerator is odd, returned value should be negative
@@ -128,18 +155,18 @@ inline double in_order_sum_uniform_pow(int len, const double *arr, int power_num
 	double total0 = 0, total1 = 0, total2 = 0, total3 = 0, total4 = 0, total5 = 0, total6 = 0, total7 = 0;
 	int i = 0;
 	while (i < len - len % UNIT) {
-		total0 += frac_pow(arr[0], power_numer, power_denom, abs, errno);
-		total1 += frac_pow(arr[1], power_numer, power_denom, abs, errno);
-		total2 += frac_pow(arr[2], power_numer, power_denom, abs, errno);
-		total3 += frac_pow(arr[3], power_numer, power_denom, abs, errno);
-		total4 += frac_pow(arr[4], power_numer, power_denom, abs, errno);
-		total5 += frac_pow(arr[5], power_numer, power_denom, abs, errno);
-		total6 += frac_pow(arr[6], power_numer, power_denom, abs, errno);
-		total7 += frac_pow(arr[7], power_numer, power_denom, abs, errno);
+		total0 += frac_pow(arr[0], power_numer, power_denom, abs, TRUE, errno);
+		total1 += frac_pow(arr[1], power_numer, power_denom, abs, TRUE, errno);
+		total2 += frac_pow(arr[2], power_numer, power_denom, abs, TRUE, errno);
+		total3 += frac_pow(arr[3], power_numer, power_denom, abs, TRUE, errno);
+		total4 += frac_pow(arr[4], power_numer, power_denom, abs, TRUE, errno);
+		total5 += frac_pow(arr[5], power_numer, power_denom, abs, TRUE, errno);
+		total6 += frac_pow(arr[6], power_numer, power_denom, abs, TRUE, errno);
+		total7 += frac_pow(arr[7], power_numer, power_denom, abs, TRUE, errno);
 		i += UNIT; arr += UNIT;
 	}
 	for (; i < len; i++) // Leftovers
-		total7 += frac_pow(*(arr++), power_numer, power_denom, abs, errno);
+		total7 += frac_pow(*(arr++), power_numer, power_denom, abs, TRUE, errno);
 	return (total0 + total1 + total2 + total3 + total4 + total5 + total6 + total7);
 }
 
@@ -148,18 +175,18 @@ inline double in_order_sum_different_pow(int len, const double *arr, int *power_
 	double total0 = 0, total1 = 0, total2 = 0, total3 = 0, total4 = 0, total5 = 0, total6 = 0, total7 = 0;
 	int i = 0;
 	while (i < len - len % UNIT) {
-		total0 += frac_pow(arr[0], power_numers[0], power_denoms[0], abs, errno);
-		total1 += frac_pow(arr[1], power_numers[1], power_denoms[1], abs, errno);
-		total2 += frac_pow(arr[2], power_numers[2], power_denoms[2], abs, errno);
-		total3 += frac_pow(arr[3], power_numers[3], power_denoms[3], abs, errno);
-		total4 += frac_pow(arr[4], power_numers[4], power_denoms[4], abs, errno);
-		total5 += frac_pow(arr[5], power_numers[5], power_denoms[5], abs, errno);
-		total6 += frac_pow(arr[6], power_numers[6], power_denoms[6], abs, errno);
-		total7 += frac_pow(arr[7], power_numers[7], power_denoms[7], abs, errno);
+		total0 += frac_pow(arr[0], power_numers[0], power_denoms[0], abs, TRUE, errno);
+		total1 += frac_pow(arr[1], power_numers[1], power_denoms[1], abs, TRUE, errno);
+		total2 += frac_pow(arr[2], power_numers[2], power_denoms[2], abs, TRUE, errno);
+		total3 += frac_pow(arr[3], power_numers[3], power_denoms[3], abs, TRUE, errno);
+		total4 += frac_pow(arr[4], power_numers[4], power_denoms[4], abs, TRUE, errno);
+		total5 += frac_pow(arr[5], power_numers[5], power_denoms[5], abs, TRUE, errno);
+		total6 += frac_pow(arr[6], power_numers[6], power_denoms[6], abs, TRUE, errno);
+		total7 += frac_pow(arr[7], power_numers[7], power_denoms[7], abs, TRUE, errno);
 		i += UNIT; arr += UNIT;
 	}
 	for (; i < len; i++) // Leftovers
-		total7 += frac_pow(*(arr++), *(power_numers++), *(power_denoms++), abs, errno);
+		total7 += frac_pow(*(arr++), *(power_numers++), *(power_denoms++), abs, TRUE, errno);
 	return (total0 + total1 + total2 + total3 + total4 + total5 + total6 + total7);
 }
 
@@ -214,4 +241,56 @@ inline double in_order_tri_dot_prod_pow(int len, const double *l, const double *
 		total7 += (pow(*(l++), lpow)) * (pow(*(m++), mpow)) * (pow(*(r++), rpow));
 	}
 	return (total0 + total1 + total2 + total3 + total4 + total5 + total6 + total7);
+}
+
+
+/* ********************************************************************* */
+inline void eliminate_vec(const int *p, double *vec, const int j) {
+	// Subtracts the j-th component from all components
+	double tmp = vec[j];
+	for (int k=0; k<*p; k++)
+		vec[k] -= tmp;
+}
+
+inline void eliminate_col(const int *n, const int *p, double *mat, const int j) {
+	// Subtracts the j-th column from all columns
+	for (int i=0; i<*n; i++) {
+		double tmp = mat[i+(*n)*j];
+		for (int k=0; k<*p; k++) {
+			mat[i+k*(*n)] -= tmp;
+		}
+	}
+}
+
+inline void eliminate_row(const int *n, const int *p, double *mat, const int j) {
+	// Subtracts the j-th row from all rows
+	for (int k=0; k<*p; k++)
+		eliminate_vec(n, mat+k*(*n), j);
+}
+
+inline void eliminate_row_col(const int *n, const int *p, double *mat, const int j, const int k) {
+	// Subtracts the j-th row from all rows and then the k-th column from all columns
+	eliminate_col(n, p, mat, k);
+	eliminate_row(n, p, mat, j);
+}
+
+/* ********************************************************************* */
+
+void print_progress_setup(double **checkpoints, int total_iters) {
+	double print_percentages[] = {0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
+	*checkpoints = (double*)malloc(14 * sizeof(double));
+	int pointer = -1;
+	for (int i = 0; i < 13; i++) {
+		int print_iter = floor(print_percentages[i] * total_iters);
+		if (print_iter >= 1 && (i == 0 || print_iter > (*checkpoints)[pointer]))
+			(*checkpoints)[++pointer] = print_iter;
+	}
+	(*checkpoints)[pointer + 1] = INFINITY; // So that checkpoints[pointer] will never go out of bound when accessed in printing
+}
+
+void print_progress(double *checkpoints, int *pointer, int iter, int total_iters) {
+	if (iter + 1 >= checkpoints[*pointer]) {
+		Rprintf("Sampling %.1f%% done.\n", (iter + 1.0) / total_iters * 100);
+		(*pointer)++;
+	}
 }

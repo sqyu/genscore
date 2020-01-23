@@ -22,12 +22,14 @@ A vector of length \code{2*length(gammas)}. The first \code{length(gammas)} numb
 Calculates the eBIC score both with and without refitting an unpenalized model restricted to the estimated support.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
+# Examples are shown for Gaussian truncated to R+^p only. For other distributions
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, 
+#   as the way to call this function (\code{eBIC()}) is exactly the same in those cases.
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
+domain <- make_domain("R+", p=p)
 h_hp <- get_h_hp("min_pow", 1, 3)
 mu <- rep(0, p)
 K <- diag(p)
@@ -36,10 +38,10 @@ x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 
-elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                 centered=FALSE, profiled=FALSE, diag=dm)
-res_nc_np <- get_results(elts_NC_NP, symmetric="symmetric",
+res_nc_np <- get_results(elts_gauss_np, symmetric="symmetric",
                lambda1=0.35, lambda2=2, previous_res=NULL,
                is_refit=FALSE)
-eBIC(res_nc_np, elts_NC_NP, BIC_refit=TRUE, gammas=c(0,0.5,1))
+eBIC(res_nc_np, elts_gauss_np, BIC_refit=TRUE, gammas=c(0,0.5,1))
 }

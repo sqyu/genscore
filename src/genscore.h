@@ -10,22 +10,36 @@
 #define FUNCTIONS_H_INCLUDED
 #endif
 
-void elts_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier);
-void elts_nc_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+void elts_gauss_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier);
+void elts_gauss_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+
 void make_profile(int *pIn, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonals_with_multiplier);
+
 void elts_ab_c(int *nIn, int *pIn, double *a, double *hx, double *hpx, double *x, double *g1, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier);
 void elts_ab_np(int *nIn, int *pIn, double *a, double *b, double *hx, double *hpx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+
 void elts_exp_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier);
 void elts_exp_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+
 void elts_gamma_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
-void elts_nc_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+
+void elts_loglog_c(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *d, double *Gamma, double *diagonal_multiplier, double *diagonals_with_multiplier,
+				   double *logx, double *h_over_xsq, double *hp_over_x);
+void elts_loglog_np(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2,  double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+
+
+void elts_gauss_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
 void elts_ab_p(int *nIn, int *pIn, double *a, double *b, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
 void elts_exp_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
 void elts_gamma_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+void elts_loglog_p(int *nIn, int *pIn, double *hx, double *hpx, double *x, double *g1, double *g2, double *d, double *Gamma, double *Gamma12, double *diagonal_multiplier, double *diagonals_with_multiplier);
+
 
 double shrink(double a, double b);
 
 int lindx(int r, int c, int p);
+
+double set_KKT_bound(double bound, double tol);
 
 
 double loss_profiled (int p, double *Sd20, double *Sd11, double *K, double *diagonals_with_multiplier, double lambda1);

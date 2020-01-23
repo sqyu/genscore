@@ -20,62 +20,63 @@ A number, the smallest lambda that produces the empty graph in the centered case
 Analytic solution for the minimum \eqn{\lambda_{\mathbf{K}}}{\lambda_K} that gives the empty graph. In the non-centered setting the bound is not tight, as it is such that both \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta} are empty. The bound is also not tight if \code{symmetric == "and"}.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
+# Examples are shown for Gaussian truncated to R+^p only. For other distributions
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, 
+#   as the way to call this function (\code{lambda_max()}) is exactly the same in those cases.
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
+domain <- make_domain("R+", p=p)
 mu <- rep(0, p)
 K <- diag(p)
-dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 
-
-elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
+h_hp <- get_h_hp("min_pow", 1, 3)
+elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                 centered=FALSE, profiled=FALSE, diag=dm)
 
 # Exact analytic solution for the smallest lambda such that K and eta are both zero,
-#  but not a tight bound for K only
-lambda_max(elts_NC_NP, "symmetric", 2)
+#  but not a tight bound for K ONLY
+lambda_max(elts_gauss_np, "symmetric", 2)
 # Use the upper bound as a starting point for numerical search
-test_lambda_bounds2(elts_NC_NP, "symmetric", lambda_ratio=2, lower = FALSE,
-     lambda_start = lambda_max(elts_NC_NP, "symmetric", 2))
+test_lambda_bounds2(elts_gauss_np, "symmetric", lambda_ratio=2, lower = FALSE,
+     lambda_start = lambda_max(elts_gauss_np, "symmetric", 2))
 
 # Exact analytic solution for the smallest lambda such that K and eta are both zero,
-#  but not a tight bound for K only
-lambda_max(elts_NC_NP, "or", 2)
+#  but not a tight bound for K ONLY
+lambda_max(elts_gauss_np, "or", 2)
 # Use the upper bound as a starting point for numerical search
-test_lambda_bounds2(elts_NC_NP, "or", lambda_ratio=2, lower = FALSE,
-     lambda_start = lambda_max(elts_NC_NP, "or", 2))
+test_lambda_bounds2(elts_gauss_np, "or", lambda_ratio=2, lower = FALSE,
+     lambda_start = lambda_max(elts_gauss_np, "or", 2))
 
 # An upper bound, not tight.
-lambda_max(elts_NC_NP, "and", 2)
+lambda_max(elts_gauss_np, "and", 2)
 # Use the upper bound as a starting point for numerical search
-test_lambda_bounds2(elts_NC_NP, "and", lambda_ratio=2, lower = FALSE,
-     lambda_start = lambda_max(elts_NC_NP, "and", 2))
+test_lambda_bounds2(elts_gauss_np, "and", lambda_ratio=2, lower = FALSE,
+     lambda_start = lambda_max(elts_gauss_np, "and", 2))
 
 
-elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_p <- get_elts(h_hp, x, setting="gaussian", domain=domain,
               centered=FALSE, profiled=TRUE, diag=dm)
 # Exact analytic solution
-lambda_max(elts_NC_P, "symmetric")
+lambda_max(elts_gauss_p, "symmetric")
 # Numerical solution, should be close to the analytic solution
-test_lambda_bounds2(elts_NC_P, "symmetric", lambda_ratio=Inf, lower = FALSE,
+test_lambda_bounds2(elts_gauss_p, "symmetric", lambda_ratio=Inf, lower = FALSE,
      lambda_start = NULL)
 
 # Exact analytic solution
-lambda_max(elts_NC_P, "or")
+lambda_max(elts_gauss_p, "or")
 # Numerical solution, should be close to the analytic solution
-test_lambda_bounds2(elts_NC_P, "or", lambda_ratio=Inf, lower = FALSE,
+test_lambda_bounds2(elts_gauss_p, "or", lambda_ratio=Inf, lower = FALSE,
      lambda_start = NULL)
 
 # An upper bound, not tight
-lambda_max(elts_NC_P, "and")
+lambda_max(elts_gauss_p, "and")
 # Use the upper bound as a starting point for numerical search
-test_lambda_bounds2(elts_NC_P, "and", lambda_ratio=Inf, lower = FALSE,
-     lambda_start = lambda_max(elts_NC_P, "and"))
+test_lambda_bounds2(elts_gauss_p, "and", lambda_ratio=Inf, lower = FALSE,
+     lambda_start = lambda_max(elts_gauss_p, "and"))
 }

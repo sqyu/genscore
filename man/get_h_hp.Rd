@@ -2,7 +2,7 @@
 % Please edit documentation in R/genscore.R
 \name{get_h_hp}
 \alias{get_h_hp}
-\title{Generator of h and hp functions.}
+\title{Generator of h and hp (derivative of h) functions.}
 \usage{
 get_h_hp(mode, para = NULL, para2 = NULL)
 }
@@ -14,13 +14,14 @@ get_h_hp(mode, para = NULL, para2 = NULL)
 \item{para2}{May be optional. A number, the second parameter. Default to \code{NULL}.}
 }
 \value{
-A list containing two functions \code{h} and \code{hp} (\eqn{h'}).
+A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.
 }
 \description{
-Generator of \code{h} and \code{hp} (\eqn{h'}) functions.
+Generator of \code{h} and \code{hp} (derivative of \eqn{h}) functions.
 }
 \details{
 The \code{mode} parameter can be chosen from the options listed below along with the corresponding definitions of \code{h} under appropriate choices of \code{para} and \code{para2} parameters. Unless otherwise noted, \code{para} and \code{para2}, must both be strictly positive if provided, and are set to 1 if not provided. Functions \code{h} and \code{hp} should only be applied to non-negative values \code{x} and this is not enforced or checked by the functions.
+Internally calls \code{get_h_hp_vector}.
 \describe{
     \item{\code{asinh}}{An asinh function \eqn{\boldsymbol{h}(\boldsymbol{x})=\mathrm{asinh}(\mathrm{para}\cdot\boldsymbol{x})=\log\left(\mathrm{para}\cdot\boldsymbol{x}+\sqrt{(\mathrm{para}\cdot\boldsymbol{x})^2+1}\right)}{h(x)=asinh(para*x)=log(para*x+sqrt((para*x)^2+1))}. Unbounded and takes one parameter. Equivalent to \code{min_asinh(x, para, Inf)}.}
     \item{\code{cosh}}{A shifted cosh function \eqn{\boldsymbol{h}(\boldsymbol{x})=\cosh(\mathrm{para}\cdot\boldsymbol{x})-1}{h(x)=cosh(para*x)-1}. Unbounded and takes one parameter. Equivalent to \code{min_cosh(x, para, Inf)}.}
@@ -45,8 +46,8 @@ The \code{mode} parameter can be chosen from the options listed below along with
  }
 }
 \examples{
-get_h_hp("mcp", 2, 4)
-get_h_hp("min_log_pow", 1, log(1+3))
-get_h_hp("min_pow", 1, 3)
-get_h_hp("min_softplus")
+get_h_hp("mcp", 2, 4)(0:10)
+get_h_hp("min_log_pow", 1, log(1+3))(matrix(0:11, nrow=3))
+get_h_hp("min_pow", 1.5, 3)(seq(0, 5, by=0.5))
+get_h_hp("min_softplus")(matrix(seq(0, 2, by=0.1), nrow=7))
 }

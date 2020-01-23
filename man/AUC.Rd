@@ -24,10 +24,11 @@ K <- cov_cons(mode="sub", p=p, seed=1, spars=0.2, eig=0.1, subgraphs=10)
 true_edges <- which(abs(K) > tol & diag(p) == 0)
 dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 set.seed(1)
+domain <- make_domain("R+", p=p)
 x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
-est <- estimate(x, "trun_gaussian", elts=NULL, centered=TRUE,
+est <- estimate(x, setting="gaussian", elts=NULL, domain=domain, centered=TRUE,
          symmetric="symmetric", lambda_length=100, mode="min_pow",
          param1=1, param2=3, diagonal_multiplier=dm)
 # Apply tp_fp to each estimated edges set for each lambda

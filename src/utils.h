@@ -20,7 +20,18 @@ double in_order_tri_dot_prod_pow(int len, const double *l, const double *m, cons
 
 int gcd(int a, int b);
 void reduce_gcd(int *a, int *b);
-double frac_pow(double num, int power_numer, int power_denom, int abs, int* errno);
+double frac_pow(double num, int power_numer, int power_denom, int abs, int print_error, int* errno);
 
 double in_order_sum_uniform_pow(int len, const double *arr, int power_numer, int power_denom, int abs, int* errno);
 double in_order_sum_different_pow(int len, const double *arr, int *power_numers, int *power_denoms, int abs, int* errno);
+double dot_prod_by_row(int len, const double *m, const double *v);
+
+
+void eliminate_vec(const int *p, double *vec, const int j);
+void eliminate_col(const int *n, const int *p, double *mat, const int j);
+void eliminate_row(const int *n, const int *p, double *mat, const int j);
+void eliminate_row_col(const int *n, const int *p, double *mat, const int j, const int k);
+
+
+void print_progress_setup(double **checkpoints, int total_iters);
+void print_progress(double *checkpoints, int *pointer, int iter, int total_iters);

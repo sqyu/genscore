@@ -4,8 +4,16 @@
 \alias{test_lambda_bounds2}
 \title{Searches for a tight bound for \eqn{\lambda_{\boldsymbol{K}}}{\lambda_K} that gives the empty or complete graph starting from a given lambda}
 \usage{
-test_lambda_bounds2(elts, symmetric, lambda_ratio = Inf, lower = TRUE,
-  verbose = TRUE, tol = 1e-06, maxit = 10000, lambda_start = NULL)
+test_lambda_bounds2(
+  elts,
+  symmetric,
+  lambda_ratio = Inf,
+  lower = TRUE,
+  verbose = TRUE,
+  tol = 1e-06,
+  maxit = 10000,
+  lambda_start = NULL
+)
 }
 \arguments{
 \item{elts}{A list, elements necessary for calculations returned by get_elts().}
@@ -34,24 +42,25 @@ Searches for the smallest lambda that gives the empty graph (if \code{lower == F
 This function calls \code{test_lambda_bounds} three times with \code{step} set to \code{10}, \code{10^(1/4)}, \code{10^(1/16)}, respectively.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
-}
-require(tmvtnorm)
+# Examples are shown for Gaussian truncated to R+^p only. For other distributions
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the 
+#   way to call this function (\code{test_lambda_bounds2()}) is exactly the same in those cases.
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
+domain <- make_domain("R+", p=p)
 mu <- rep(0, p)
 K <- diag(p)
-dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
-
-elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+h_hp <- get_h_hp("min_pow", 1, 3)
+dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
+elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                 centered=FALSE, profiled=FALSE, diag=dm)
-test_lambda_bounds2(elts_NC_NP, "symmetric", lambda_ratio=2,
-     lower=TRUE, lambda_start=NULL)
-test_lambda_bounds2(elts_NC_NP, "symmetric", lambda_ratio=2,
-     lower=FALSE, lambda_start=1.0)
+test_lambda_bounds2(elts_gauss_np, "symmetric", lambda_ratio=2,
+     lower=TRUE, verbose=TRUE, lambda_start=NULL)
+test_lambda_bounds2(elts_gauss_np, "symmetric", lambda_ratio=2,
+     lower=FALSE, verbose=TRUE, lambda_start=1.0)
 }

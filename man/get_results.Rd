@@ -4,8 +4,16 @@
 \alias{get_results}
 \title{Estimate \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta} using elts from \code{get_elts()} given one \eqn{\lambda_{\mathbf{K}}}{\lambda_K} (and \eqn{\lambda_{\boldsymbol{\eta}}}{\lambda_\eta} if non-profiled non-centered) and applying warm-start with strong screening rules.}
 \usage{
-get_results(elts, symmetric, lambda1, lambda2 = 0, tol = 1e-06,
-  maxit = 10000, previous_res = NULL, is_refit = FALSE)
+get_results(
+  elts,
+  symmetric,
+  lambda1,
+  lambda2 = 0,
+  tol = 1e-06,
+  maxit = 10000,
+  previous_res = NULL,
+  is_refit = FALSE
+)
 }
 \arguments{
 \item{elts}{A list, elements necessary for calculations returned by \code{get_elts()}.}
@@ -35,41 +43,48 @@ get_results(elts, symmetric, lambda1, lambda2 = 0, tol = 1e-06,
     \item{n}{An integer, the number of samples.}
     \item{p}{An integer, the dimension.}
     \item{is_refit,lambda1,maxit,previous_lambda1,symmetric,tol}{Same as in the input.}
-    \item{lambda2}{Same as in the input, and returned only if \code{elts$centered == FALSE} and \code{elts$profiled_if_noncenter == FALSE}.}
+    \item{lambda2}{Same as in the input, and returned only if \code{elts$centered == FALSE} and \cr 
+             \code{elts$profiled_if_noncenter == FALSE}.}
 }
 \description{
 Estimate \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta} using elts from \code{get_elts()} given one \eqn{\lambda_{\mathbf{K}}}{\lambda_K} (and \eqn{\lambda_{\boldsymbol{\eta}}}{\lambda_\eta} if non-profiled non-centered) and applying warm-start with strong screening rules.
 }
-\examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE)){
-  stop("Please install package \\"tmvtnorm\\" first.", call. = FALSE)
+\details{
+If \code{elts$domain_type == "simplex"}, \code{symmetric != "symmetric"} or \code{elts$centered == FALSE && elts$profiled_if_noncenter} are currently not supported.
+If \code{elts$domain_type == "simplex"} and \code{elts$setting} constains substring \code{"sum0"}, it is assumed that the column and row sums of \code{K} are all 0 and estimation will be done by profiling out the diagonal entries.
 }
-require(tmvtnorm)
+\examples{
+# Examples are shown for Gaussian truncated to R+^p only. For other distributions
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
+#   way to call this function (\code{get_results()}) is exactly the same in those cases.
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
-h_hp <- get_h_hp("min_pow", 1, 3)
+domain <- make_domain("R+", p=p)
 mu <- rep(0, p)
 K <- diag(p)
-dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 
-elts_NC_NP <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+h_hp <- get_h_hp("min_pow", 1, 3)
+dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
+elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                 centered=FALSE, profiled=FALSE, scale="norm", diag=dm)
-test_nc_np <- get_results(elts_NC_NP, symmetric="symmetric", lambda1=0.35,
+test_nc_np <- get_results(elts_gauss_np, symmetric="symmetric", lambda1=0.35,
                 lambda2=2, previous_res=NULL, is_refit=FALSE)
-test_nc_np2 <- get_results(elts_NC_NP, symmetric="and", lambda1=0.25,
+test_nc_np2 <- get_results(elts_gauss_np, symmetric="and", lambda1=0.25,
                  lambda2=2, previous_res=test_nc_np, is_refit=FALSE)
 
-elts_NC_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_p <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                centered=FALSE, profiled=TRUE, scale="norm", diag=dm)
-test_nc_p <- get_results(elts_NC_P, symmetric="symmetric",
+test_nc_p <- get_results(elts_gauss_p, symmetric="symmetric",
                lambda1=0.35, lambda2=NULL, previous_res=NULL, is_refit=FALSE)
 
-elts_C <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian",
+elts_gauss_c <- get_elts(h_hp, x, setting="gaussian", domain=domain,
                centered=TRUE, scale="norm", diag=dm)
-test_c <- get_results(elts_C, symmetric="or", lambda1=0.35,
+test_c <- get_results(elts_gauss_c, symmetric="or", lambda1=0.35,
                lambda2=NULL, previous_res=NULL, is_refit=FALSE)
 
 }

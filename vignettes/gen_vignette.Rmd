@@ -30,6 +30,7 @@ We begin by generating a mean parameter and an inverse covariance matrix, and ta
 n <- 200
 p <- 50
 tol <- 1e-8
+domain <- make_domain(type="R+", p=p)
 mu <- rnorm(p) * 0.5
 K <- cov_cons(mode="sub", p=p, seed=1, spars=0.2, eig=0.1, subgraphs=5)
 true_edges <- which(abs(K) > tol & diag(p) == 0)
@@ -48,7 +49,7 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n)))) # diagonal multip
 h_mode <- "min_pow"
 h_param1 <- 1
 h_param2 <- 3
-est <- estimate(x, setting="trun_gaussian", centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+est <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm, return_raw=T)
 ```
 The results returned contain a list of edge sets, `edgess`, one for each lambda.
 ```{r}
@@ -88,14 +89,12 @@ points(c(0,1), c(0,1), type="l", lty=2)
 ### Estimate using `elts`
 The function `estimate()` internally calls `get_elts()`, which calculates summary statistics (`elts`) of `x` used for estimation. If one were to rerun `estimate()` a multiple of times, e.g. when trying out different h functions, it might be time-saving to calculate these elements using `get_elts()` first, and then call `estimate()` with these elements directly, as shown in the following example. Unlike `estimate()` which may take the name of the function family and the parameters of h as inputs, `get_elts()` takes the h function and its derivative (`hp`) explicitly. We may obtain these through `get_h_hp()`.
 ```{r}
-h_hp <- get_h_hp(mode=h_mode, para=h_param1, para2=h_param2)
-h_hp$h # h(x)=min(x,3)
-h_hp$hp # h'(x)=(x<=3)
-elts_P <- get_elts(h_hp$h, h_hp$hp, x, setting="trun_gaussian", centered=F, profiled_if_noncenter=Inf, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol) # P stands for Profiled
+h_hp <- get_h_hp(mode=h_mode, para=h_param1, para2=h_param2) # h(x)=min(x,3), h'(x)=(x<=3)
+elts_P <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=F, profiled_if_noncenter=Inf, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol) # P stands for Profiled
 ```
 We can then feed `elts_P` into `estimate()` to avoid recalculation of the summary statistics. Note that here since we have already defined the `h` and `hp` directly, we can pass them to `estimate()` instead of passing `mode`, `param1` and `param2`, in which case `estimate()` internally calls `get_h_hp()` just as we did. Now the results should be the same as `est` that we obtained before.
 ```{r}
-est2 <- estimate(x, setting="trun_gaussian", elts=elts_P, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, h=h_hp$h, hp=h_hp$hp, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+est2 <- estimate(x, setting="gaussian", domain=domain, elts=elts_P, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, h_hp=h_hp, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
 compare_two_results(est, est2) ## Should be all close to 0
 ```
 ### Results for one lambda
@@ -112,7 +111,7 @@ all(sub_res$edges == est$edgess[[i]])
 ```
 Equivalently, we can use `estimate()` with one lambda value (optionally with `elts_P` if available).
 ```{r}
-est_sub <- estimate(x, setting="trun_gaussian", centered=F, symmetric="symmetric", scale="norm", lambda1s = lambda1, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+est_sub <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda1s = lambda1, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
 # Check if the result matches the previous one
 sum(abs(est_sub$raw_estimates[[1]] - sub_res$K))
 sum(abs(est_sub$etas[1,] - sub_res$eta))
@@ -134,7 +133,7 @@ par(mfrow=c(2,2), mar=c(3,3,3,3))
 for (i in 1:3){
   set.seed(i)
   x <- rtmvnorm(n, mean = mu, sigma = solve(K), lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs", burn.in.samples = 100, thinning = 10)
-  est <- estimate(x, setting="trun_gaussian", centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=F, diagonal_multiplier=dm, return_raw=F)
+  est <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=F, diagonal_multiplier=dm, return_raw=F)
   ROC <- t(sapply(est$edgess, function(edges){tp_fp(edges, true_edges, p)}))
   ROCs[[i]] <- ROC
   plot(c(), c(),  ylim=c(0,1), xlim=c(0,1), cex.lab=1, main=paste("ROC, trial ",i,", AUC ",round(AUC(ROC),4),sep=""), xlab="False Positives", ylab="True Positives")
@@ -151,9 +150,7 @@ points(c(0,1), c(0,1), type = "l", lty = 2)
 ### Data setup
 Consider the exponential square-root graphical models from Inouye et al (2016), which is also defined as a special case of the a-b model in (1) in Yu et al (2019) with $a=b=0.5$. We reuse the mean and inverse covariance matrix parameters from the previous section, and generate a new sample from the exponential square-root distribution.
 ```{r}
-#x <- rexp_gamma_reject_R(n, gamm=FALSE, eta=mu, K=K, seed=2, burn_in=1000, thinning=1000, max_iter=100000, verbose=FALSE)
-#The following generator may be more stable.
-x <- rab_arms_R(n, a=0.5, b=0.5, eta=mu, K=K, seed=2, burn_in=1000, thinning=1000, verbose=FALSE)
+x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=F, eta=mu, K=K, domain=domain, finite_infinity=100, seed=2, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
 ```
 ### Estimation
 As suggested by the simulation studies in Yu et al (2019), we estimate using $h(x)=\min(x,3)^{1.5}$. We also try with a finite `lambda_ratio` as it is known to improve the result compared to the profiled estimator, although the best ratio is subject to careful tuning.
@@ -161,7 +158,7 @@ As suggested by the simulation studies in Yu et al (2019), we estimate using $h(
 h_mode <- "min_pow"
 h_param1 <- 1.5
 h_param2 <- 3
-est_exp <- estimate(x, setting="exp", centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
+est_exp <- estimate(x, setting="exp", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
 ROC_exp <- t(sapply(est_exp$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
 AUC(ROC_exp) # The area under the curve
 par(mfrow=c(1,2), mar=c(4,4,4,4))
@@ -177,13 +174,11 @@ points(c(0,1), c(0,1), type="l", lty=2)
 We now try the same experiments with the gamma models ($a=0.5$, $b=0$), again with $h(x)=\min(x,3)^{1.5}$ and `lambda_ratio=2`. However, recall that the gamma graphical models require all entries in the linear parameter to be strictly larger than -1.
 ```{r, fig.height=4, fig.width=8}
 mu[mu <= -1] <- abs(mu[mu <= -1]) # make sure all entries are strictly larger than 1
-#x <- rexp_gamma_reject_R(n, gamm=TRUE, eta=mu, K=K, seed=3, burn_in=1000, thinning=1000, max_iter=100000, verbose=FALSE)
-#The following generator may be more stable.
-x <- rab_arms_R(n, a=0.5, b=0, eta=mu, K=K, seed=3, burn_in=1000, thinning=1000, verbose=FALSE)
+x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=F, eta=mu, K=K, domain=domain, finite_infinity=100, seed=3, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
 h_mode <- "min_pow"
 h_param1 <- 1.5
 h_param2 <- 3
-est_gamma <- estimate(x, setting="gamma", centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
+est_gamma <- estimate(x, setting="gamma", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
 ROC_gamma <- t(sapply(est_gamma$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
 AUC(ROC_gamma) # The area under the curve
 par(mfrow=c(1,2), mar=c(4,4,4,4))
@@ -198,11 +193,11 @@ points(c(0,1), c(0,1), type="l", lty=2)
 ## General a-b Graphical Models
 The same can be applied to models with a general choice of $a$ and $b$, just with a different random generator. We now experiment with $a=1.5$, $b=0.5$, and estimate using $h(x)=\min(x,3)^{1/2}$ and `lambda_ratio=2`.
 ```{r, fig.height=4, fig.width=8}
-x <- rab_arms_R(n, a=1.5, b=0.5, eta=mu, K=K, seed=4, burn_in=1000, thinning=1000, verbose=FALSE)
+x <- gen(n, a_numer=3, a_denom=2, b_numer=1, b_denom=2, abs=F, eta=mu, K=K, domain=domain, finite_infinity=100, seed=4, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
 h_mode <- "min_pow"
 h_param1 <- 0.5
 h_param2 <- 3
-est_ab <- estimate(x, setting="ab_1.5_0.5", centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
+est_ab <- estimate(x, setting="ab_1.5_0.5", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
 ROC_ab <- t(sapply(est_ab$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
 AUC(ROC_ab) # The area under the curve
 par(mfrow=c(1,2), mar=c(4,4,4,4))
@@ -217,14 +212,15 @@ points(c(0,1), c(0,1), type="l", lty=2)
 ## (Untruncated) Gaussian Graphical Models
 The package also includes implementations for estimating the inverse covariance matrix from Gaussian graphical models on the entire $R^p$. However, for Gaussian graphical models we use the penalized version of the original score matching from Hyvärinen (2005); see Lin et al (2016). Thus, the `h` and `hp` functions are ignored (where we fix $h(x)=1$), and the summary statistics (`elts`) are stored internally in a different way. Below we show an example where we draw samples using the same mean and inverse covariance matrix as before, and estimate with `lambda_ratio=2`.
 ```{r}
+domain <- make_domain("R", p=p)
 set.seed(5)
 x <- rmvnorm(n, mean = mu, sigma = solve(K))
-est_gauss <- estimate(x, setting="gaussian", centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+est_gauss <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
 ```
 Alternatively, get the summary statistics first (without specifying `h` and `hp`) and pass it to `estimate()`.
 ```{r}
-elts_gauss <- get_elts(NULL, NULL, x, setting="gaussian", centered=F, profiled_if_noncenter=F, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol)
-est_gauss2 <- estimate(x, setting="gaussian", elts=elts_gauss, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+elts_gauss <- get_elts(NULL, x, setting="gaussian", domain=domain, centered=F, profiled_if_noncenter=F, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol)
+est_gauss2 <- estimate(x, setting="gaussian", elts=elts_gauss, domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
 compare_two_results(est_gauss, est_gauss2) ## Should be all close to 0
 ```
 We can then draw the ROC curve as before.
