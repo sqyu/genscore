@@ -14,7 +14,8 @@ get_elts(
   scale = "",
   diagonal_multiplier = 1,
   use_C = TRUE,
-  tol = .Machine$double.eps^0.5
+  tol = .Machine$double.eps^0.5,
+  unif_dist = NULL
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ get_elts(
 \item{use_C}{Optional. A boolean, use C (\code{TRUE}) or R (\code{FALSE}) functions for computation. Default to \code{TRUE}. Ignored if \code{setting == "gaussian" && domain$type == "R"}.}
 
 \item{tol}{Optional. A positive number. If \code{setting != "gaussian" || domain$type != "R"}, function stops if any entry if smaller than -tol, and all entries between -tol and 0 are set to tol, for numerical stability and to avoid violating the assumption that \eqn{h(\mathbf{x})>0}{h(x)>0} almost surely.}
+
+\item{unif_dist}{Optional, defaults to \code{NULL}. If not \code{NULL}, \code{h_hp} must be \code{NULL} and \code{unif_dist(x)} must return a list containing \code{"g0"} of length \code{nrow(x)} and \code{"g0d"} of dimension \code{dim(x)}, representing the distance and the derivative of the distance to the boundary: the true distance function to the boundary is used for all coordinates in place of h_of_dist; see "Estimating Density Models with Complex Truncation Boundaries" by Liu et al, 2019. That is, \eqn{(h_j\circ \phi_j)(x_i)}{(h_j\circ phi_j)(xi)} in the score-matching loss is replaced by \eqn{g_0(x_i)}{g0(xi)}, the conventional "distance" of xi to the boundary of the domain.}
 }
 \value{
 A list that contains the elements necessary for estimation.
@@ -124,7 +127,7 @@ h_hp <- get_h_hp("min_pow", 1.5, 3)
 get_elts(h_hp, x, "exp", domain, centered=TRUE, scale="", diag=dm)
 get_elts(h_hp, x, "exp", domain, centered=FALSE,
        profiled_if_noncenter=FALSE, scale="", diag=dm)
-
+ 
 # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
 domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
        ineqs=list(list("expression"="x1>1", abs=FALSE, nonnegative=TRUE),
@@ -164,6 +167,24 @@ h_hp <- get_h_hp("min_pow", 2, 3)
 get_elts(h_hp, x, "log_log", domain, centered=TRUE, scale="", diag=dm)
 get_elts(h_hp, x, "log_log", domain, centered=FALSE,
        profiled_if_noncenter=FALSE, scale="", diag=dm)
+# Example of using the uniform distance function to boundary as in Liu (2019)
+g0 <- function(x) {
+       row_min <- apply(x, 1, min)
+       row_which_min <- apply(x, 1, which.min)
+       dist_to_sum_boundary <- apply(x, 1, function(xx){
+                   (1 - sum(1:p * xx)) / sqrt(p*(p+1)*(2*p+1)/6)})
+       grad_sum_boundary <- -(1:p) / sqrt(p*(p+1)*(2*p+1)/6)
+       g0 <- pmin(row_min, dist_to_sum_boundary)
+       g0d <- t(sapply(1:nrow(x), function(i){
+          if (row_min[i] < dist_to_sum_boundary[i]){
+             tmp <- numeric(ncol(x)); tmp[row_which_min[i]] <- 1
+          } else {tmp <- grad_sum_boundary}
+          tmp
+       }))
+       list("g0"=g0, "g0d"=g0d)
+}
+get_elts(NULL, x, "exp", domain, centered=TRUE, profiled_if_noncenter=FALSE, 
+       scale="", diag=dm, unif_dist=g0)
 
 # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
 domain <- make_domain("simplex", p=p)

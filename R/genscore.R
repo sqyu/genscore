@@ -782,6 +782,7 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' @param diagonal_multiplier A number >= 1, the diagonal multiplier.
 #' @param use_C Optional. A boolean, use C (\code{TRUE}) or R (\code{FALSE}) functions for computation. Default to \code{TRUE}. Ignored if \code{setting == "gaussian" && domain$type == "R"}.
 #' @param tol Optional. A positive number. If \code{setting != "gaussian" || domain$type != "R"}, function stops if any entry if smaller than -tol, and all entries between -tol and 0 are set to tol, for numerical stability and to avoid violating the assumption that \eqn{h(\mathbf{x})>0}{h(x)>0} almost surely.
+#' @param unif_dist Optional, defaults to \code{NULL}. If not \code{NULL}, \code{h_hp} must be \code{NULL} and \code{unif_dist(x)} must return a list containing \code{"g0"} of length \code{nrow(x)} and \code{"g0d"} of dimension \code{dim(x)}, representing the distance and the derivative of the distance to the boundary: the true distance function to the boundary is used for all coordinates in place of h_of_dist; see "Estimating Density Models with Complex Truncation Boundaries" by Liu et al, 2019. That is, \eqn{(h_j\circ \phi_j)(x_i)}{(h_j\circ phi_j)(xi)} in the score-matching loss is replaced by \eqn{g_0(x_i)}{g0(xi)}, the conventional "distance" of xi to the boundary of the domain.
 #' @return A list that contains the elements necessary for estimation.
 #'   \item{n}{The sample size.}
 #'   \item{p}{The dimension.}
@@ -862,7 +863,7 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' get_elts(h_hp, x, "exp", domain, centered=TRUE, scale="", diag=dm)
 #' get_elts(h_hp, x, "exp", domain, centered=FALSE,
 #'        profiled_if_noncenter=FALSE, scale="", diag=dm)
-#'
+#'  
 #' # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
 #' domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
 #'        ineqs=list(list("expression"="x1>1", abs=FALSE, nonnegative=TRUE),
@@ -902,6 +903,24 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' get_elts(h_hp, x, "log_log", domain, centered=TRUE, scale="", diag=dm)
 #' get_elts(h_hp, x, "log_log", domain, centered=FALSE,
 #'        profiled_if_noncenter=FALSE, scale="", diag=dm)
+#' # Example of using the uniform distance function to boundary as in Liu (2019)
+#' g0 <- function(x) {
+#'        row_min <- apply(x, 1, min)
+#'        row_which_min <- apply(x, 1, which.min)
+#'        dist_to_sum_boundary <- apply(x, 1, function(xx){
+#'                    (1 - sum(1:p * xx)) / sqrt(p*(p+1)*(2*p+1)/6)})
+#'        grad_sum_boundary <- -(1:p) / sqrt(p*(p+1)*(2*p+1)/6)
+#'        g0 <- pmin(row_min, dist_to_sum_boundary)
+#'        g0d <- t(sapply(1:nrow(x), function(i){
+#'           if (row_min[i] < dist_to_sum_boundary[i]){
+#'              tmp <- numeric(ncol(x)); tmp[row_which_min[i]] <- 1
+#'           } else {tmp <- grad_sum_boundary}
+#'           tmp
+#'        }))
+#'        list("g0"=g0, "g0d"=g0d)
+#' }
+#' get_elts(NULL, x, "exp", domain, centered=TRUE, profiled_if_noncenter=FALSE, 
+#'        scale="", diag=dm, unif_dist=g0)
 #'
 #' # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
 #' domain <- make_domain("simplex", p=p)
@@ -927,7 +946,9 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' max(abs(diag(matrix(elts_simplex_1$g_K, nrow=p))))
 #' @export
 #' @useDynLib genscore elts_exp_c elts_exp_np elts_exp_p elts_gamma_np elts_gamma_p elts_gauss_c elts_gauss_np elts_gauss_p elts_loglog_c elts_loglog_np elts_loglog_p elts_loglog_simplex_c elts_loglog_simplex_np elts_ab_c elts_ab_np elts_ab_p
-get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncenter=TRUE, scale="", diagonal_multiplier=1, use_C=TRUE, tol=.Machine$double.eps^0.5){
+get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncenter=TRUE, 
+                     scale="", diagonal_multiplier=1, use_C=TRUE, tol=.Machine$double.eps^0.5,
+                     unif_dist=NULL){
   ## Note that in the result the diagonals of elts$Gamma_K are without multipliers.
   ## The diagonal entries with multipliers are stored in elts$diagonals_with_multiplier
   if (!(setting %in% c("exp", "gamma", "gaussian", "log_log", "log_log_sum0") || startsWith(setting, "ab_"))){
@@ -961,14 +982,25 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
     x <- scale(x, center=FALSE)
   }
   if (setting != "gaussian" || domain$type != "R"){
-    h_hp_dx <- h_of_dist(h_hp, x, domain)
-    hdx <- h_hp_dx$hdx # h(dist to boundary)
-    hpdx <- h_hp_dx$hpdx # h'(dist to boundary(x)) = h'(dist to boundary) * dist'(x)
-    if (any(is.infinite(hdx)) || any(is.infinite(hpdx))){
+    if (is.null(unif_dist)) {
+      h_hp_dx <- h_of_dist(h_hp, x, domain)
+      hdx <- h_hp_dx$hdx # h(dist to boundary)
+      hpdx <- h_hp_dx$hpdx # h'(dist to boundary(x)) = h'(dist to boundary) * dist'(x)
+    } else {
+      if (!is.null(h_hp))
+        stop("Exactly one of h_hp and unif_dist should be NULL.")
+      tmp <- unif_dist(x)
+      if (length(tmp$g0) != nrow(x))
+        stop("g0 returned by unif_dist(x) must have length equal to nrow(x).")
+      if ((nrow(tmp$g0d) != nrow(x) || ncol(tmp$g0d) != domain$p_deemed))
+        stop("g0d returned by unif_dist(x) must have nrow(x) rows (", nrow(x), ") and domain$p_deemed (", domain$p_deemed, ") columns.")
+      hdx <- matrix(tmp$g0, nrow=nrow(x), ncol=ncol(x))
+      hpdx <- tmp$g0d
+    }
+    if (any(is.infinite(hdx)) || any(is.infinite(hpdx)))
       stop("Infinite values encountered in h(get_dist(x, domain)) and/or hp(get_dist(x, domain)). Please use a bounded h function with one of the following modes (min_pow is recommended): 1, mcp, min_asinh, min_cosh, min_exp, min_log_pow, min_pow, min_sinh, min_softplus, tanh, truncated_sin, truncated_tan.")
     if (any(is.nan(hdx)) || any(is.nan(hpdx)))
       stop("NaN values encountered in h(get_dist(x, domain)) and/or hp(get_dist(x, domain)). If you are using a custom h/hp, please make sure it allows 0 and Inf as inputs. You may set h(Inf) to Inf but this is only allowed if all coordinates are bounded.")
-    }
   }
   if (setting == "exp"){
     if (use_C){
@@ -2159,6 +2191,7 @@ s_output <- function(out, verbose, verbosetext){
 #' @param param1 A number, the first parameter to the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian" && domain$type == "R"}.
 #' @param param2 A number, the second parameter (may be optional depending on \code{mode}) to the \code{h} function. Ignored if \code{elts}, or \code{h} and \code{hp} are provided, or if \code{setting == "gaussian" && domain$type == "R"}.
 #' @param h_hp A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.
+#' @param unif_dist Optional, defaults to \code{NULL}. If not \code{NULL}, \code{h_hp} must be \code{NULL} and \code{unif_dist(x)} must return a list containing \code{"g0"} of length \code{nrow(x)} and \code{"g0d"} of dimension \code{dim(x)}, representing the distance and the derivative of the distance to the boundary: the true distance function to the boundary is used for all coordinates in place of h_of_dist; see "Estimating Density Models with Complex Truncation Boundaries" by Liu et al, 2019. That is, \eqn{(h_j\circ \phi_j)(x_i)}{(h_j\circ phi_j)(xi)} in the score-matching loss is replaced by \eqn{g_0(x_i)}{g0(xi)}, the conventional "distance" of xi to the boundary of the domain.
 #' @param verbose Optional. A boolean, whether to output intermediate results.
 #' @param verbosetext Optional. A string, text to be added to the end of each printout if \code{verbose == TRUE}.
 #' @param tol Optional. A number, the tolerance parameter. Default to \code{1e-6}.
@@ -2266,7 +2299,7 @@ s_output <- function(out, verbose, verbosetext){
 #' @export
 estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="symmetric", scale="",
                      lambda1s=NULL, lambda_length=NULL, lambda_ratio=Inf, mode=NULL, param1=NULL,
-                     param2=NULL, h_hp=NULL, verbose=TRUE, verbosetext="", tol=1e-6, maxit=1000,
+                     param2=NULL, h_hp=NULL, unif_dist=NULL, verbose=TRUE, verbosetext="", tol=1e-6, maxit=1000,
                      BIC_refit=TRUE, warmstart=TRUE, diagonal_multiplier=NULL, eBIC_gammas=c(0,0.5,1),
                      return_raw=FALSE){
   ## BIC_refit: calculate BIC (with refit) or not
@@ -2329,8 +2362,8 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
     stop("If lambda1s are not provided, lambda_length must be at least 2.")
   } else
     lambda_length <- as.integer(lambda_length)
-  if ((setting != "gaussian" || domain$type != "R") && is.null(elts) && (is.null(mode) || is.null(param1)) && (is.null(h_hp)))
-    stop("At least one of 1. elts, 2. mode & param1, or 3. h_hp has to be provided.")
+  if ((setting != "gaussian" || domain$type != "R") && is.null(elts) && (is.null(mode) || is.null(param1)) && (is.null(h_hp)) && is.null(unif_dist))
+    stop("At least one of 1. elts, 2. mode & param1, 3. h_hp, or 4. unif_dist has to be provided.")
   if ((setting != "gaussian" || domain$type != "R") && is.null(elts) && !is.null(mode)){
     if (!is.null(h_hp)){
       warning("mode and h_hp should not be provided at the same time. Using h_hp instead.\n")
@@ -2350,7 +2383,8 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
   if (is.null(elts))
     elts <- get_elts(h_hp, x, setting, domain, centered=centered,
                      profiled_if_noncenter = is.infinite(lambda_ratio) && (domain$type != "simplex"), # profiled not supported for models on the simplex
-                     scale=scale, diagonal_multiplier=diagonal_multiplier)
+                     scale=scale, diagonal_multiplier=diagonal_multiplier,
+                     unif_dist=unif_dist)
   if (is.null(lambda1s)){
     s_output("Calculating lower bound for lambda.", verbose, verbosetext)
     lambda_lo <- test_lambda_bounds2(elts, symmetric, lambda_ratio, lower=TRUE, verbose=verbose, tol=tol, maxit=maxit)
