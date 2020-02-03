@@ -24,7 +24,7 @@ devtools::install_github("sqyu/genscore", build_vignettes=TRUE)
 ```
 
 # Usage
-For a complete guide to its usage, please consult the vignette [here](vignettes/gen_vignette.Rmd).
+For a complete guide to its usage, please consult the vignette [here](vignettes/gen_vignette.Rmd) (or [here](vignettes/gen_vignette.html) for the precompiled page).
 ```R
 vignette("gen_vignette")
 ```
