@@ -82,14 +82,14 @@ p <- 30
 eta <- rep(0, p)
 K <- diag(p)
 domain <- make_domain("R+", p=p)
-x <- gen(n, a_numer=1, a_denom=2, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K, 
-       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="ab_1/2_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1.5, 3)
 h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
-get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
             centered=TRUE, scale="norm", diag=1.5)
-get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
             centered=FALSE, profiled_if_noncenter=TRUE, scale="norm", diag=1.7)
-get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
             centered=FALSE, profiled_if_noncenter=FALSE, scale="norm", diag=1.9)
 }

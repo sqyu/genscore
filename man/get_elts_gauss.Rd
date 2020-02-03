@@ -50,6 +50,9 @@ p <- 30
 mu <- rep(0, p)
 K <- diag(p)
 x <- mvtnorm::rmvnorm(n, mean=mu, sigma=solve(K))
+# Equivalently:
+#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=make_domain("R",p), 
+#       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 get_elts_gauss(x, centered=TRUE, scale="norm", diag=1.5)
 get_elts_gauss(x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
 }

@@ -235,7 +235,7 @@ readline("Press enter to continue to the next example.")
 # Consider the exponential square-root graphical models from Inouye et al (2016),
 # also defined as a special case of the a-b model in (1) in Yu et al (2019)
 # with a=b=0.5.
-x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=mu, K=K, 
+x <- gen(n, setting="exp", abs=FALSE, eta=mu, K=K, 
          domain=domain, finite_infinity=100, seed=2, burn_in=1000, thinning=1000, verbose=TRUE, 
          remove_outofbound=TRUE) 
 
@@ -268,7 +268,7 @@ readline("Press enter to continue to the next example.")
 # `lambda_ratio=2`. Recall that the gamma graphical models require
 # all entries in the linear parameter to be strictly larger than -1.
 mu[mu <= -1] <- abs(mu[mu <= -1])
-x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=mu, K=K, 
+x <- gen(n, setting="gamma", abs=FALSE, eta=mu, K=K, 
          domain=domain, finite_infinity=100, seed=3, burn_in=1000, thinning=1000, verbose=TRUE, 
          remove_outofbound=TRUE) 
 h_mode <- "min_pow"
@@ -294,13 +294,13 @@ readline("Press enter to continue to the next example.")
 ## General a-b Graphical Models on the non-negative orthant R_+^p
 # Now choose a=1.5, b=0.5, and estimate using h(x)=\min(x,3)^0.5
 # and `lambda_ratio=2`.
-x <- gen(n, a_numer=3, a_denom=2, b_numer=3, b_denom=2, abs=FALSE, eta=mu, K=K, 
+x <- gen(n, setting="ab_3/2_1/2", abs=FALSE, eta=mu, K=K, 
          domain=domain, finite_infinity=100, seed=4, burn_in=1000, thinning=1000, verbose=TRUE, 
          remove_outofbound=TRUE) 
 h_mode <- "min_pow"
 h_param1 <- 0.5
 h_param2 <- 3
-est_ab <- estimate(x, setting="ab_1.5_0.5", centered=FALSE, domain=domain,
+est_ab <- estimate(x, setting="ab_3/2_1/2", centered=FALSE, domain=domain,
                    symmetric="symmetric", scale="norm", lambda_length=nlambda, 
                    lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, 
                    verbose=TRUE, tol=tol, maxit=maxit, BIC_refit=TRUE, 
@@ -368,7 +368,7 @@ diag(K) <- diag(K) - rowSums(K) # So that K has row and column sums 0
 eigen(K)$val # Verify that K has one 0 and (p-1) positive eigenvalues 
 true_edges <- which(abs(K) > tol & diag(p) == 0)
 domain <- make_domain(type="simplex", p=p) # Simplex domain
-x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K, 
+x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, 
          domain=domain, finite_infinity=100, seed=6, burn_in=1000, thinning=1000, 
          verbose=TRUE, remove_outofbound=TRUE)
 h_mode <- "pow" # Simplex domains are bounded by nature, so no truncation needed

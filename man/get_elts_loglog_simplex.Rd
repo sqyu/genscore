@@ -62,8 +62,8 @@ K <- -cov_cons("band", p=p, spars=3, eig=1)
 diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
 domain <- make_domain("simplex", p=p)
-x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-       K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 h_hp <- get_h_hp("min_pow", 2, 3)
 h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 

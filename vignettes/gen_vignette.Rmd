@@ -1,5 +1,5 @@
 ---
-title: "Generalized Score Matching"
+title: "Generalized Score Matching on Generalized Domain Types"
 author: "Shiqing Yu"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -19,11 +19,219 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(genscore)
-if (!require(tmvtnorm)) install.packages('tmvtnorm', repos = "http://cran.us.r-project.org")
+if (!requireNamespace("tmvtnorm", quietly = TRUE))
+  stop("Please install package \"tmvtnorm\".")
 library(tmvtnorm)
 ```
-# Multivariate Graphical Models
-## Truncated Gaussian Graphical Models
+# Different domain types
+The package offers a few types of domains on which the multivariate distribution is  defined, namely `"R"`, `"R+"`, `"uniform"`, `"simplex"`, and `"polynomial"`. As the domain is one of the two building blocks that define a distribution, we first present a guide to creating a `domain` object that should be passed to the two main functions `gen()` and `estimate()` (as the `domain` argument). 
+
+Note that since the probability densities considered in the package are defined with respect to the Lebesgue measure, the package is indifferent to whether the boundary points are included in the domain or not (i.e. $\sum_ix_i^2<1$ and $\sum_ix_i^2\leq 1$ are treated equally), except for the simplex domains.
+
+Throughout the demonstration in this section, we assume the number of covariates is `p=5.`
+```{r p}
+p <- 5
+```
+
+## The entire real space
+The most straightforward domain type is `"R"`, which is the entire real space $\mathbb{R}^p$.
+```{r R domains}
+domain <- make_domain(type="R", p=p)
+domain
+```
+
+## The non-negative orthant of the real space
+The second most commonly used domain type would be the non-negative orthant of the $\mathbb{R}^p$ space, $\mathbb{R}_+^p$. Constructing the domain is also straightforward.
+```{r R+ domains}
+domain <- make_domain(type="R+", p=p)
+domain
+```
+
+## The simplex domains
+Another useful type of domains the package offers is the simplices. Formally, we define the $(p-1)$-dimensional simplex as $\{\boldsymbol{x}\in\mathbb{R}_+^p:\sum_{i=1}^p x_i=1, \boldsymbol{x}\succ\boldsymbol{0}\}$.
+
+Defining the domain is also straightforward without any additional arguments required:
+```{r simplex domains}
+domain <- make_domain(type="simplex", p=p)
+domain
+```
+The `simplex_tol` member is unique to this type of domain, and is used internally for checking if each row in the data matrix indeed sums to 1. It is also the only domain type that has `p_deemed` one less than `p`, whereas for other domain types these two are equal. It is because it is currently the only domain type implemented that is a Lebesgue-null subset of $\mathbb{R}^p$.
+
+## Uniform-type domains
+This domain type assumes that each component/covariate has the same domain, which is a finite union of intervals. The `lefts` arguments specify the left endpoints of each interval, and `rights` specify the right endpoints accordingly. Formally, the domain is defined as
+$\left(\cup_{i}[\mathrm{lefts}_i,\mathrm{rights}_i]\right)^p$.
+
+For example, if we assume each covariate is larger than (or equal to) 1, then one can specify the domain as follows.
+```{r uniform domains}
+domain <- make_domain(type="uniform", p=p, lefts=1, rights=Inf)
+domain
+```
+Note again that we do not differentiate between open/closed/half-open half-closed intervals, as the probability of the random vector lying at the boundary points is assumed to be 0.
+
+If `rights` is just `Inf` and `lefts` is simply `-Inf` or `0`, this corresponds to the `"R"` and `"R+"` domain types, and the domain type would be changed accordingly.
+```{r uniform domains equivalent to R and R+}
+domain <- make_domain(type="uniform", p=p, lefts=-Inf, rights=Inf) # Changed to R
+domain <- make_domain(type="uniform", p=p, lefts=0, rights=Inf) # Changed to R+
+```
+Of course, the domain can also be bounded, e.g. $[-1,1]^p$.
+```{r uniform domains; bounded}
+domain <- make_domain(type="uniform", p=p, lefts=-1, rights=1) 
+domain
+```
+
+A more interesting case would be when the uniform domain for each component is a union of multiple intervals, e.g. $((-\infty,-2]\cup[-1,1]\cup[2,+\infty))^p$.
+```{r uniform domains; multiple intervals}
+domain <- make_domain(type="uniform", p=p, lefts=c(-Inf, -1, 2), rights=c(-2, 1, Inf)) 
+domain
+```
+
+### Solution for infinite unions of intervals or non-uniform domains for each component
+Domains that are a union of infinitely many intervals are currently not supported, but in some cases they can be approximated by a finite union. 
+
+For example, if the goal is to generate samples using `gen()`, $\cup_{i=0}^{\infty}[2i,2i+1]$ may be approximated by $\cup_{i=0}^{10}[2i,2i+1]$ in the first three lines of code below, assuming the joint density is negligible if any $x_j>21$. 
+
+```{r uniform domains approximating infinite union of intervals, fig.height=4, fig.width=6}
+domain <- make_domain(type="uniform", p=p, lefts=seq(0, 20, by=2), rights=seq(1, 21, by=2)) # If goal is random sample generation, just truncate the infinite union by an interval large enough 
+x <- gen(1000, setting="gaussian", abs=FALSE, eta=rep(0,p), K=diag(p), domain=domain, finite_infinity=100, seed=2, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE) # Generates a Gaussian
+hist(x, breaks=20) # Generated data far from the upper bound 21 we set above
+```
+
+If the goal is estimation given a data matrix using `estimate()`, one may simply truncate the infinite union by $\left[-\max_{i,j}\left|x_{ij}\right|, \max_{i,j}\left|x_{ij}\right|\right]$, as below.
+```{r}
+# Suppose the goal is estimation, simply truncate to the maximum absolute value in x
+max_i <- ceiling((max(abs(x)) - 1) / 2)
+domain <- make_domain(type="uniform", p=p, lefts=seq(0, 2*max_i, by=2), rights=seq(1, 2*max_i+1, by=2))
+# Estimate the inverse covariance matrix K with no penalty and no diagonal multiplier since n >> p, assuming mu = eta = 0
+est <- estimate(x=x, setting="gaussian", domain=domain, centered = TRUE,
+                mode="min_pow", param1=1, param2=3, lambda1s=0,
+                diagonal_multiplier=1, verbose=FALSE, return_raw=TRUE)
+est$raw_estimates[[1]] # Should be close to diag(p) we used to generate x
+```
+
+If each covariate has its own domain as a different union of intervals, refer to the polynomial-type domains below.
+
+## Polynomial-type domains
+The most complicated and flexible domain type is `"polynomial"`. Although effort is made for simplifying the definition of this domain type, the user may find the exact rules/requirements confusing, but hopefully the examples should make it easier to follow.
+
+Each polynomial-type domain is defined by a set of inequalities, where for each inequality a constant on the right-hand side is compared to a polynomial on the left-hand side, which must not have any interaction term and can have at most one term for each covariate. (That is, an inequality like $x_1x_2>1$ or $x_1^2+x_1^3>1$ are unfortunately not yet supported in the current version.) If there are more than one inequality, the user must specify a logical rule using `"&"` and `"|"` telling the program how to aggregate the domains defined by each inequality.
+
+Each term can be $\log(x)$, $\exp(nx)$ with $n$ a nonzero integer, or a rational power of $x$, where $x^{a/b}=(-1)^a|x|^{a/b}$ ($a$, $b$ coprime) for $x\geq 0$ and $x<0$ if $b$ is odd, or `NA` if $x<0$ and $b$ is even.
+
+For example, an inequality may look like $1.3x_1^2-2.7 x_2^3+0.37\exp(2x_3)-1.4\log(x_4)>1.3$, and another may look like $0.5x_1^{-2/3}+1.91x_2^{-5/4}-0.73\exp(-3x_3)-1.7\log(x_4)<-1.3$. If we wish to let our domain be the intersection of the two domains defined by the two inequalities, we write
+```{r polynomial domains}
+domain <- make_domain(type="polynomial", 
+                      p=p,
+                      rule="1 && 2",
+                      ineqs=list(
+                        list(expression="1.3x1^2-2.7* x2^3+0.37exp(2x3)-1.4log(x4)>1.3", 
+                             nonnegative=FALSE, abs=FALSE),
+                        list(expression="5e-1x1^(-2/3)+1.91*x2^(-5/4)-0.73exp(-3*x3)-1.7*log(x4)<-1.3",
+                             nonnegative=FALSE, abs=FALSE)
+                      )
+)
+domain
+```
+
+### Inequalities
+In this subsection we discuss the `ineqs` argument of `make_domain()` when defining a polynomial-type domain.
+
+The argument must be a list, and each element in this list is a list itself that represents an inequality. The recommended way of representing an inequality uses a  list of three members: (1) `nonnegative`, a logical indicating whether the domain of this inequality should be restricted to $\mathbb{R}_+^p$, (2) `abs`, a logical whether to use the absolute values $|\boldsymbol{x}|$ in place of $\boldsymbol{x}$ when evaluating the inequality, and (3) `expression`, a string expression of the inequality, which we explain the next. There is another highly discouraged way of representing an inequality by how the inequality is stored internally that is not covered in this guide.
+
+We call a term in an expression "uniform" if it is written as a function in "x", and "non-uniform" if it is written as a function in "x" followed by an index, e.g. "x1" or "x2". A uniform term can be (1) `"log(x)"`, (2) `"exp(x)"`, `"exp(nx)"` or `"exp(n*x)"` where `n` is a nonzeero integer, or (3) a power in one of the following forms: `"x^n"`, `"x^(-n)"`, `"x^(n/m)"`, `"x^(-n/m)"`, `"x^(n/-m)"` (replace `n` and `m` by non-zero integers). A non-uniform term is similar (replacing `x` by e.g. `x1` or `x2`), and can start with a coefficient, e.g. `"1.2*log(x)"`, `"-2.3x^2"`.
+
+An `expression` must have the variable part on the left-hand side, followed by one of  "<", ">", "<=", ">=", and finally a number to compare to. The variable part can be (1) a single uniform term (e.g. `x^(-2/3)`, `exp(x)`, `log(x)`), (2) a single uniform term surrounded by `"sum()"` (e.g. `sum(x^(-2/3))`, `sum(exp(x))`, `sum(log(x))`), or (3) a sum of non-uniform terms separated by `+`/`-` (e.g. `1.3x1^2-0.7*x2^(2/3)+2e3log(x)+1.3e-2*exp(-x)`).
+
+For (1), the same inequality will be applied to each covariate independently; (2) on the other hand is a shorthand for (3) with the same form for all components and coefficients all equal to 1 (e.g. `"sum(x^2)"` is just `"x1^2+x2^2+...+xp^2"`).
+
+In conclusion, the following are some examples of `expression`:
+```{r examples of expressions}
+"x<=-3.2e2" # (1)
+"x^(-2/3)>3.1" # (1)
+"exp(x)>1.3" # (1)
+"exp(-23x)<=3e3" # (1)
+"log(x) < 1.3" # (1)
+"sum(x)<=3e3" # (2)
+"sum(x^2)>10" # (2)
+"sum(x^(1/3))>10" # (2)
+"sum(x^(-2/3))<=3e3" # (2)
+"sum(exp(-23x))<=3e3" # (2)
+"sum(log(x)) < 2" # (2)
+"x1>1" # (3)
+"x2<=1" # (3)
+"x1^(2/3)-1.3x2^(-3)< 1" # (3)
+"exp(x1)+2.3*x2^2 > 2" # (3)
+"1x1+2x2+3x3+4x4+5x5 <1" # (3)
+"0.5*x1^(-2/3)-0.3x4^(4/-6)+2e3x3^(-6/9) < 3.5e5" # (3)
+"0.5*x1^(-2/3)-x3^3 + 2log(x2)- 1.3e4exp(-25*x6)+x8-.3x5^(-3/-4) >= 2" # (3)
+```
+
+### Rule
+If more than one inequality is provided, the user must specify the rule to aggregate the domains defined by each function. The rule can only contain inequality numbers (indexed starting from 1 to `length(domain$ineqs)`), logical operators (`&` / `|`, or `&&` / `||`; no difference is made between the single and doubled operators), parentheses and space. The only other requirement is that `&` and `|` is given the same precedence, and thus only operators of the same kind can be chained without a parenthesis, i.e. `1 & 2 | 3` is not allowed; one must specify `(1 & 2) | 3` or `1 | (2 & 3)` to avoid ambiguity. The following are some rules allowed.
+```{r examples of rules}
+"1"
+"1 & 2" # Assuming there are at least 2 inequalities
+"1 || 2" # Assuming >= 2 inequalities
+"1 && 2 & 3" # Assuming >= 3 inequalities
+"1 | 2 || 3" # Assuming >= 3 inequalities
+"(((1 & 2) | (3 & 4 && 5) || 6 || 7) & 8 & 9 && 10) || 11 " # Assuming >= 11 inequalities
+```
+
+### Examples of polynomial domains
+```{r examples of polynomial domains}
+# x such that sum(x^2) > 10 && sum(x^(1/3)) > 10 with x allowed to be negative
+domain <- make_domain("polynomial", p=p, rule="1 && 2",
+                      ineqs=list(list(expression="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
+                                 list(expression="sum(x^(1/3))>10", abs=FALSE, nonnegative=FALSE)))
+
+# x such that {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
+domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
+                      ineqs=list(list(expression="x1>1", abs=FALSE, nonnegative=TRUE),
+                                 list(expression="x2<1", abs=FALSE, nonnegative=TRUE),
+                                 list(expression="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
+
+#' # x in R_+^p such that {sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
+domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
+                      ineqs=list(list(expression="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
+                                 list(expression="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
+                                 list(expression="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
+
+#' # x in R_+^p such that {x in R_+^p: sum_j j * xj <= 1}
+domain <- make_domain("polynomial", p=p,
+                      ineqs=list(
+                        list(expression=paste(paste(sapply(1:p, function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
+                             abs=FALSE, nonnegative=TRUE)))
+
+# The l-1 ball {sum(|x|) < 1}
+domain <- make_domain("polynomial", p=p, 
+                      ineqs=list(list(expression="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
+```
+
+# Distribution Models Supported
+This package assumes the densities are with respect to the Lebesgue measure, from the exponential family and form interaction graphical models, proportional to
+\[\exp\left\{-\frac{1}{2a}{\boldsymbol{x}^a}^{\top}\mathbf{K}\boldsymbol{x}^a+\frac{1}{b}\boldsymbol{\eta}^{\top}\boldsymbol{x}^b\right\},\]
+where `a=a_numer/a_denom` and `b=b_numer/b_denom` with `a_numer`, `a_denom`, `b_numer`, `b_denom` are integers. We define
+$\frac{1}{(0/0)}\boldsymbol{x}^{0/0}\equiv\log\boldsymbol{x}$ and $\frac{1}{(n/0)}\boldsymbol{x}^{n/0}\equiv\exp(n\boldsymbol{x})$ for $n\neq 0$ (the $\exp$ case has been implemented for `gen()` but not yet for `estimate()` and thus has no name). 
+
+Note that $\mathbf{K}$ is generally assumed to be positive definite (except for the Aitchison $A^d$ model, `"log_log_sum0"` explained below). If $b$ is $0/0$ (i.e. $\boldsymbol{\eta}^{\top}\log(\boldsymbol{x})$ appears in the log density), $\boldsymbol{\eta}\succ-1$ is necessary for the density to have a finite normalizing constant.
+
+When generating random samples using `gen()` or doing estimation using `estimate()`, you should specify the model by passing its name as the `setting` argument.
+
+For example, the Gaussian graphical models have name `"gaussian"` with density proportional to
+\[\exp\left\{-\frac{1}{2}{\boldsymbol{x}}^{\top}\mathbf{K}\boldsymbol{x}+\boldsymbol{\eta}^{\top}\boldsymbol{x}\right\};\]
+the square root exponential graphical models from Inouye et al. (2016) and Yu et al. (2019) have name `"exp"` with density proportional to
+\[\exp\left\{-{\boldsymbol{x}^{1/2}}^{\top}\mathbf{K}\boldsymbol{x}^{1/2}+2\boldsymbol{\eta}^{\top}\boldsymbol{x}^{1/2}\right\};\]
+the gamma graphical models from Yu et al. (2019) have name `"gamma"` with density proportional to
+\[\exp\left\{-{\boldsymbol{x}^{1/2}}^{\top}\mathbf{K}\boldsymbol{x}^{1/2}+\boldsymbol{\eta}^{\top}\log(\boldsymbol{x})\right\};\]
+the $A^d$ model on the simplex from Aitchison (1985) have name `"log_log_sum0"` with density proportional to
+\[\exp\left\{-\frac{1}{2}\log(\boldsymbol{x})^{\top}\mathbf{K}\log(\boldsymbol{x})+\boldsymbol{\eta}^{\top}\log(\boldsymbol{x})\right\}\]
+where $\mathbf{K}\boldsymbol{1}=\mathbf{K}^{\top}\boldsymbol{1}=\boldsymbol{0}$. If we do not assume the rows and columns sum to 0, the setting has name `"log_log"`.
+
+For models with other $a$ and $b$, their names should have the form `"ab_aVal_bVal"` with `aVal` and `bVal` both integers or both two integers separated by `"/"`, e.g. `"ab_2_2"` if $a=b=2$, or `"ab_2_5/4"` if $a=2$ and $b=5/4$, or `"ab_2/3_1/2"` if $a=2/3$ and $b=1/2$.
+
+# Examples of Multivariate Graphical Models
+In this section we show how to use the package to generate random samples from interaction models defined on a type of domain already implemented. We focus on  the canonical example of the `"R+"` domain, namely the non-negative orthant $\mathbb{R}_+^p$. Examples of Aitchison (1985) models on the $(p-1)$-dimensional simplex would then follow.
+
+## Truncated Gaussian Graphical Models on the Non-negative Orthant
 ### Data setup
 We begin by generating a mean parameter and an inverse covariance matrix, and taking the true edge set.
 ```{r}
@@ -49,7 +257,7 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n)))) # diagonal multip
 h_mode <- "min_pow"
 h_param1 <- 1
 h_param2 <- 3
-est <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm, return_raw=T)
+est <- estimate(x, setting="gaussian", domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm, return_raw=TRUE)
 ```
 The results returned contain a list of edge sets, `edgess`, one for each lambda.
 ```{r}
@@ -57,7 +265,7 @@ est$edgess[[1]] # empty graph
 length(est$edgess[[nlambda]]) == p*(p-1) # complete graph
 length(est$edgess[[nlambda/2]]) # estimated graph for the 50th lambda
 ```
-The result ```est``` also includes a matrix `BIC` containing the eBIC values, and `BIC_refits` if run with `BIC_refit=T`. Each column corresponds to the choice of $\gamma=0,0.5,1$; c.f. Chen and Chen (2008).
+The result ```est``` also includes a matrix `BIC` containing the eBIC values, and `BIC_refits` if run with `BIC_refit=TRUE`. Each column corresponds to the choice of $\gamma=0,0.5,1$; c.f. Chen and Chen (2008).
 ```{r}
 est$BICs[1:10,]
 est$BIC_refits[1:10, ]
@@ -67,7 +275,7 @@ We can also take a look at the lambda values we used in the estimation. We only 
 est$lambda1s # lambda_Ks used
 est$lambda2s # lambda_etas, all 0 since with lambda_ratio=Inf we are in the profiled setting
 ```
-If run with `centered=F`, `etas` is also returned. The raw estimates of K are stored in `raw_estimates` if `return_raw=T` in the function call.
+If run with `centered=FALSE`, `etas` is also returned. The raw estimates of K are stored in `raw_estimates` if `return_raw=TRUE` in the function call.
 ```{r}
 est$etas[1:5,1:5] # First 5 components for the first 5 lambdas
 est$raw_estimates[[nlambda/2]][1:5,1:5] # First few entries of the estimated K for the 50th lambda
@@ -90,11 +298,11 @@ points(c(0,1), c(0,1), type="l", lty=2)
 The function `estimate()` internally calls `get_elts()`, which calculates summary statistics (`elts`) of `x` used for estimation. If one were to rerun `estimate()` a multiple of times, e.g. when trying out different h functions, it might be time-saving to calculate these elements using `get_elts()` first, and then call `estimate()` with these elements directly, as shown in the following example. Unlike `estimate()` which may take the name of the function family and the parameters of h as inputs, `get_elts()` takes the h function and its derivative (`hp`) explicitly. We may obtain these through `get_h_hp()`.
 ```{r}
 h_hp <- get_h_hp(mode=h_mode, para=h_param1, para2=h_param2) # h(x)=min(x,3), h'(x)=(x<=3)
-elts_P <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=F, profiled_if_noncenter=Inf, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol) # P stands for Profiled
+elts_P <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=FALSE, profiled_if_noncenter=Inf, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol) # P stands for Profiled
 ```
 We can then feed `elts_P` into `estimate()` to avoid recalculation of the summary statistics. Note that here since we have already defined the `h` and `hp` directly, we can pass them to `estimate()` instead of passing `mode`, `param1` and `param2`, in which case `estimate()` internally calls `get_h_hp()` just as we did. Now the results should be the same as `est` that we obtained before.
 ```{r}
-est2 <- estimate(x, setting="gaussian", domain=domain, elts=elts_P, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, h_hp=h_hp, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+est2 <- estimate(x, setting="gaussian", domain=domain, elts=elts_P, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, h_hp=h_hp, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm,  return_raw=TRUE)
 compare_two_results(est, est2) ## Should be all close to 0
 ```
 ### Results for one lambda
@@ -111,7 +319,7 @@ all(sub_res$edges == est$edgess[[i]])
 ```
 Equivalently, we can use `estimate()` with one lambda value (optionally with `elts_P` if available).
 ```{r}
-est_sub <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda1s = lambda1, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+est_sub <- estimate(x, setting="gaussian", domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda1s = lambda1, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm,  return_raw=TRUE)
 # Check if the result matches the previous one
 sum(abs(est_sub$raw_estimates[[1]] - sub_res$K))
 sum(abs(est_sub$etas[1,] - sub_res$eta))
@@ -133,7 +341,7 @@ par(mfrow=c(2,2), mar=c(3,3,3,3))
 for (i in 1:3){
   set.seed(i)
   x <- rtmvnorm(n, mean = mu, sigma = solve(K), lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs", burn.in.samples = 100, thinning = 10)
-  est <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=F, diagonal_multiplier=dm, return_raw=F)
+  est <- estimate(x, setting="gaussian", domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=h_param2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=FALSE, diagonal_multiplier=dm, return_raw=FALSE)
   ROC <- t(sapply(est$edgess, function(edges){tp_fp(edges, true_edges, p)}))
   ROCs[[i]] <- ROC
   plot(c(), c(),  ylim=c(0,1), xlim=c(0,1), cex.lab=1, main=paste("ROC, trial ",i,", AUC ",round(AUC(ROC),4),sep=""), xlab="False Positives", ylab="True Positives")
@@ -146,11 +354,11 @@ points(average_ROC[,2], average_ROC[,1], type="l")
 points(c(0,1), c(0,1), type = "l", lty = 2)
 ```
 
-## Exponential Square-Root Graphical Models
+## Exponential Square-Root Graphical Models on the Non-negative Orthant
 ### Data setup
-Consider the exponential square-root graphical models from Inouye et al (2016), which is also defined as a special case of the a-b model in (1) in Yu et al (2019) with $a=b=0.5$. We reuse the mean and inverse covariance matrix parameters from the previous section, and generate a new sample from the exponential square-root distribution.
+Consider the exponential square-root graphical models from Inouye et al (2016) on $\mathbb{R}_+^p$, which is also defined as a special case of the a-b model in (1) in Yu et al (2019) with $a=b=0.5$. We reuse the mean and inverse covariance matrix parameters from the previous section, and generate a new sample from the exponential square-root distribution.
 ```{r}
-x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=F, eta=mu, K=K, domain=domain, finite_infinity=100, seed=2, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
+x <- gen(n, setting="exp", abs=FALSE, eta=mu, K=K, domain=domain, finite_infinity=100, seed=2, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
 ```
 ### Estimation
 As suggested by the simulation studies in Yu et al (2019), we estimate using $h(x)=\min(x,3)^{1.5}$. We also try with a finite `lambda_ratio` as it is known to improve the result compared to the profiled estimator, although the best ratio is subject to careful tuning.
@@ -158,7 +366,7 @@ As suggested by the simulation studies in Yu et al (2019), we estimate using $h(
 h_mode <- "min_pow"
 h_param1 <- 1.5
 h_param2 <- 3
-est_exp <- estimate(x, setting="exp", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
+est_exp <- estimate(x, setting="exp", domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm,  return_raw=FALSE)
 ROC_exp <- t(sapply(est_exp$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
 AUC(ROC_exp) # The area under the curve
 par(mfrow=c(1,2), mar=c(4,4,4,4))
@@ -170,15 +378,15 @@ points(ROC_exp[,2], ROC_exp[,1], pch=16, cex=1.5, col=colors_)
 points(c(0,1), c(0,1), type="l", lty=2)
 ```
 
-## Gamma Graphical Models
-We now try the same experiments with the gamma models ($a=0.5$, $b=0$), again with $h(x)=\min(x,3)^{1.5}$ and `lambda_ratio=2`. However, recall that the gamma graphical models require all entries in the linear parameter to be strictly larger than -1.
+## Gamma Graphical Models on the Non-negative Orthant
+We now try the same experiments with the gamma models ($a=0.5$, $b=0$) on $\mathbb{R}_+^p$, again with $h(x)=\min(x,3)^{1.5}$ and `lambda_ratio=2`. However, recall that the gamma graphical models require all entries in the linear parameter to be strictly larger than -1.
 ```{r, fig.height=4, fig.width=8}
 mu[mu <= -1] <- abs(mu[mu <= -1]) # make sure all entries are strictly larger than 1
-x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=F, eta=mu, K=K, domain=domain, finite_infinity=100, seed=3, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
+x <- gen(n, setting="gamma", abs=FALSE, eta=mu, K=K, domain=domain, finite_infinity=100, seed=3, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
 h_mode <- "min_pow"
 h_param1 <- 1.5
 h_param2 <- 3
-est_gamma <- estimate(x, setting="gamma", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
+est_gamma <- estimate(x, setting="gamma", domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm,  return_raw=FALSE)
 ROC_gamma <- t(sapply(est_gamma$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
 AUC(ROC_gamma) # The area under the curve
 par(mfrow=c(1,2), mar=c(4,4,4,4))
@@ -190,14 +398,14 @@ points(ROC_gamma[,2], ROC_gamma[,1], pch=16, cex=1.5, col=colors_)
 points(c(0,1), c(0,1), type="l", lty=2)
 ```
 
-## General a-b Graphical Models
-The same can be applied to models with a general choice of $a$ and $b$, just with a different random generator. We now experiment with $a=1.5$, $b=0.5$, and estimate using $h(x)=\min(x,3)^{1/2}$ and `lambda_ratio=2`.
+## General a-b Graphical Models on the Non-negative Orthant
+The same can be applied to models with a general choice of $a$ and $b$. We now experiment with $a=1.5$, $b=0.5$ on $\mathbb{R}_+^p$, and estimate using $h(x)=\min(x,3)^{1/2}$ and `lambda_ratio=2`.
 ```{r, fig.height=4, fig.width=8}
-x <- gen(n, a_numer=3, a_denom=2, b_numer=1, b_denom=2, abs=F, eta=mu, K=K, domain=domain, finite_infinity=100, seed=4, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
+x <- gen(n, setting="ab_3/2_1/2", abs=FALSE, eta=mu, K=K, domain=domain, finite_infinity=100, seed=4, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
 h_mode <- "min_pow"
 h_param1 <- 0.5
 h_param2 <- 3
-est_ab <- estimate(x, setting="ab_1.5_0.5", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=F)
+est_ab <- estimate(x, setting="ab_3/2_1/2", domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, mode=h_mode, param1=h_param1, param2=h_param2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm,  return_raw=FALSE)
 ROC_ab <- t(sapply(est_ab$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
 AUC(ROC_ab) # The area under the curve
 par(mfrow=c(1,2), mar=c(4,4,4,4))
@@ -209,18 +417,18 @@ points(ROC_ab[,2], ROC_ab[,1], pch=16, cex=1.5, col=colors_)
 points(c(0,1), c(0,1), type="l", lty=2)
 ```
 
-## (Untruncated) Gaussian Graphical Models
-The package also includes implementations for estimating the inverse covariance matrix from Gaussian graphical models on the entire $R^p$. However, for Gaussian graphical models we use the penalized version of the original score matching from Hyvärinen (2005); see Lin et al (2016). Thus, the `h` and `hp` functions are ignored (where we fix $h(x)=1$), and the summary statistics (`elts`) are stored internally in a different way. Below we show an example where we draw samples using the same mean and inverse covariance matrix as before, and estimate with `lambda_ratio=2`.
+## (Untruncated) Gaussian Graphical Models on the Entire Real Space
+By specifying an `"R"` type domain, the package also includes implementations for estimating the inverse covariance matrix from Gaussian graphical models on the entire $R^p$. However, for Gaussian graphical models we use the penalized version of the original score matching from Hyv\"arinen (2005); see Lin et al (2016). Thus, the `h` and `hp` functions are ignored (where we fix $h(x)=1$), and the summary statistics (`elts`) are stored internally in a different way. Below we show an example where we draw samples using the same mean and inverse covariance matrix as before, and estimate with `lambda_ratio=2`.
 ```{r}
 domain <- make_domain("R", p=p)
 set.seed(5)
 x <- rmvnorm(n, mean = mu, sigma = solve(K))
-est_gauss <- estimate(x, setting="gaussian", domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+est_gauss <- estimate(x, setting="gaussian", domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm,  return_raw=TRUE)
 ```
 Alternatively, get the summary statistics first (without specifying `h` and `hp`) and pass it to `estimate()`.
 ```{r}
-elts_gauss <- get_elts(NULL, x, setting="gaussian", domain=domain, centered=F, profiled_if_noncenter=F, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol)
-est_gauss2 <- estimate(x, setting="gaussian", elts=elts_gauss, domain=domain, centered=F, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=F, tol=tol, maxit=maxit, BIC_refit=T, diagonal_multiplier=dm,  return_raw=T)
+elts_gauss <- get_elts(NULL, x, setting="gaussian", domain=domain, centered=FALSE, profiled_if_noncenter=FALSE, scale="norm", diagonal_multiplier=dm, use_C=TRUE, tol=tol)
+est_gauss2 <- estimate(x, setting="gaussian", elts=elts_gauss, domain=domain, centered=FALSE, symmetric="symmetric", scale="norm", lambda_length=nlambda, lambda_ratio=2, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=dm,  return_raw=TRUE)
 compare_two_results(est_gauss, est_gauss2) ## Should be all close to 0
 ```
 We can then draw the ROC curve as before.
@@ -236,7 +444,46 @@ points(ROC_gauss[,2], ROC_gauss[,1], pch=16, cex=1.5, col=colors_)
 points(c(0,1), c(0,1), type="l", lty=2)
 ```
 
-# Univariate Truncated Normal Distributions
+## Aitchison $A^d$ Models on the Simplex
+The last interesting multivariate model we present is the $A^d$ model from Aitchison (1985) with density on the $(p-1)$-dimensional simplex proportional to
+\[\exp\left\{-\frac{1}{2}\log(\boldsymbol{x})^{\top}\mathbf{K}\log(\boldsymbol{x})+\boldsymbol{\eta}^{\top}\log(\boldsymbol{x})\right\}\]
+with $\mathbf{K}\boldsymbol{1}=\mathbf{K}^{\top}\boldsymbol{1}=\boldsymbol{0}$ and $\boldsymbol{\eta}\succ -1$. With the zero column and row sum restriction on $\mathbf{K}$, the fields returned by `get_elts()` and calculations behind `estimate()` are very different than other previous cases, but the function prototypes remain the same, so there is no meaningful difference the user needs to be aware of.
+
+Note that `scale=""` is required in `estimate()` for simplex-type domains since the simplex is not invariant to scaling.
+```{r, fig.height=4, fig.width=8}
+eta <- rep(0.5, p)
+K <- -cov_cons("band", p, seed=1, spars=3)
+diag(K) <- diag(K) - rowSums(K) # So that K has row and column sums 0
+eigen(K)$val # Verify that K has one 0 and (p-1) positive eigenvalues 
+true_edges <- which(abs(K) > tol & diag(p) == 0)
+domain <- make_domain(type="simplex", p=p)
+x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, seed=6, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
+h_mode <- "pow" # Simplex domains are bounded by nature, so no truncation needed
+h_param1 <- 2 
+est_log_log_sum0 <- estimate(x, setting="log_log_sum0", domain=domain, centered=FALSE, symmetric="symmetric", scale="", lambda_length=nlambda, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=NULL, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=NULL,  return_raw=FALSE)
+
+ROC_log_log_sum0 <- t(sapply(est_log_log_sum0$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
+AUC(ROC_log_log_sum0) # The area under the curve
+par(mfrow=c(1,2), mar=c(4,4,4,4))
+plot_BIC_ind <- !is.infinite(est_log_log_sum0$BIC_refits[,3])
+plot(est_log_log_sum0$lambda1s[plot_BIC_ind], est_log_log_sum0$BIC_refits[plot_BIC_ind,3], col=colors_[plot_BIC_ind], pch=16, cex=1.5, xlab="lambda", ylab="eBIC", main="Refitted BIC (when exists)")
+plot(c(),c(), ylim = c(0,1), xlim = c(0,1), cex.lab=1, xlab = "False Positives", ylab = "True Positives", main = "ROC curve")
+points(ROC_log_log_sum0[,2], ROC_log_log_sum0[,1], type="l")
+points(ROC_log_log_sum0[,2], ROC_log_log_sum0[,1], pch=16, cex=1.5, col=colors_)
+points(c(0,1), c(0,1), type="l", lty=2)
+```
+One may not necessarily wish to impose the condition that $\mathbf{K}\mathbf{1}=\mathbf{K}^{\top}\mathbf{1}=\mathbf{0}$, in which case `estimate(x, setting="log_log_sum0", ...)` should be changed to `estimate(x, setting="log_log", ...)`. Performance is not guaranteed.
+```{r}
+est_log_log <- estimate(x, setting="log_log", domain=domain, centered=FALSE, symmetric="symmetric", scale="", lambda_length=40, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=NULL, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=NULL,  return_raw=FALSE)
+ROC_log_log <- t(sapply(est_log_log$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
+AUC(ROC_log_log)
+```
+Note that while `setting = "log_log"` is available for all domain types, `setting = "log_log_sum0"` is only available for simplex domains. On the other hand, these two settings are the only settings currently available for simplex domains.
+
+This concludes our tutorial on data generation and estimation for multivariate interaction models on general domains.
+
+
+# Univariate Truncated Normal Distributions on x > 0
 In this section, we explore univariate truncated normal distributions with probability density function proportional to $\exp(-(x-\mu)^2/(2\sigma^2))$ on $(0,+\infty)$.
 
 ## Introduction
@@ -265,22 +512,22 @@ mu_sigmasqhat(x, mode, param1, param2)
 The `varhat()` function provides a numerical calculation of the asymptotic variance of the estimator of one parameter assuming knowing the other.
 ```{r}
 # The asymptotic variance for mu assuming sigmasq known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=T)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE)
 # The asymptotic variance for sigmasq assuming mu known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=F)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE)
 ```
 Plugging in the estimated values, we can thus construct a confidence interval using the asymptotic variance evaluated at the estimates.
 ```{r}
 alpha <- 0.05
 muhat <- mu_sigmasqhat(x, mode, param1, param2, sigma=sigma^2)[1]
 # Assuming sigmasq is known, plug in muhat
-sdmu <- sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=T)/n)
+sdmu <- sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE)/n)
 # The 95% confidence interval for mu
 muhat + c(-1,1)*qnorm(1-alpha/2)*sdmu
 
 sigmasqhat <- mu_sigmasqhat(x, mode, param1, param2, mu=mu)[2]
 # Assuming mu is known, plug in sigmasqhat
-sdsigmasq <- sqrt(varhat(mu, sigmasqhat, mode, param1, param2, est_mu=F)/n)
+sdsigmasq <- sqrt(varhat(mu, sigmasqhat, mode, param1, param2, est_mu=FALSE)/n)
 # The 95% confidence interval for sigmasq
 sigmasqhat + c(-1,1)*qnorm(1-alpha/2)*sdsigmasq
 ```
@@ -293,38 +540,38 @@ x <- matrix(tmvtnorm::rtmvnorm(n*samples, mean=mu, sigma=sigma^2, lower=c(0), up
 # One muhat estimate for each of the 10000 samples
 muhats <- apply(x, 2, mu_sigmasqhat, mode=mode, param1=param1, param2=param2, sigmasq=sigma^2)[1,]
 # One standard error for each of the 10000 samples, plugging in the estimates for mu and true sigmasq
-ses_mu <- sapply(muhats, function(muhat){sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=T)/n)})
+ses_mu <- sapply(muhats, function(muhat){sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE)/n)})
 # Coverage probability of the confidence intervals for mu, should be close to 0.95
 mean(mu >= muhats - qnorm(1-alpha/2)*ses_mu & mu <= muhats + qnorm(1-alpha/2)*ses_mu)
 
 # One sigmasqhat estimate for each of the 10000 samples
 sigmasqhats <- apply(x, 2, mu_sigmasqhat, mode=mode, param1=param1, param2=param2, mu=mu)[2,]
 # One standard error for each of the 10000 samples, plugging in the estimates for sigmasq and true mu
-ses_sigmasq <- sapply(sigmasqhats, function(sigmasqhat){sqrt(varhat(mu, sigmasqhat^2, mode, param1, param2, est_mu=F)/n)})
+ses_sigmasq <- sapply(sigmasqhats, function(sigmasqhat){sqrt(varhat(mu, sigmasqhat^2, mode, param1, param2, est_mu=FALSE)/n)})
 # Coverage probability of the confidence intervals for sigmasq, should be close to 0.95
 mean(sigma^2 >= sigmasqhats - qnorm(1-alpha/2)*ses_sigmasq & sigma^2 <= sigmasqhats + qnorm(1-alpha/2)*ses_sigmasq)
 ```
-We can also compare the asymptotic variance of the estimator to the empirical variance, as well as the Cramér-Rao lower bound.
+We can also compare the asymptotic variance of the estimator to the empirical variance, as well as the Cram\'er-Rao lower bound.
 ```{r}
 trials <- 100
 # Reshape x into a 1000*100*100 array
 x <- array(x, dim=c(n,trials,samples/trials))
 # The asymptotic variance for mu assuming sigmasq known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=T)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE)
 # Empirical variance by averaging 100 variance estimates over 100 samples, each with sample size 1000
 n*mean(apply(apply(x, c(2,3), mu_sigmasqhat, mode=mode, param1=param1, param2=param2, sigmasq=sigma^2)[1,,], 1, var))
-# The Cramér-Rao lower bound on the variance of unbiased estimators of mu
+# The Cram\'er-Rao lower bound on the variance of unbiased estimators of mu
 crbound_mu(mu, sigma)
 
 # The asymptotic variance for sigmasq assuming mu known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=F)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE)
 # Empirical variance by averaging 100 variance estimates over 100 samples, each with sample size 1000
 n*mean(apply(apply(x, c(2,3), mu_sigmasqhat, mode=mode, param1=param1, param2=param2, mu=mu)[2,,], 1, var))
-# The Cramér-Rao lower bound on the variance of unbiased estimators of sigmasq
+# The Cram\'er-Rao lower bound on the variance of unbiased estimators of sigmasq
 crbound_sigma(mu, sigma)
 ```
 ## Plots from Yu et al (2019)
-The following plot reproduces Figure 1 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cramér-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\mu$ parameter, assuming $\sigma^2=1$ is known.
+The following plot reproduces Figure 1 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\mu$ parameter, assuming $\sigma^2=1$ is known.
 ```{r, fig.height=4, fig.width=8}
 modes <- c("min_log_pow", "min_log_pow", "log_pow", "min_pow", "min_pow", "min_pow", "pow", "pow")
 param1s <- c(1,1,1,1,1,2,1,2)
@@ -336,7 +583,7 @@ sigma <- 1
 curves <- matrix(NA, nrow=length(h_names)+1, ncol=length(mus))
 for (mu_i in 1:length(mus)){
   for (hi in 1:length(h_names))
-    curves[hi,mu_i] <- varhat(mus[mu_i],sigma^2,modes[hi],param1s[hi],param2s[hi],est_mu=T)
+    curves[hi,mu_i] <- varhat(mus[mu_i],sigma^2,modes[hi],param1s[hi],param2s[hi],est_mu=TRUE)
   curves[length(h_names)+1,mu_i] <- crbound_mu(mus[mu_i],sigma^2)
 }
 
@@ -357,14 +604,14 @@ for (hi in 1:length(h_names)){
 }
 ```
 
-The following plot reproduces Figure 2 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cramér-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\sigma^2$ parameter, assuming $\mu=0.5$ is known.
+The following plot reproduces Figure 2 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\sigma^2$ parameter, assuming $\mu=0.5$ is known.
 ```{r, fig.height=4, fig.width=8}
 sigmas <- exp(seq(log(0.1),log(10),length.out=100))
 mu <- 0.5
 curves2 <- matrix(NA, nrow=length(h_names)+1, ncol=length(sigmas))
 for (sigma_i in 1:length(sigmas)){
   for (hi in 1:length(h_names))
-    curves2[hi,sigma_i] <- varhat(mu,sigmas[sigma_i]^2,modes[hi],param1s[hi],param2s[hi],est_mu=F)
+    curves2[hi,sigma_i] <- varhat(mu,sigmas[sigma_i]^2,modes[hi],param1s[hi],param2s[hi],est_mu=FALSE)
   curves2[length(h_names)+1,sigma_i] <- crbound_sigma(mu,sigmas[sigma_i]^2)
 }
 

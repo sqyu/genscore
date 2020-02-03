@@ -52,16 +52,14 @@ The R implementation to get the elements necessary for calculations for the gaus
 For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 }
 \examples{
-if (!requireNamespace("tmvtnorm", quietly = TRUE))
-   stop("Please install package \"tmvtnorm\".")
 n <- 50
 p <- 30
 mu <- rep(0, p)
 K <- diag(p)
 eta <- K \%*\% mu
 domain <- make_domain("R+", p=p)
-x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta, K=K,
-       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1, 3)
 h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)

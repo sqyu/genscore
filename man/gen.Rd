@@ -6,10 +6,7 @@
 \usage{
 gen(
   n,
-  a_numer,
-  a_denom,
-  b_numer,
-  b_denom,
+  setting,
   abs,
   eta,
   K,
@@ -26,13 +23,7 @@ gen(
 \arguments{
 \item{n}{An integer, number of observations.}
 
-\item{a_numer}{An integer, the numerator of the a parameter, which is assumed to be rational.}
-
-\item{a_denom}{An integer, the denominator of the a parameter, which is assumed to be rational.}
-
-\item{b_numer}{An integer, the numerator of the b parameter, which is assumed to be rational.}
-
-\item{b_denom}{An integer, the denominator of the b parameter, which is assumed to be rational.}
+\item{setting}{A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value, and \code{NUM1} and \code{NUM2} must be integers or two integers separated by "/", e.g. "ab_2_2", "ab_2_5/4" or "ab_2/3_1/2".}
 
 \item{abs}{A boolean. If TRUE, density is rewritten as f(|x|), i.e. with |x|^(a_numer/a_denom) and |x|^(b_numer/b_denom)}
 
@@ -72,8 +63,6 @@ Letting \code{a=a_numer/a_denom} and \code{b=b_numer/b_denom}, the \code{a}-\cod
 Note that \code{x^(0/0)} is understood as \code{log(x)}, and \code{x^(n/0)} with nonzero \code{n} is \code{exp(n*x)}, and in both cases the \code{a} and \code{b} in the denominators in the density are treated as 1.
 }
 \examples{
-if (!requireNamespace("mvtnorm", quietly = TRUE))
-   stop("Please install package \"mvtnorm\".")
 n <- 50
 p <- 30
 eta <- rep(0, p)
@@ -85,13 +74,13 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2",
        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
                       list("expression"="sum(x^(1/3))>10", abs=FALSE, nonnegative=FALSE)))
 xinit <- rep(sqrt(20/p), p)
-x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta,  K=K, 
-      domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="gaussian", abs=FALSE, eta=eta,  K=K, domain=domain, 
+       finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 
 # exp on ([0, 1] v [2,3])^p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=eta,
-       K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, 
+       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 
 # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
 domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
@@ -100,8 +89,8 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 set.seed(1)
 xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
-x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-       domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+       finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 
 # a0.6_b0.7 on {x in R_+^p: sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
@@ -109,29 +98,29 @@ domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 xinit <- rep(1, p)
-x <- gen(n, a_numer=6, a_denom=10, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K,
-       domain=domain, finite_infinity=1e4, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+       finite_infinity=1e4, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 
 # log_log model exp(-log(x) \%*\% K \%*\% log(x)/2 + eta \%*\% log(x)) on {x in R_+^p: sum_j j * xj <= 1}
 domain <- make_domain("polynomial", p=p, 
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
-x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
+       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 
 # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
 domain <- make_domain("simplex", p=p)
 K <- -cov_cons("band", p=p, spars=3, eig=1)
 diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-       K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 
 # Gumbel_Gumbel model exp(-exp(2x) \%*\% K \%*\% exp(2x)/2 + eta \%*\% exp(-3x)) on {sum(|x|) < 1}
 domain <- make_domain("polynomial", p=p, 
        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 K <- diag(p)
-x <- gen(n, a_numer=2, a_denom=0, b_numer=-3, b_denom=0, abs=FALSE, eta=eta, K=K,
-       domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="ab_2/0_-3/0", abs=FALSE, eta=eta, K=K, domain=domain, 
+       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 }

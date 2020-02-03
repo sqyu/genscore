@@ -31,6 +31,9 @@
 #' # Gaussian on R^p:
 #' domain <- make_domain("R", p=p)
 #' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
+#' # Equivalently:
+#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("pow", 2) # For demonstration only
 #' hd <- h_of_dist(h_hp, x, domain) 
 #' # hdx is all Inf and hpdx is all 0 since each coordinate is unbounded with domain R
@@ -39,8 +42,8 @@
 #'
 #' # exp on R_+^p:
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=eta, K=K, 
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("pow", 2) # For demonstration only
 #' hd <- h_of_dist(h_hp, x, domain)
 #' # hdx is x^2 and hpdx is 2*x; with domain R+, the distance of x to the boundary is just x itself
@@ -50,8 +53,8 @@
 #' # Gaussian on sum(x^2) > p with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"=paste("sum(x^2)>", p), abs=FALSE, nonnegative=FALSE)))
-#' x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta, K=K, 
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain)
 #' quota <- p - (rowSums(x^2) - x^2) # How much should xij^2 at least be so that sum(xi^2) > p?
 #' # How far is xij from +/-sqrt(quota), if quota >= 0?
@@ -78,8 +81,8 @@
 #'
 #' # gamma on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K, 
-#'        domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain)
 #' # If 0 <= xij <= 1, distance to boundary is min(x-0, 1-x)
 #' max(abs(dist$dx - pmin(x, 1-x))[x >= 0 & x <= 1])
@@ -107,8 +110,8 @@
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 #' set.seed(1)
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2)) + log(1.3))
-#' x <- gen(n, a_numer=3, a_denom=5, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K, 
-#'        domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain)
 #' # x_{i1} has uniform bound [1, +Inf), so its distance to its boundary is x_{i1} - 1
 #' max(abs(dist$dx[,1] - (x[,1] - 1))) 
@@ -137,8 +140,8 @@
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K, 
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain)
 #' # Upper bound for j * xij so that sum_j j * xij <= 1
 #' quota <- 1 - (rowSums(t(t(x) * 1:p)) - t(t(x) * 1:p))
@@ -153,13 +156,13 @@
 #' print(max(abs(hd$hpdx - 2*dist$dpx*dist$dx))) 
 #'
 #'
-#' # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
+#' # log_log_sum0 model on the simplex with K having row and column sums 0 (Aitchison model)
 #' domain <- make_domain("simplex", p=p)
 #' K <- -cov_cons("band", p=p, spars=3, eig=1)
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' # Note that dist$dx and dist$dpx only has p-1 columns -- excluding the last coordinate in x
 #' dist <- get_dist(x, domain) 
 #' # Upper bound for x_{i,j} so that x_{i,1} + ... + x_{i,p-1} <= 1
@@ -185,6 +188,47 @@ h_of_dist <- function(h_hp, x, domain) {
   hpdx[dpx == 0] <- 0 # Instead of doing h_hp_dx$hpx * dpx, this would avoid Inf * 0 = NaN
   hpdx[dpx == -1] <- -hpdx[dpx == -1]
   return (list("hdx"=hdx, "hpdx"=hpdx))
+}
+
+#' Parses an ab setting into rational numbers a and b.
+#'
+#' Parses an ab setting into rational numbers a and b.
+#'
+#' @param s A string starting with "ab_", followed by rational numbers a and b separated by "_". a and b must be integers or rational numbers of the form "int/int". See examples.
+#' @return A list of the following elements:
+#'    \item{a_numer}{The numerator of \code{a}.}
+#'    \item{a_denom}{The denominator of \code{a}.}
+#'    \item{b_numer}{The numerator of \code{b}.}
+#'    \item{b_denom}{The denominator of \code{b}.}
+#' @examples
+#' parse_ab("ab_1_1") # gaussian: a = 1, b = 1
+#' parse_ab("ab_2_5/4") # a = 2, b = 5/4
+#' parse_ab("ab_5/4_3/2") # a = 5/4, b = 3/2 
+#' parse_ab("ab_3/2_0/0") # a = 3/2, b = 0/0 (log)
+#' parse_ab("ab_1/2_0/0") # exp: a = 1/2, b = 0/0 (log)
+#' @export
+parse_ab <- function(s) {
+  if (!startsWith(s, "ab_")) 
+    stop("To be parsed as an ab setting, s must start with ab_. Got '", s, "'.")
+  s <- substr(s, 4, nchar(s))
+  if (!grepl("_", s))
+    stop("a and b must be separated by an underscore _. For example, ab_2_2, ab_2_5/4 or ab_2/3_1/2.")
+  ab <- strsplit(s, "_")[[1]]
+  get_numer_denom <- function(ss) {
+    if (grepl("/", ss)) {
+      numer_denom <- as.integer(strsplit(ss, "/")[[1]])
+      if (any(is.na(numer_denom)))
+        stop("a and b must both be integers or two integers separated by /. For example, ab_2_2, ab_2_5/4 or ab_2/3_1/2.")
+      return (numer_denom)
+    } else {
+      numer <- as.integer(ss)
+      if (is.na(numer))
+        stop("a and b must both be integers or two integers separated by /. For example, ab_2_2, ab_2_5/4 or ab_2/3_1/2.")
+      return (c(numer, 1))
+    }
+  }
+  a <- get_numer_denom(ab[1]); b <- get_numer_denom(ab[2])
+  return (list("a_numer"=a[1], "a_denom"=a[2], "b_numer"=b[1], "b_denom"=b[2]))
 }
 
 #' The R implementation to get the elements necessary for calculations for general a and b.
@@ -239,15 +283,15 @@ h_of_dist <- function(h_hp, x, domain) {
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K, 
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_1/2_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
-#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
 #'             centered=TRUE, scale="norm", diag=1.5)
-#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
 #'             centered=FALSE, profiled_if_noncenter=TRUE, scale="norm", diag=1.7)
-#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_0.5_0.7",
+#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
 #'             centered=FALSE, profiled_if_noncenter=FALSE, scale="norm", diag=1.9)
 #' @export
 get_elts_ab <- function(hdx, hpdx, x, a, b, setting,
@@ -318,9 +362,8 @@ get_elts_ab <- function(hdx, hpdx, x, a, b, setting,
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100, 
-#'        verbose=TRUE)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #' get_elts_exp(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
@@ -389,8 +432,8 @@ get_elts_exp <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncenter=TRUE
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #' get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
@@ -452,16 +495,14 @@ get_elts_gamma <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncenter=TR
 #'   \item{t1,t2}{Returned in the profiled non-centered setting, where the \eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 #' @details For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 #' @examples
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
 #' n <- 50
 #' p <- 30
 #' mu <- rep(0, p)
 #' K <- diag(p)
 #' eta <- K %*% mu
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #' get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
@@ -520,6 +561,9 @@ get_elts_trun_gauss <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncent
 #' mu <- rep(0, p)
 #' K <- diag(p)
 #' x <- mvtnorm::rmvnorm(n, mean=mu, sigma=solve(K))
+#' # Equivalently:
+#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=make_domain("R",p), 
+#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 #' get_elts_gauss(x, centered=TRUE, scale="norm", diag=1.5)
 #' get_elts_gauss(x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
 #' @export
@@ -574,8 +618,8 @@ get_elts_gauss <- function(x, centered=TRUE, profiled_if_noncenter=TRUE, scale="
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' domain <- make_domain("uniform", p=p, lefts=c(0), rights=c(1))
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #' get_elts_loglog(h_hp_dx$hdx, h_hp_dx$hpdx, x, setting="log_log", centered=TRUE,
@@ -659,8 +703,8 @@ get_elts_loglog <- function(hdx, hpdx, x, setting, centered=TRUE,
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
 #' domain <- make_domain("simplex", p=p)
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' h_hp <- get_h_hp("min_pow", 2, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #'
@@ -774,7 +818,7 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'
 #' @param h_hp A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.
 #' @param x An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.
-#' @param setting A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value. If \code{domain$type == "simplex"}, only \code{"log_log"} and \code{"log_log_sum0"} are supported, and on the other hand \code{"log_log_sum0"} is supported for \code{domain$type == "simplex"} only.
+#' @param setting A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value, and \code{NUM1} and \code{NUM2} must be integers or two integers separated by "/", e.g. "ab_2_2", "ab_2_5/4" or "ab_2/3_1/2". If \code{domain$type == "simplex"}, only \code{"log_log"} and \code{"log_log_sum0"} are supported, and on the other hand \code{"log_log_sum0"} is supported for \code{domain$type == "simplex"} only.
 #' @param domain A list returned from \code{make_domain()} that represents the domain.
 #' @param centered A boolean, whether in the centered setting(assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.
 #' @param profiled_if_noncenter A boolean, whether in the profiled setting (\eqn{\lambda_{\boldsymbol{\eta}}=0}{\lambda_\eta=0}) if noncentered. Parameter ignored if \code{centered=TRUE}. Default to \code{TRUE}. Can only be \code{FALSE} if \code{setting == "log_log_sum0" && centered == FALSE}.
@@ -831,8 +875,11 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 #'
 #' # Gaussian on R^p:
-#' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 #' domain <- make_domain("R", p=p)
+#' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
+#' # Equivalently:
+#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 #' get_elts(NULL, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 #' get_elts(NULL, x, "gaussian", domain, FALSE, profiled=FALSE, scale="sd", diag=dm)
 #'
@@ -841,6 +888,9 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' x <- tmvtnorm::rtmvnorm(n, mean = solve(K, eta), sigma = solve(K),
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
+#' # Equivalently:
+#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' get_elts(h_hp, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 #'
@@ -849,16 +899,16 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'        ineqs=list(list("expression"="sum(x^2)>1", abs=FALSE, nonnegative=FALSE),
 #'                       list("expression"="sum(x^(1/3))>1", abs=FALSE, nonnegative=FALSE)))
 #' xinit <- rep(sqrt(2/p), p)
-#' x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' get_elts(h_hp, x, "gaussian", domain, centered=FALSE,
 #'        profiled_if_noncenter=TRUE, scale="", diag=dm)
 #'
 #' # exp on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' get_elts(h_hp, x, "exp", domain, centered=TRUE, scale="", diag=dm)
 #' get_elts(h_hp, x, "exp", domain, centered=FALSE,
@@ -871,8 +921,8 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=TRUE)))
 #' set.seed(1)
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' get_elts(h_hp, x, "gamma", domain, centered=TRUE, scale="", diag=dm)
 #' get_elts(h_hp, x, "gamma", domain, centered=FALSE,
@@ -884,11 +934,11 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
 #'                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 #' xinit <- rep(1, p)
-#' x <- gen(n, a_numer=6, a_denom=10, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 #' h_hp <- get_h_hp("min_pow", 1.4, 3)
-#' get_elts(h_hp, x, "ab_0.6_0.7", domain, centered=TRUE, scale="", diag=dm)
-#' get_elts(h_hp, x, "ab_0.6_0.7", domain, centered=FALSE,
+#' get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=TRUE, scale="", diag=dm)
+#' get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=FALSE,
 #'        profiled_if_noncenter=TRUE, scale="", diag=dm)
 #'
 #' # log_log model on {x in R_+^p: sum_j j * xj <= 1}
@@ -896,9 +946,9 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, 
-#'        thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100, 
+#'        verbose=TRUE)
 #' h_hp <- get_h_hp("min_pow", 2, 3)
 #' get_elts(h_hp, x, "log_log", domain, centered=TRUE, scale="", diag=dm)
 #' get_elts(h_hp, x, "log_log", domain, centered=FALSE,
@@ -922,13 +972,13 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' get_elts(NULL, x, "exp", domain, centered=TRUE, profiled_if_noncenter=FALSE, 
 #'        scale="", diag=dm, unif_dist=g0)
 #'
-#' # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
+#' # log_log_sum0 model on the simplex with K having row and column sums 0 (Aitchison model)
 #' domain <- make_domain("simplex", p=p)
 #' K <- -cov_cons("band", p=p, spars=3, eig=1)
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' h_hp <- get_h_hp("min_pow", 2, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #'
@@ -952,7 +1002,7 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
   ## Note that in the result the diagonals of elts$Gamma_K are without multipliers.
   ## The diagonal entries with multipliers are stored in elts$diagonals_with_multiplier
   if (!(setting %in% c("exp", "gamma", "gaussian", "log_log", "log_log_sum0") || startsWith(setting, "ab_"))){
-    stop("\"setting\" parameter must be one of exp, gamma, gaussian, log_log, log_log_sum0, or ab_A_B e.g. ab_1.2_0.9.")
+    stop("\"setting\" parameter must be one of exp, gamma, gaussian, log_log, log_log_sum0, or ab_A_B (e.g. ab_2_2, ab_2_5/4 or ab_2/3_1/2).")
   }
   if (!"checked" %in% names(domain))
     stop("domain must be an object returned by make_domain().")
@@ -1116,10 +1166,10 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
                                       scale=scale, diagonal_multiplier=diagonal_multiplier), domain_type=domain$type))
     }
   } else { # Only left option: ab models
-    s <- strsplit(setting,"_")[[1]]
-    if (s[1] != "ab" || is.na(as.numeric(s[2])) || is.na(as.numeric(s[3])))
-      stop("Setting should be one of 'gaussian', 'exp', 'gamma', 'log_log', 'log_log_sum0', or of the form 'ab_AVAL_BVAL' (e.g. 'ab_1.2_0.9').")
-    a <- as.numeric(s[2]); b <- as.numeric(s[3])
+    if (!startsWith(setting, "ab_"))
+      stop("\"setting\" parameter must be one of exp, gamma, gaussian, log_log, log_log_sum0, or ab_A_B (e.g. ab_2_2, ab_2_5/4 or ab_2/3_1/2).")
+    tmp <- parse_ab(setting)
+    a <- tmp$a_numer / tmp$a_denom; b <- tmp$b_numer / tmp$b_denom #### !
     if (use_C){
       if (centered) {
         res <- .C("elts_ab_c", nIn=as.integer(n), pIn=as.integer(p), a=as.double(a), hdx=as.double(hdx), hpdx=as.double(hpdx), x=as.double(x), g1=as.double(numeric(p^2)), Gamma=as.double(numeric(p^3)), diagonal_multiplier=as.double(diagonal_multiplier), diagonals_with_multiplier=as.double(numeric(p^2)), PACKAGE="genscore")
@@ -1141,10 +1191,7 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #' Random data generator from general \code{a}-\code{b} graphs with general domain types using adaptive rejection metropolis sampling (ARMS). x^(0/0) treated as log(x) and x^(n/0) as exp(x) for n non-zero. Density only guaranteed to be a proper density when 2*a > b >= 0 or when a = b = 0.
 #'
 #' @param n An integer, number of observations.
-#' @param a_numer An integer, the numerator of the a parameter, which is assumed to be rational.
-#' @param a_denom An integer, the denominator of the a parameter, which is assumed to be rational.
-#' @param b_numer An integer, the numerator of the b parameter, which is assumed to be rational.
-#' @param b_denom An integer, the denominator of the b parameter, which is assumed to be rational.
+#' @param setting A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value, and \code{NUM1} and \code{NUM2} must be integers or two integers separated by "/", e.g. "ab_2_2", "ab_2_5/4" or "ab_2/3_1/2".
 #' @param abs A boolean. If TRUE, density is rewritten as f(|x|), i.e. with |x|^(a_numer/a_denom) and |x|^(b_numer/b_denom)
 #' @param eta A vector, the linear part in the distribution.
 #' @param K A square matrix, the interaction matrix. There should exist some C > 0 such that \deqn{{\boldsymbol{x}^a}^{\top}\mathbf{K}{\boldsymbol{x}}^a/({\boldsymbol{x}^a}^{\top}{\boldsymbol{x}}^a) >= C} for all x in the domain (i.e. \code{K} is positive definite if \code{domain$type == "R"} and \code{K} is co-positive if \code{domain$type == "R+"}.). If \code{a_numer == a_denom == b_numer == b_denom == 0 && domain$type == "simplex"}, K can also have all row and column sums equal to 0 but have all but one eigenvalues (0) positive.
@@ -1167,8 +1214,6 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #' Note that \code{x^(0/0)} is understood as \code{log(x)}, and \code{x^(n/0)} with nonzero \code{n} is \code{exp(n*x)}, and in both cases the \code{a} and \code{b} in the denominators in the density are treated as 1.
 #'
 #' @examples
-#' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    stop("Please install package \"mvtnorm\".")
 #' n <- 50
 #' p <- 30
 #' eta <- rep(0, p)
@@ -1180,13 +1225,13 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #'        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
 #'                       list("expression"="sum(x^(1/3))>10", abs=FALSE, nonnegative=FALSE)))
 #' xinit <- rep(sqrt(20/p), p)
-#' x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta,  K=K, 
-#'       domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta,  K=K, domain=domain, 
+#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 #'
 #' # exp on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #'
 #' # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
 #' domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
@@ -1195,8 +1240,8 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 #' set.seed(1)
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 #'
 #' # a0.6_b0.7 on {x in R_+^p: sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 #' domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
@@ -1204,34 +1249,34 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #'                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
 #'                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 #' xinit <- rep(1, p)
-#' x <- gen(n, a_numer=6, a_denom=10, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=1e4, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=1e4, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 #'
 #' # log_log model exp(-log(x) %*% K %*% log(x)/2 + eta %*% log(x)) on {x in R_+^p: sum_j j * xj <= 1}
 #' domain <- make_domain("polynomial", p=p, 
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #'
 #' # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
 #' domain <- make_domain("simplex", p=p)
 #' K <- -cov_cons("band", p=p, spars=3, eig=1)
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #'
 #' # Gumbel_Gumbel model exp(-exp(2x) %*% K %*% exp(2x)/2 + eta %*% exp(-3x)) on {sum(|x|) < 1}
 #' domain <- make_domain("polynomial", p=p, 
 #'        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 #' K <- diag(p)
-#' x <- gen(n, a_numer=2, a_denom=0, b_numer=-3, b_denom=0, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_2/0_-3/0", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' @export
 #' @useDynLib genscore rab_arms
-gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, finite_infinity=NULL,
+gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
                 xinit=NULL, seed=NULL, burn_in=1000, thinning=100,
                 verbose=TRUE, remove_outofbound=TRUE) {
   if (!"checked" %in% names(domain))
@@ -1240,14 +1285,50 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
     stop("Domain type '", domain$type, "' not supported for data generation.")
   if (length(eta) != domain$p)
     stop("eta must have length ", domain$p, ".")
-  if (any(c(a_numer, a_denom, b_numer, b_denom) %% 1 != 0))
-    stop("a_numer, a_denom, b_numer, b_denom must all be integers.")
   if (nrow(K) != domain$p || ncol(K) != domain$p)
     stop("K must have dimension ", domain$p, "x", domain$p, ".")
   if (domain$type != "simplex" && any(diag(K) <= 0))
     stop("All diagonal entries of K must be positive except for simplex domains.")
+  if (!is.null(seed)){set.seed(seed)
+  } else {seed <- -1}
+  
+  if (setting == "exp") {
+    a_numer <- b_numer <- 1; a_denom <- b_denom <- 2
+  } else if (setting == "gamma") {
+    a_numer <- 1; a_denom <- 2; b_numer <- b_denom <- 0
+  } else if (setting == "gaussian") {
+    a_numer <- a_denom <- b_numer <- b_denom <- 1 
+  } else if (startsWith(setting, "log_log")) {
+    a_numer <- a_denom <- b_numer <- b_denom <- 0
+  } else if (startsWith(setting, "ab_")) {
+    tmp <- parse_ab(setting)
+    a_numer <- tmp$a_numer; a_denom <- tmp$a_denom
+    b_numer <- tmp$b_numer; b_denom <- tmp$b_denom
+  } else 
+    stop("\"setting\" parameter must be one of exp, gamma, gaussian, log_log, log_log_sum0, or ab_A_B e.g. ab_2_2, ab_2_5/4 or ab_2/3_1/2.")
+  if (a_numer == 1 && a_denom == 1 && b_numer == 1 && b_denom == 1)
+    setting <- "gaussian"
   if ((a_numer == 0 && a_denom != 0) || (b_numer == 0 && b_denom != 0))
     stop("For a and b in the density, if the numerator is 0 then the denominator must also be 0 (-> log), otherwise the density is not defined (x^(0/n) for n!=0 always evaluates to 1 and we do not allow this; set eta to 0 instead).")
+  
+  if (setting == "gaussian" && domain$type == "R") {
+    if (!requireNamespace("mvtnorm", quietly = TRUE))
+      stop("Please install package \"mvtnorm\".")
+    Sigma <- solve(K)
+    return (mvtnorm::rmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma))
+  } else if (setting == "gaussian" && (
+      domain$type == "R+" || 
+      (domain$type == "uniform" && length(domain$lefts) == 1))) {
+    if (!requireNamespace("tmvtnorm", quietly = TRUE))
+      stop("Please install package \"tmvtnorm\".")
+    if (domain$type == "R+") {left <- 0; right <- Inf
+    } else {left <- domain$lefts[1]; right <- domain$rights[1]}
+    Sigma <- solve(K)
+    return (tmvtnorm::rtmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma, 
+                               lower=rep(left, domain$p), 
+                               upper=rep(right, domain$p), algorithm = "gibbs", 
+                               burn.in.samples = burn_in, thinning = thinning))
+  } 
   
   if (domain$type == "uniform") {
     if (domain$left_inf || domain$right_inf) {
@@ -1263,8 +1344,6 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
       stop("You must specify finite_infinity for R, R+, and polynomial-type domains.")
   }
   
-  if (!is.null(seed)){set.seed(seed)
-  } else {seed <- -1}
   if (is.null(xinit)) {
     if (domain$type == "R")
       xinit <- stats::rnorm(domain$p)
@@ -1352,14 +1431,17 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
 #' # Gaussian on R^p:
 #' domain <- make_domain("R", p=p)
 #' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
+#' # Equivalently:
+#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain) 
 #' # dx is all Inf and dpx is all 0 since each coordinate is unbounded with domain R
 #' c(all(is.infinite(dist$dx)), all(dist$dpx==0))
 #'
 #' # exp on R_+^p:
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=1, b_denom=2, abs=FALSE, eta=eta, K=K, 
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain)
 #' # dx is x and dpx is 1; with domain R+, the distance of x to the boundary is just x itself
 #' c(max(abs(dist$dx - x))<.Machine$double.eps^0.5, all(dist$dpx == 1)) 
@@ -1367,8 +1449,8 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
 #' # Gaussian on sum(x^2) > p with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p, 
 #'        ineqs=list(list("expression"=paste("sum(x^2)>", p), abs=FALSE, nonnegative=FALSE)))
-#' x <- gen(n, a_numer=1, a_denom=1, b_numer=1, b_denom=11, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain)
 #' quota <- p - (rowSums(x^2) - x^2) # How much should xij^2 at least be so that sum(xi^2) > p?
 #' # How far is xij from +/-sqrt(quota), if quota >= 0?
@@ -1382,8 +1464,8 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
 #'
 #' # gamma on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-#' x <- gen(n, a_numer=1, a_denom=2, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' dist <- get_dist(x, domain)
 #' # If 0 <= xij <= 1, distance to boundary is min(x-0, 1-x)
 #' max(abs(dist$dx - pmin(x, 1-x))[x >= 0 & x <= 1])
@@ -1403,9 +1485,9 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 #' set.seed(1)
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2)) + log(1.3))
-#' x <- gen(n, a_numer=3, a_denom=5, b_numer=7, b_denom=10, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, 
-#'        thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100, 
+#'        verbose=TRUE)
 #' dist <- get_dist(x, domain)
 #' # x_{i1} has uniform bound [1, +Inf), so its distance to its boundary is x_{i1} - 1
 #' max(abs(dist$dx[,1] - (x[,1] - 1))) 
@@ -1426,8 +1508,8 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta, K=K,
-#'        domain=domain, finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' dist <- get_dist(x, domain)
 #' # Upper bound for j * xij so that sum_j j * xij <= 1
 #' quota <- 1 - (rowSums(t(t(x) * 1:p)) - t(t(x) * 1:p))
@@ -1439,8 +1521,8 @@ gen <- function(n, a_numer, a_denom, b_numer, b_denom, abs, eta, K, domain, fini
 #' K <- -cov_cons("band", p=p, spars=3, eig=1)
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-#' x <- gen(n, a_numer=0, a_denom=0, b_numer=0, b_denom=0, abs=FALSE, eta=eta,
-#'        K=K, domain=domain, xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+#'         xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 #' # Note that dist$dx and dist$dpx only has p-1 columns -- excluding the last coordinate in x
 #' dist <- get_dist(x, domain)
 #' # Upper bound for x_{i,j} so that x_{i,1} + ... + x_{i,p-1} <= 1
@@ -2178,7 +2260,7 @@ s_output <- function(out, verbose, verbosetext){
 #' The main function for the generalized score-matching estimator for graphical models.
 #'
 #' @param x An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.
-#' @param setting A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value.
+#' @param setting A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value, and \code{NUM1} and \code{NUM2} must be integers or two integers separated by "/", e.g. "ab_2_2", "ab_2_5/4" or "ab_2/3_1/2".
 #' @param domain A list returned from \code{make_domain()} that represents the domain.
 #' @param elts A list (optional), elements necessary for calculations returned by get_elts().
 #' @param centered A boolean, whether in the centered setting (assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.

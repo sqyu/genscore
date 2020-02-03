@@ -34,7 +34,7 @@ estimate(
 \arguments{
 \item{x}{An \code{n} by \code{p} matrix, the data matrix, where \code{n} is the sample size and \code{p} the dimension.}
 
-\item{setting}{A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value.}
+\item{setting}{A string that indicates the distribution type, must be one of \code{"exp"}, \code{"gamma"}, \code{"gaussian"}, \code{"log_log"}, \code{"log_log_sum0"}, or of the form \code{"ab_NUM1_NUM2"}, where \code{NUM1} is the \code{a} value and \code{NUM2} is the \code{b} value, and \code{NUM1} and \code{NUM2} must be integers or two integers separated by "/", e.g. "ab_2_2", "ab_2_5/4" or "ab_2/3_1/2".}
 
 \item{domain}{A list returned from \code{make_domain()} that represents the domain.}
 
