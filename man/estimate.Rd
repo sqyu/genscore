@@ -60,7 +60,7 @@ estimate(
 
 \item{h_hp}{A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.}
 
-\item{unif_dist}{Optional, defaults to \code{NULL}. If not \code{NULL}, \code{h_hp} must be \code{NULL} and \code{unif_dist(x)} must return a list containing \code{"g0"} of length \code{nrow(x)} and \code{"g0d"} of dimension \code{dim(x)}, representing the distance and the derivative of the distance to the boundary: the true distance function to the boundary is used for all coordinates in place of h_of_dist; see "Estimating Density Models with Complex Truncation Boundaries" by Liu et al, 2019. That is, \eqn{(h_j\circ \phi_j)(x_i)}{(h_j\circ phi_j)(xi)} in the score-matching loss is replaced by \eqn{g_0(x_i)}{g0(xi)}, the conventional "distance" of xi to the boundary of the domain.}
+\item{unif_dist}{Optional, defaults to \code{NULL}. If not \code{NULL}, \code{h_hp} must be \code{NULL} and \code{unif_dist(x)} must return a list containing \code{"g0"} of length \code{nrow(x)} and \code{"g0d"} of dimension \code{dim(x)}, representing the l2 distance and the gradient of the l2 distance to the boundary: the true l2 distance function to the boundary is used for all coordinates in place of h_of_dist; see "Estimating Density Models with Complex Truncation Boundaries" by Liu et al, 2019. That is, \eqn{(h_j\circ \phi_j)(x_i)}{(h_j\circ phi_j)(xi)} in the score-matching loss is replaced by \eqn{g_0(x_i)}{g0(xi)}, the l2 distance of xi to the boundary of the domain.}
 
 \item{verbose}{Optional. A boolean, whether to output intermediate results.}
 

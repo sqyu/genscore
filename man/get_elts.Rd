@@ -39,7 +39,7 @@ get_elts(
 
 \item{tol}{Optional. A positive number. If \code{setting != "gaussian" || domain$type != "R"}, function stops if any entry if smaller than -tol, and all entries between -tol and 0 are set to tol, for numerical stability and to avoid violating the assumption that \eqn{h(\mathbf{x})>0}{h(x)>0} almost surely.}
 
-\item{unif_dist}{Optional, defaults to \code{NULL}. If not \code{NULL}, \code{h_hp} must be \code{NULL} and \code{unif_dist(x)} must return a list containing \code{"g0"} of length \code{nrow(x)} and \code{"g0d"} of dimension \code{dim(x)}, representing the distance and the derivative of the distance to the boundary: the true distance function to the boundary is used for all coordinates in place of h_of_dist; see "Estimating Density Models with Complex Truncation Boundaries" by Liu et al, 2019. That is, \eqn{(h_j\circ \phi_j)(x_i)}{(h_j\circ phi_j)(xi)} in the score-matching loss is replaced by \eqn{g_0(x_i)}{g0(xi)}, the conventional "distance" of xi to the boundary of the domain.}
+\item{unif_dist}{Optional, defaults to \code{NULL}. If not \code{NULL}, \code{h_hp} must be \code{NULL} and \code{unif_dist(x)} must return a list containing \code{"g0"} of length \code{nrow(x)} and \code{"g0d"} of dimension \code{dim(x)}, representing the l2 distance and the gradient of the l2 distance to the boundary: the true l2 distance function to the boundary is used for all coordinates in place of h_of_dist; see "Estimating Density Models with Complex Truncation Boundaries" by Liu et al, 2019. That is, \eqn{(h_j\circ \phi_j)(x_i)}{(h_j\circ phi_j)(xi)} in the score-matching loss is replaced by \eqn{g_0(x_i)}{g0(xi)}, the l2 distance of xi to the boundary of the domain.}
 }
 \value{
 A list that contains the elements necessary for estimation.

@@ -406,3 +406,138 @@ compare_two_results <- function(res, res2){
   return (d)
 }
 
+#' Calculates the l2 distance to the boundary of the domain and its gradient for some domains.
+#'
+#' Calculates the l2 distance to the boundary of the domain and its gradient for some domains.
+#'
+#' @param domain A list returned from \code{make_domain()} that represents the domain.
+#' @param C A positive number, cannot be \code{Inf} if \code{domain$type == "R"}. If not \code{Inf}, the l2 distance will be truncated to \code{C}, i.e. the function returns \code{pmin(g0(x), C)} and its gradient.
+#' @details Calculates the l2 distance to the boundary of the domain, with the distance truncated above by a constant \code{C}. Matches the \code{g0} function and its gradient from Liu (2019) if \code{C == Inf} and domain is bounded.
+#' Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
+#' @return A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
+#' @examples
+#' n <- 100
+#' p <- 20
+#' K <- diag(p)
+#' eta <- numeric(p)
+#' 
+#' domain <- make_domain("R", p=p)
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#' 
+#' domain <- make_domain("R+", p=p)
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#' 
+#' domain <- make_domain("uniform", p=p, lefts=c(-Inf,-3,3), rights=c(-5,1,Inf))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#' 
+#' domain <- make_domain("simplex", p=p)
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' max(abs(get_g0(domain, 1)(x)$g0 - get_g0(domain, 1)(x[,-p])$g0))
+#' max(abs(get_g0(domain, 1)(x)$g0d - get_g0(domain, 1)(x[,-p])$g0d))
+#' 
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)>1.3", "nonnegative"=FALSE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#' 
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)<1.3", "nonnegative"=FALSE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#' 
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x)<1.3", "nonnegative"=FALSE, "abs"=TRUE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#' 
+#' @export
+get_g0 <- function(domain, C) {
+  if (C <= 0) stop("C must be positive.")
+  if (domain$type == "R") {
+    if (is.infinite(C)) stop("C cannot be infinite for R domains.")
+    unif_dist <- function(x) {
+      list("g0"=rep(C, nrow(x)), "g0d"=matrix(0, nrow=nrow(x), ncol=ncol(x)))
+    }
+  } else if (domain$type == "R+") {
+    unif_dist <- function(x) {
+      if (any(!in_bound(x, domain))) stop("x out of domain.")
+      dist_origin <- sqrt(rowSums(x^2))
+      list("g0"=pmin(dist_origin, C),
+           "g0d"=replicate(nrow(x), as.numeric(dist_origin < C)))
+    }
+  } else if (domain$type == "simplex") {
+    unif_dist <- function(x) {
+      if (any(!in_bound(x, domain))) stop("x out of domain.")
+      p <- domain$p
+      if (ncol(x) == domain$p) x <- x[,-p,drop=FALSE]
+      row_min <- apply(x, 1, min)
+      row_which_min <- apply(x, 1, which.min)
+      dist_to_sum_boundary <- apply(x, 1, function(xx){(1-sum(xx))/sqrt(p)})
+      grad_sum_boundary <- rep(-1/sqrt(p), p)
+      g0 <- pmin(row_min, dist_to_sum_boundary)
+      g0d <- t(sapply(1:nrow(x), function(i){
+        if (g0[i] >= C){ tmp <- numeric(p)
+        } else if (row_min[i] < dist_to_sum_boundary[i]){
+          tmp <- numeric(p); tmp[row_which_min[i]] <- 1
+        } else {tmp <- grad_sum_boundary}
+        tmp
+      }))
+      g0 <- pmin(g0, C)
+      list("g0"=g0, "g0d"=g0d)
+    }
+  } else if (domain$type == "uniform") {
+    unif_dist <- function(x) {
+      if (any(!in_bound(x, domain))) stop("x out of domain.")
+      bins <- matrix(sapply(c(x), function(xx){
+        for (i in 1:length(domain$lefts)) 
+          if (xx >= domain$lefts[i] && domain$rights[i] >= xx) return (i)
+        stop(xx, " out of bound.")
+      }), nrow=nrow(x))
+      dist_to_lefts <- x - domain$lefts[bins]
+      dist_to_rights <- domain$rights[bins] - x
+      right_closer <- dist_to_rights < dist_to_lefts
+      g0 <- sqrt(rowSums(pmin(dist_to_lefts, dist_to_rights)^2))
+      dist_to_lefts[right_closer] <- -dist_to_rights[right_closer]
+      dist_to_lefts[which(g0 >= C), ] <- 0
+      g0 <- pmin(g0, C)
+      g0d <- sweep(dist_to_lefts, 1, g0, "/") 
+      list("g0"=g0, "g0d"=g0d)
+    }
+  } else if (length(domain$ineqs)==1 && !domain$ineqs[[1]]$uniform
+             && all(domain$ineqs[[1]]$power_numers == 2)
+             && all(domain$ineqs[[1]]$power_denoms==1) 
+             && all(domain$ineqs[[1]]$coeffs == 1) 
+             && !domain$ineqs[[1]]$nonnegative) { # sum(x^2) <= d or sum(x^2) >= d
+    unif_dist <- function(x) {
+      if (any(!in_bound(x, domain))) stop("x out of domain.")
+      g0 <- apply(x, 1, function(xx){sqrt(domain$ineqs[[1]]$const) - sqrt(sum(xx^2))})
+      g0d <- t(apply(x, 1, function(xx){-xx/sqrt(sum(xx^2))}))
+      if (domain$ineqs[[1]]$larger) {
+        g0 <- -g0; g0d <- -g0d
+      }
+      g0d[which(g0 >= C), ] <- 0
+      list("g0"=pmin(g0, C), "g0d"=g0d)
+    }
+  } else if (length(domain$ineqs)==1 && !domain$ineqs[[1]]$uniform
+             && !domain$ineqs[[1]]$larger && all(domain$ineqs[[1]]$power_numers == 1)
+             && all(domain$ineqs[[1]]$power_denoms==1) 
+             && all(domain$ineqs[[1]]$coeffs == 1) 
+             && domain$ineqs[[1]]$abs
+             && !domain$ineqs[[1]]$nonnegative) { # sum(abs(x)) <= d
+    unif_dist <- function(x) {
+      if (any(!in_bound(x, domain))) stop("x out of domain.")
+      lambdas <- apply(x, 1, function(xx){(domain$ineqs[[1]]$const - sum(abs(xx))) / domain$p})
+      g0 <- lambdas * sqrt(domain$p)
+      g0d <- -sign(x) / sqrt(domain$p)
+      g0d[which(g0 >= C), ] <- 0
+      list("g0"=pmin(g0, C), "g0d"=g0d)
+    }
+  } else {
+    warning("g0 not available for requested domain type.")
+    unif_dist <- NULL
+  }
+  return (unif_dist)
+}
