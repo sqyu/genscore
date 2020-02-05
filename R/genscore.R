@@ -1851,9 +1851,9 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
     if (symmetric != "symmetric") #### This should be updated in the future
       stop("Asymmetric estimation not supported for models on the simplex.")
     if (elts$centered) {
-      test <- .C("simplex_centered", pIn=as.integer(elts$p), sum_to_zero=as.integer(sum_to_zero),
+      test <- .C("simplex_centered", p=as.integer(elts$p), sum_to_zero=as.integer(sum_to_zero),
                  Gamma_K=as.double(elts$Gamma_K), Gamma_K_jp=as.double(elts$Gamma_K_jp),
-                 g_K=as.double(elts$g_K), K=as.double(previous_res$K), lambda1In=as.double(lambda1),
+                 g_K=as.double(elts$g_K), K=as.double(previous_res$K), lambda1=as.double(lambda1),
                  tol=as.double(tol), maxit=as.integer(maxit), iters=as.integer(0), converged=as.integer(0), crit=as.double(0),
                   exclude=as.integer(exclude), previous_lambda1=as.double(previous_res$lambda1),
                   is_refit=as.integer(is_refit), diagonals_with_multiplier=as.double(elts$diagonals_with_multiplier), PACKAGE="genscore")
@@ -1861,13 +1861,13 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
     } else {
       if (elts$profiled_if_noncenter)
         stop("Profiled non-centered estimators not supported for models on the simplex.")
-      test <- .C("simplex_full", pIn=as.integer(elts$p), sum_to_zero=as.integer(sum_to_zero),
+      test <- .C("simplex_full", p=as.integer(elts$p), sum_to_zero=as.integer(sum_to_zero),
                  Gamma_K=as.double(elts$Gamma_K), Gamma_K_eta=as.double(elts$Gamma_K_eta),
                  Gamma_K_jp=as.double(elts$Gamma_K_jp), Gamma_Kj_etap=as.double(elts$Gamma_Kj_etap),
                  Gamma_Kp_etaj=as.double(elts$Gamma_Kp_etaj), Gamma_eta=as.double(elts$Gamma_eta),
                  Gamma_eta_jp=as.double(elts$Gamma_eta_jp), g_K=as.double(elts$g_K),
                  g_eta=as.double(elts$g_eta), K=as.double(previous_res$K), eta=as.double(previous_res$eta),
-                 lambda1In=as.double(lambda1), lambda2In=as.double(lambda2),
+                 lambda1=as.double(lambda1), lambda2=as.double(lambda2),
                  tol=as.double(tol), maxit=as.integer(maxit),
                  iters=as.integer(0), converged=as.integer(0), crit=as.double(0),
                  exclude=as.integer(exclude), exclude_eta=as.integer(exclude_eta),
@@ -1915,7 +1915,7 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
   }
   if ((!elts$centered) && elts$profiled_if_noncenter){
     if (elts$setting == "gaussian" && elts$domain_type == "R")
-      test$eta <- elts$t1 - test$K %*% elts$t2 ## Note: elts$t1 = 0
+      test$eta <- elts$t1 - elts$t2 %*% test$K ## Note: elts$t1 = 0
     else
       test$eta <- elts$t1 - sapply(1:elts$p, function(k){crossprod(elts$t2[(k-1)*elts$p+1:elts$p], test$K[,k])})
   }
@@ -2495,10 +2495,8 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
   convergeds <- numeric(lambda_length)
   iters <- numeric(lambda_length)
   s_output("Calculating estimates.", verbose, verbosetext)
-  if (verbose){
-    #  pb <- txtProgressBar(style=3)
+  if (verbose)
     checkpoints <- ceiling(c(0.1, 0.2, 0.5, 1:10) * lambda_length / 10)
-  }
   raw_estimates <- list()
   for (lambda_index in 1:lambda_length){
     if (!warmstart)
@@ -2531,8 +2529,6 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
       break
     }
   }
-  #if (verbose)
-  #  close(pb)
   s_output("Done.", verbose, verbosetext)
   return (list("edgess"=edgess,
                "etas"=switch(changed_from_nc_to_c+1, etas, matrix(0, nrow=lambda_length, ncol=p)),
@@ -2677,6 +2673,168 @@ eBIC <- function(res, elts, BIC_refit=TRUE, gammas=c(0,0.5,1)){
 }
 
 
+#' Calculates penalized or unpenalized loss in K and eta given arbitrary data
+#' 
+#' Calculates penalized or unpenalized loss in K and eta given arbitrary data
+#'
+#' @param elts An element list returned from \code{get_elts()}. Need not be the same as the elements used to estimate \code{res}, but they must be both centered or both non-centered, and their dimension \code{p} must match. \code{elts} cannot be profiled as this is supposed to be elements for a new data unseen by \code{res}, in which case the loss must be explicitly written in \code{K} and \code{eta} with \code{Gamma} and \code{g} from a new dataset \code{x}.
+#' @param res A result list returned from \code{get_results()}. Must be centered if \code{elts} is centered, and must be non-centered otherwise. Can be profiled. \code{res$p} must be equal to \code{elts$p}.
+#' @param penalty A boolean, indicates whether the loss should be penalized (using \code{elts$diagonals_with_multiplier}, \code{res$lambda1} and \code{res$lambda2}).
+#' @return A number, the loss.
+#' @details This function calculates the loss in some estimated \code{K} and \code{eta} given an \code{elts} generated using \code{get_elts()} with a new dataset \code{x}. This is helpful for cross-validation.
+#' @examples
+#' # In the following examples, all printed numbers should be close to 0.
+#' # In practice, \code{res} need not be estimates fit to \code{elts},
+#' # but in the examples we use \code{res <- get_results(elts)} just to 
+#' # demonstrate that the loss this function returns matches that returned
+#' # by the C code during estimation using \code{get_results}.
+#' 
+#' n <- 50
+#' p <- 30
+#' eta <- rep(0, p)
+#' K <- diag(p)
+#' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
+#'
+#' domains <- list(make_domain("R", p=p),
+#'                 make_domain("R+", p=p),
+#'                 make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3)),
+#'                 make_domain("polynomial", p=p, 
+#'                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))),
+#'                 make_domain("polynomial", p=p, 
+#'                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
+#'                 make_domain("polynomial", p=p, 
+#'                   ineqs=list(list("expression"=paste(paste(sapply(1:p,
+#'                      function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
+#'                      abs=FALSE, nonnegative=TRUE))),
+#'                 make_domain("simplex", p=p))
+#' for (domain in domains) {
+#'   if (domain$type == "R" || 
+#'        (domain$type == "uniform" && any(domain$lefts < 0)) || 
+#'        (domain$type == "polynomial" && !domain$ineqs[[1]]$nonnegative))
+#'     settings <- c("gaussian")
+#'   else if (domain$type == "simplex")
+#'     settings <- c("log_log", "log_log_sum0")
+#'   else
+#'     settings <- c("gaussian", "exp", "gamma", "log_log", "ab_3/4_2/3")
+#' 
+#'   if (domain$type == "simplex")
+#'     symms <- c("symmetric")
+#'   else
+#'     symms <- c("symmetric", "and", "or")
+#'   
+#'   for (setting in settings) {
+#'     x <- gen(n, setting=setting, abs=FALSE, eta=eta, K=K, domain=domain, 
+#'          finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
+#'     h_hp <- get_h_hp("min_pow", 1, 3)
+#'     
+#'     for (symm in symms) {
+#'        
+#'        # Centered, penalized loss
+#'        elts <- get_elts(h_hp, x, setting, domain, centered=TRUE, scale="", diag=dm)
+#'        res <- get_results(elts, symm, 0.1)
+#'        print(calc_crit(elts, res, penalty=TRUE) - res$crit) # Close to 0
+#' 
+#'        # Non-centered, unpenalized loss
+#'        elts_nopen <- get_elts(h_hp, x, setting, domain, centered=TRUE, scale="", diag=1)
+#'        res_nopen <- get_results(elts_nopen, symm, 0)
+#'        print(calc_crit(elts_nopen, res_nopen, penalty=FALSE) - res_nopen$crit) # Close to 0
+#' 
+#'        # Non-centered, non-profiled, penalized loss
+#'        elts_nc_np <- get_elts(h_hp, x, setting, domain, centered=FALSE,
+#'          profiled_if_noncenter=FALSE, scale="", diag=dm)
+#'        res_nc_np <- get_results(elts_nc_np, symm, lambda1=0.1, lambda2=0.05)
+#'        print(calc_crit(elts_nc_np, res_nc_np, penalty=TRUE) - res_nc_np$crit) # Close to 0
+#' 
+#'        # Non-centered, non-profiled, unpenalized loss
+#'        elts_nc_np_nopen <- get_elts(h_hp, x, setting, domain, centered=FALSE,
+#'          profiled_if_noncenter=FALSE, scale="", diag=1)
+#'        res_nc_np_nopen <- get_results(elts_nc_np_nopen, symm, lambda1=0, lambda2=0)
+#'        print(calc_crit(elts_nc_np_nopen, res_nc_np_nopen, penalty=FALSE) - 
+#'          res_nc_np_nopen$crit) # Close to 0
+#'       
+#'        if (domain$type != "simplex") {
+#'          # Non-centered, profiled, penalized loss
+#'          elts_nc_p <- get_elts(h_hp, x, setting, domain, centered=FALSE,
+#'            profiled_if_noncenter=TRUE, scale="", diag=dm)
+#'          res_nc_p <- get_results(elts_nc_p, symm, lambda1=0.1)
+#'          if (elts_nc_np$setting != setting || elts_nc_np$domain_type != "R")
+#'            res_nc_p$crit <- res_nc_p$crit - sum(elts_nc_np$g_eta ^ 2 / elts_nc_np$Gamma_eta) / 2
+#'          print(calc_crit(elts_nc_np, res_nc_p, penalty=TRUE) - res_nc_p$crit)  # Close to 0
+#'          # Note that the elts argument cannot be profiled, so
+#'          # calc_crit(elts_nc_p, res_nc_p, penalty=TRUE) is not allowed 
+#' 
+#'          # Non-centered, profiled, unpenalized loss
+#'          elts_nc_p_nopen <- get_elts(h_hp, x, setting, domain, centered=FALSE,
+#'            profiled_if_noncenter=TRUE, scale="", diag=1)
+#'          res_nc_p_nopen <- get_results(elts_nc_p_nopen, symm, lambda1=0)
+#'          if (elts_nc_np_nopen$setting != setting || elts_nc_np_nopen$domain_type != "R")
+#'            res_nc_p_nopen$crit <- (res_nc_p_nopen$crit - 
+#'               sum(elts_nc_np_nopen$g_eta ^ 2 / elts_nc_np_nopen$Gamma_eta) / 2)
+#'          print(calc_crit(elts_nc_np_nopen, res_nc_p_nopen, penalty=TRUE) - 
+#'            res_nc_p_nopen$crit) # Close to 0
+#'           # Again, calc_crit(elts_nc_p_nopen, res_nc_p, penalty=TRUE) is not allowed 
+#'        } # if domain$type != "simplex"
+#'        
+#'     } # for symm in symms
+#'   } # for setting in settings
+#' } # for domain in domains
+#' @export
+calc_crit <- function(elts, res, penalty) {
+  if (!elts$centered && elts$profiled)
+    stop("In calc_crit(): elts must not be profiled if noncentered.")
+  if (elts$centered != is.null(res$eta))
+    stop("elts and res must be both centered or both noncentered.")
+  if (elts$p != res$p)
+    stop("elts$p and res$p must be equal.")
+  if (penalty) {
+    if (elts$setting == "gaussian" && elts$domain_type == "R")
+      diag(elts$Gamma_K) <- elts$diagonals_with_multiplier
+    else
+      elts$Gamma_K[(1:(p*p)-1)*p + 1:p] <- elts$diagonals_with_multiplier
+  }
+  if (elts$setting == "gaussian" && elts$domain_type == "R") {
+    crit <- sum(sapply(1:elts$p, function(i){
+      crossprod(res$K[,i], elts$Gamma_K) %*% res$K[,i]})) / 2 - sum(diag(res$K))
+    if (!elts$centered) {
+      crit <- crit + sum(sapply(1:elts$p, function(i){
+        sum(res$K[,i] * elts$Gamma_K_eta) * res$eta[i]
+      })) + sum(res$eta ^ 2) / 2
+    }
+  } else {
+    crit <- sum(sapply(1:elts$p, function(i){
+      crossprod(res$K[,i], elts$Gamma_K[, (i-1)*p+1:p] %*% res$K[,i] / 2 - 
+                  elts$g_K[(i-1)*p+1:p])
+    }))
+    if (!elts$centered) {
+      crit <- crit + sum(sapply(1:elts$p, function(i){
+        crossprod(res$K[,i], elts$Gamma_K_eta[,i]) * res$eta[i]
+      })) - sum(res$eta * elts$g_eta) + sum(res$eta ^ 2 * elts$Gamma_eta) / 2
+    }
+    if (elts$domain_type == "simplex") {
+        crit <- crit + sum(sapply(1:(p-1), function(i){
+          res$K[,i] %*% elts$Gamma_K_jp[, (i-1)*p+1:p] %*% res$K[,elts$p]
+        }))
+        if (!elts$centered) {
+          crit <- crit + sum(sapply(1:(p-1), function(i){
+            res$K[,i] %*% elts$Gamma_Kj_etap[,i] * res$eta[elts$p] +
+              res$K[elts$p,] %*% elts$Gamma_Kp_etaj[,i] * res$eta[i] +
+              res$eta[i] * elts$Gamma_eta_jp[i] * res$eta[elts$p]
+          }))
+        }
+    }
+  }
+  if (penalty) {
+    crit <- crit + res$lambda1 * sum(abs(res$K[diag(p) == 0]))
+    if (!is.null(res$lambda2)) # res$lambda2 is NULL if res is centered or profiled
+      crit <- crit + res$lambda2 * sum(abs(res$eta))
+    if (elts$domain_type == "simplex") {
+      crit <- crit + (elts$p-2) * res$lambda1 * sum(abs(res$K[-elts$p,elts$p])+abs(res$K[elts$p,-elts$p]))
+      if (!is.null(res$lambda2))
+        crit <- crit + (elts$p-2) * res$lambda2 * abs(res$eta[elts$p])
+    }    
+  }
+  return (crit)
+}
 
 
 #' Minimized loss for unpenalized restricted asymmetric models.
@@ -2713,6 +2871,8 @@ eBIC <- function(res, elts, BIC_refit=TRUE, gammas=c(0,0.5,1)){
 #' get_crit_nopenalty(elts_gauss_np, previous_res=res_nc_np)
 #' @export
 get_crit_nopenalty <- function(elts, exclude=NULL, exclude_eta=NULL, previous_res=NULL){
+  if (elts$setting %in% c("log_log", "log_log_sum0") || elts$domain_type == "simplex")
+    stop("get_crit_nopenalty() not supported for log_log and log_log_sum0 settings and simplex domains.")
   tryCatch({
     if (!is.null(previous_res)){
       exclude_given <- !is.null(exclude)
@@ -2763,6 +2923,7 @@ get_crit_nopenalty <- function(elts, exclude=NULL, exclude_eta=NULL, previous_re
     } else {stop(s)}
   })
 }
+
 
 ############### 1-D ###############
 #' The Cram\'er-Rao lower bound (times \code{n}) for estimating the mean parameter from a univariate truncated normal sample with known variance parameter.

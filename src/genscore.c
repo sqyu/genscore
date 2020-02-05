@@ -1,4 +1,4 @@
-/* Compile with R CMD SHLIB arms.c utils.c set_ops.c domain.c genscore.c sampling.c tests.c simplex_genscore.c -o genscore.so
+/* Compile with R CMD SHLIB arms.c domain.c genscore.c sampling.c set_ops.c simplex_genscore.c tests.c utils.c -o genscore.so
  Update in 1002 from 0928: added sampler for the general a/b setting; in gibbs_one_round with gamma FALSE, A = Theta[j] now becomes Theta[j] * 2, reflecting the fact that the linear part in the formulation of the exp density changed from Theta%*%sqrt(x) to (Theta%*%((x^1/2-1)/(1/2))), as in the general a/b setting
  Thus, 1002.rsqrt_gibbs_one_round(...,Theta,...) is the same as 0928.rsqrt_gibbs_one_round(...,Theta*2,...)
  Update in genscore on 20190415: renamed rsqrt_gibbs_one_round to rexp_gamma_reject and renamed rsqrt_gibbs_one_round_ab to rab_arms
