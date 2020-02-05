@@ -2790,7 +2790,7 @@ calc_crit <- function(elts, res, penalty) {
     if (elts$setting == "gaussian" && elts$domain_type == "R")
       diag(elts$Gamma_K) <- elts$diagonals_with_multiplier
     else
-      elts$Gamma_K[(1:(p*p)-1)*p + 1:p] <- elts$diagonals_with_multiplier
+      elts$Gamma_K[(1:(elts$p*elts$p)-1)*elts$p + 1:elts$p] <- elts$diagonals_with_multiplier
   }
   if (elts$setting == "gaussian" && elts$domain_type == "R") {
     crit <- sum(sapply(1:elts$p, function(i){
@@ -2802,8 +2802,8 @@ calc_crit <- function(elts, res, penalty) {
     }
   } else {
     crit <- sum(sapply(1:elts$p, function(i){
-      crossprod(res$K[,i], elts$Gamma_K[, (i-1)*p+1:p] %*% res$K[,i] / 2 - 
-                  elts$g_K[(i-1)*p+1:p])
+      crossprod(res$K[,i], elts$Gamma_K[, (i-1)*elts$p+1:elts$p] %*% res$K[,i] / 2 - 
+                  elts$g_K[(i-1)*elts$p+1:elts$p])
     }))
     if (!elts$centered) {
       crit <- crit + sum(sapply(1:elts$p, function(i){
@@ -2811,11 +2811,11 @@ calc_crit <- function(elts, res, penalty) {
       })) - sum(res$eta * elts$g_eta) + sum(res$eta ^ 2 * elts$Gamma_eta) / 2
     }
     if (elts$domain_type == "simplex") {
-        crit <- crit + sum(sapply(1:(p-1), function(i){
-          res$K[,i] %*% elts$Gamma_K_jp[, (i-1)*p+1:p] %*% res$K[,elts$p]
+        crit <- crit + sum(sapply(1:(elts$p-1), function(i){
+          res$K[,i] %*% elts$Gamma_K_jp[, (i-1)*elts$p+1:elts$p] %*% res$K[,elts$p]
         }))
         if (!elts$centered) {
-          crit <- crit + sum(sapply(1:(p-1), function(i){
+          crit <- crit + sum(sapply(1:(elts$p-1), function(i){
             res$K[,i] %*% elts$Gamma_Kj_etap[,i] * res$eta[elts$p] +
               res$K[elts$p,] %*% elts$Gamma_Kp_etaj[,i] * res$eta[i] +
               res$eta[i] * elts$Gamma_eta_jp[i] * res$eta[elts$p]
@@ -2824,7 +2824,7 @@ calc_crit <- function(elts, res, penalty) {
     }
   }
   if (penalty) {
-    crit <- crit + res$lambda1 * sum(abs(res$K[diag(p) == 0]))
+    crit <- crit + res$lambda1 * sum(abs(res$K[diag(elts$p) == 0]))
     if (!is.null(res$lambda2)) # res$lambda2 is NULL if res is centered or profiled
       crit <- crit + res$lambda2 * sum(abs(res$eta))
     if (elts$domain_type == "simplex") {
