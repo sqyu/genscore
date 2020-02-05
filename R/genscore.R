@@ -183,7 +183,7 @@ h_of_dist <- function(h_hp, x, domain) {
   dpx <- dists$dpx # Derivative of distance to boundary, 1 if closer to left boundary, -1 if right, 0 if equal or at boundary of domain is entire R
   h_hp_dx <- h_hp(dx) # h(dist to boundary) and h'(dist to boundary)
   hdx <- h_hp_dx$hx # h(dist to boundary)
-
+  
   hpdx <- h_hp_dx$hpx # h'(dist to boundary(x)) = h'(dist to boundary) * dist'(x)
   hpdx[dpx == 0] <- 0 # Instead of doing h_hp_dx$hpx * dpx, this would avoid Inf * 0 = NaN
   hpdx[dpx == -1] <- -hpdx[dpx == -1]
@@ -739,14 +739,14 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
   sum_h_over_xmsq <- rowSums(hdx) / x[,p]^2
   hp_over_x_nop <- hpdx / x[,-p]
   sum_hp_over_xm <- rowSums(hpdx) / x[,p]
-
+  
   g_K <- crossprod(logx, cbind(hp_over_x_nop - h_over_xsq_nop, -sum_h_over_xmsq - sum_hp_over_xm))/n
   g_K[-p,-p] <- g_K[-p,-p] + diag(colMeans(h_over_xsq_nop))
   tmp <- colMeans(minus_h_over_x_xp_nop)
   g_K[p,-p] <- g_K[p,-p] + tmp
   g_K[-p,p] <- g_K[-p,p] + tmp
   g_K[p,p] <- g_K[p,p] + mean(sum_h_over_xmsq)
-
+  
   if (centered) {
     Gamma_K <- Reduce(cbind, lapply(1:(p-1), function(j){t(logx) %*% diag(h_over_xsq_nop[,j]) %*% logx / n}))
     Gamma_K <- cbind(Gamma_K, t(logx) %*% diag(sum_h_over_xmsq) %*% logx / n)
@@ -758,23 +758,23 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
     Gamma_K_eta <- cbind(Gamma_K0[-p-1, c(1:(p-1))*(p+1)]) # p * (p-1), interactions between K_j and eta_j (j!=p)
     Gamma_eta <- c(Gamma_K0[p+1, c(1:(p-1))*(p+1)]) # p-1, coefficient on eta_j^2 (j!=p)
     remove(Gamma_K0)
-
+    
     Gamma_K0_jp <- Reduce(cbind, lapply(1:(p-1), function(j){t(logx_m1) %*% diag(minus_h_over_x_xp_nop[,j]) %*% logx_m1 / n}))
     Gamma_K_jp <- Gamma_K0_jp[-p-1, -c(1:(p-1))*(p+1)]  # p * p(p-1), interactions between K_j (j!=p) and K_p, (p-1) blocks
     Gamma_K_eta_jp <- Gamma_K0_jp[-p-1, c(1:(p-1))*(p+1)] # p * (p-1), interactions between Kj (j!=p) and etap, or Kp and etaj (j!=p)
     Gamma_eta_jp <- Gamma_K0_jp[p+1, c(1:(p-1))*(p+1)] # p-1, interaction between eta_j (j!=p) and eta_p
     remove(Gamma_K0_jp)
-
+    
     Gamma_Kp0 <- t(logx_m1) %*% diag(sum_h_over_xmsq) %*% logx_m1 / n
     Gamma_K <- cbind(Gamma_K, Gamma_Kp0[1:p, 1:p]) # p * p^2, interaction matrix for K_j (including j=p)
     Gamma_K_eta <- cbind(Gamma_K_eta, Gamma_Kp0[1:p, p+1]) # p * p, interactions between K_j and eta_j (including j=p)
     Gamma_eta <- c(Gamma_eta, Gamma_Kp0[p+1, p+1]) # p, coefficient on eta_j^2 (including j=p)
     remove(Gamma_Kp0)
-
+    
     g_eta <- c(colMeans(h_over_xsq_nop - hp_over_x_nop),
                mean(sum_h_over_xmsq + sum_hp_over_xm))
   }
-
+  
   if (sum_to_zero) {
     g_K <- t(t(g_K) - diag(g_K)) # g_j <- g_j - g_jj
     # Subtract j-th column from all columns of mat
@@ -1011,10 +1011,10 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
       stop("Currently only log_log and log_log_sum0 are supported for simplex domains.")
   } else if (setting == "log_log_sum0")
     stop("log_log_sum0 only supported for simplex domains.")
-
+  
   n <- dim(x)[1]; p <- dim(x)[2]
   if (tol <= 0) {stop("tol must be >= 0.")}
-
+  
   ### Violates the assumption that h(x)>0 almost surely since each column will have at least one 0
   #if (substr(scale, 1,3) == "min")
   #  x <- t(t(x)-apply(x, 2, min))
@@ -1112,8 +1112,8 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
         return (list("n"=n, "p"=p, "g_K"=res$g1, "Gamma_K"=matrix(res$Gamma,nrow=p,ncol=p^2), "t1"=res$g2, "t2"=matrix(res$Gamma12,p,p), "centered"=FALSE, "scale"=scale, "profiled_if_noncenter"=TRUE, "diagonal_multiplier"=diagonal_multiplier, "diagonals_with_multiplier"=res$diagonals_with_multiplier, setting=setting, "domain_type"=domain$type))
       }
     } else {return (c(get_elts_loglog(hdx, hpdx, x, setting, centered=centered,
-                                    profiled_if_noncenter=profiled_if_noncenter,
-                                    scale=scale, diagonal_multiplier=diagonal_multiplier), domain_type=domain$type))}
+                                      profiled_if_noncenter=profiled_if_noncenter,
+                                      scale=scale, diagonal_multiplier=diagonal_multiplier), domain_type=domain$type))}
   } else if (domain$type == "simplex" && (setting == "log_log" || setting == "log_log_sum0")) {
     sum_to_zero <- (setting == "log_log_sum0")
     if (use_C){
@@ -1162,8 +1162,8 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
       if (centered == FALSE && profiled_if_noncenter)
         stop("Profiled estimator not available for log_log on simplex domains.")
       return (c(get_elts_loglog_simplex(hdx, hpdx, x, setting,
-                                      centered=centered, profiled_if_noncenter=FALSE,
-                                      scale=scale, diagonal_multiplier=diagonal_multiplier), domain_type=domain$type))
+                                        centered=centered, profiled_if_noncenter=FALSE,
+                                        scale=scale, diagonal_multiplier=diagonal_multiplier), domain_type=domain$type))
     }
   } else { # Only left option: ab models
     if (!startsWith(setting, "ab_"))
@@ -1317,8 +1317,8 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
     Sigma <- solve(K)
     return (mvtnorm::rmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma))
   } else if (setting == "gaussian" && (
-      domain$type == "R+" || 
-      (domain$type == "uniform" && length(domain$lefts) == 1))) {
+    domain$type == "R+" || 
+    (domain$type == "uniform" && length(domain$lefts) == 1))) {
     if (!requireNamespace("tmvtnorm", quietly = TRUE))
       stop("Please install package \"tmvtnorm\".")
     if (domain$type == "R+") {left <- 0; right <- Inf
@@ -1541,18 +1541,18 @@ get_dist <- function(x, domain){
       stop("If x is a dimensionless vector, its length must be domain$p = ", domain$p, " (or ", domain$p_deemed, " for simplex). Otherwise it must be a matrix with ", domain$p, " (or ", domain$p_deemed, " for simplex) columns.")
     x <- matrix(x, nrow=1)
   }
-
+  
   if (domain$type == "simplex" && ncol(x) == domain$p)
     x <- x[, 1:domain$p_deemed]
   if (ncol(x) != domain$p_deemed)
     stop("x must have domain$p = ", domain$p, " (or ", domain$p_deemed, " for simplex) columns.")
   if (!"checked" %in% names(domain))
     stop("domain must be an object returned by make_domain().")
-
+  
   inbound <- in_bound(x, domain)
   if (!all(inbound))
     stop("Row number(s) of x provided not in domain: ", paste(which(!inbound), collapse=", "))
-
+  
   if (domain$type %in% c("uniform", "polynomial", "simplex")) {
     res <- do.call(".C",
                    c(list("dist", n=as.integer(nrow(x)),
@@ -1817,7 +1817,7 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
     if (lambda1 != 0 && abs(previous_res$lambda1-lambda1)/lambda1 <= tol &&
         (elts$centered || elts$profiled_if_noncenter ||
          (is.infinite(lambda2) && is.infinite(previous_res$lambda2)) ||
-          (!is.infinite(lambda2) && lambda2 != 0 && abs(previous_res$lambda2-lambda2)/lambda2 <= tol)) &&
+         (!is.infinite(lambda2) && lambda2 != 0 && abs(previous_res$lambda2-lambda2)/lambda2 <= tol)) &&
         previous_res$symmetric == symmetric &&
         maxit == previous_res$maxit &&
         tol != 0 && abs(previous_res$tol-tol)/tol <= tol &&
@@ -1855,8 +1855,8 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
                  Gamma_K=as.double(elts$Gamma_K), Gamma_K_jp=as.double(elts$Gamma_K_jp),
                  g_K=as.double(elts$g_K), K=as.double(previous_res$K), lambda1=as.double(lambda1),
                  tol=as.double(tol), maxit=as.integer(maxit), iters=as.integer(0), converged=as.integer(0), crit=as.double(0),
-                  exclude=as.integer(exclude), previous_lambda1=as.double(previous_res$lambda1),
-                  is_refit=as.integer(is_refit), diagonals_with_multiplier=as.double(elts$diagonals_with_multiplier), PACKAGE="genscore")
+                 exclude=as.integer(exclude), previous_lambda1=as.double(previous_res$lambda1),
+                 is_refit=as.integer(is_refit), diagonals_with_multiplier=as.double(elts$diagonals_with_multiplier), PACKAGE="genscore")
       test$Gamma_K_jp <- NULL
     } else {
       if (elts$profiled_if_noncenter)
@@ -2053,7 +2053,7 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
     if (lambda_start <= 0) stop ("lambda_start must be positive if provided.")
     lambda_cur_res <- list("lambda"=lambda_start)
   } else
-      lambda_cur_res <- list("lambda"=ifelse(lower, 1e-4, 1))
+    lambda_cur_res <- list("lambda"=ifelse(lower, 1e-4, 1))
   step <- 10
   while (step >= 1.5^(1/4)){
     if (verbose)
@@ -2164,13 +2164,13 @@ lambda_max <- function(elts, symmetric, lambda_ratio=Inf){
       stop("Profiled non-centered estimators not supported for models on the simplex.")
     K_grad_from_eta <- function(elts, eta) { # \Gamma_{K,eta} %*% \eta in paper
       return (c(sapply(1:(p-1), function(i){elts$Gamma_K_eta[,i]*eta[i] + elts$Gamma_Kj_etap[,i]*eta[p]}),
-               elts$Gamma_K_eta[,p]*eta[p] + elts$Gamma_Kp_etaj %*% eta[-p]))
+                elts$Gamma_K_eta[,p]*eta[p] + elts$Gamma_Kp_etaj %*% eta[-p]))
     }
     K_grad_from_Kdiag <- function(elts, Kdiag) { # \Gamma_K %*% K in paper, assuming only the diagonals of K are non-zero
       return (c(sapply(1:(p-1), function(i){
         elts$Gamma_K[,(i-1)*p+i]*Kdiag[i] + elts$Gamma_K_jp[,i*p]*Kdiag[p]}),
         rowSums(sapply(1:(p-1), function(i){elts$Gamma_K_jp[i,(i-1)*p+1:p]*Kdiag[i]})) +
-        elts$Gamma_K[,p*p]*Kdiag[p]))
+          elts$Gamma_K[,p*p]*Kdiag[p]))
     }
     if (grepl("sum0", elts$setting)) { # If K assumed to sum to 0, then lambda_max corresponds to K = 0.
       if (!elts$centered && is.infinite(lambda_ratio)) { # Non-centered with no penalty on eta (in which case we only care about when K is all 0)
@@ -2219,7 +2219,7 @@ lambda_max <- function(elts, symmetric, lambda_ratio=Inf){
           return (max(gK_max, tol))
         } else { # Non-centered and has penalty on eta
           g_eta <- c(diag(elts$Gamma_K_eta)[-p] * K_init_diag[-p] + elts$Gamma_Kp_etaj[p,] * K_init_diag[p],
-          sum(diag(elts$Gamma_Kj_etap) * K_init_diag[-p]) + elts$Gamma_K_eta[p,p] * K_init_diag[p]) - elts$g_eta
+                     sum(diag(elts$Gamma_Kj_etap) * K_init_diag[-p]) + elts$Gamma_K_eta[p,p] * K_init_diag[p]) - elts$g_eta
           g_eta[p] <- g_eta[p] / (p-1)
           return (max(gK_max, max(abs(g_eta)) * lambda_ratio, tol))
         }
@@ -2255,6 +2255,24 @@ s_output <- function(out, verbose, verbosetext){
     cat(verbosetext, out, "\n")
 }
 
+#' Helper function for making fold IDs for cross validation.
+#' @param nsamp Number of samples.
+#' @param nfold Number of cross validation folds.
+#' @param cv_fold_seed Seed for random shuffling.
+#' @return A list of \code{nsamp} vectors, numbers 1 to \code{nsamp} shuffled and groupped into vectors of length \code{floor(nsamp/nfold)} followed by vectors of length \code{floor(nsamp/nfold)+1}.
+#' @examples
+#' make_folds(37, 5, NULL)
+#' make_folds(100, 5, 2)
+#' make_folds(100, 10, 3)
+#' @export
+make_folds <- function(nsamp, nfold, cv_fold_seed){
+  if (!is.null(cv_fold_seed)) set.seed(cv_fold_seed)
+  id <- sample(nsamp, nsamp)
+  every <- floor(nsamp / nfold)
+  ends <- cumsum(c(0,rep(every, nfold-(nsamp-nfold*every)), rep(every+1, nsamp-nfold*every)))
+  return (lapply(1:nfold, function(i){id[(ends[i]+1):ends[i+1]]}))
+}
+
 #' The main function for the generalized score-matching estimator for graphical models.
 #'
 #' The main function for the generalized score-matching estimator for graphical models.
@@ -2282,17 +2300,26 @@ s_output <- function(out, verbose, verbosetext){
 #' @param warmstart Optional. A boolean, whether to use the results from a previous (larger) lambda as a warm start for each new lambda. Default to \code{TRUE}.
 #' @param diagonal_multiplier A number >= 1, the diagonal multiplier. Optional and ignored if elts is provided. If \code{ncol(x) > ncol(n)}, a value strictly larger than 1 is recommended. Default to \eqn{1+\left(1-\left(1+4e\max\left(6\log p/n, \sqrt{6\log p/n}\right)\right)^{-1}\right)}{1+(1-1/(1+4e*max(6*log(p)/n, sqrt(6*log(p)/n))))}.
 #' @param eBIC_gammas Optional. A number of a vector of numbers. The \eqn{\gamma} parameter in eBIC. Default to \code{c(0,0.5,1)}.
+#' @param cv_fold Optional. An integer larger than 1 if provided. The number of folds used for cross validation. If provided, losses will be calculated on each fold with model fitted on the other folds, and a \code{lambda_length x cv_fold} matrix \code{cv_losses} will be returned.
+#' @param cv_fold_seed Optional. Seed for generating folds for cross validation.
 #' @param return_raw A boolean, whether to return the raw estimates of \code{K}. Default to \code{FALSE}.
 #' @return
 #'    \item{edgess}{A list of vectors of integers: indices of the non-zero edges.}
-#'    \item{etas}{If applicable, a \code{lambda_length}*\code{p} matrix of \code{eta} estimates with the \eqn{i}-th row corresponding to the \eqn{i}-th \code{lambda1}, and may contain \code{NA}s after the first lambda that gives the complete graph. Otherwise \code{NULL}.}
 #'    \item{BICs}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of raw eBIC scores (without refitting). May contain \code{Inf}s for rows after the first lambda that gives the complete graph.}
-#'    \item{BIC_refits}{\code{NULL} if \code{BIC_refit == FALSE}, otherwise a \code{lambda_length} by \code{length(eBIC_gammas)} matrix of refitted eBIC scores, obtained by refitting unpenalized models restricted to the estimated edges. May contain \code{Inf}s for rows after the first lambda that gives the graph restricted to which an unpenalized model does not have a solution (loss unbounded from below).}
 #'    \item{lambda1s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda1}s over which the estimates are obtained.}
-#'    \item{lambda2s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda2}s over which the estimates are obtained, if applicable, otherwise \code{NULL}.}
 #'    \item{converged}{A vector of booleans of length \code{lambda_length}: indicators of convergence for each fit. May contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
 #'    \item{iters}{A vector of integers of length \code{lambda_length}: the number of iterations run for each fit. May contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
 #'    \item{raw_estimate}{An empty list if \code{return_raw == FALSE}, otherwise a list that contains \code{lambda_length} estimates for \code{K} of size \code{ncol(x)}*\code{ncol(x)}. May contain \code{ncol(x)}*\code{ncol(x)} matrices of \code{NA}s for all lambdas after the first lambda that gives the complete graph.}
+#'    
+#'    In addition,
+#'    if \code{centered == FALSE},
+#'    \item{etas}{A \code{lambda_length}*\code{p} matrix of \code{eta} estimates with the \eqn{i}-th row corresponding to the \eqn{i}-th \code{lambda1}, and may contain \code{NA}s after the first lambda that gives the complete graph. Otherwise \code{NULL}.}
+#'    if \code{centered == FALSE} and non-profiled,
+#'    \item{lambda2s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda2}s over which the estimates are obtained.}
+#'    if \code{BIC_refit == TRUE},
+#'    \item{BIC_refits}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of refitted eBIC scores, obtained by refitting unpenalized models restricted to the estimated edges. May contain \code{Inf}s for rows after the first lambda that gives the graph restricted to which an unpenalized model does not have a solution (loss unbounded from below).}
+#'    if \code{cv_fold} is not \code{NULL},
+#'    \item{cv_losses}{A \code{lambda_length x cv_fold} matrix}
 #' @examples
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, 
@@ -2360,22 +2387,26 @@ s_output <- function(out, verbose, verbosetext){
 #'
 #'
 #' ## Non-centered estimates, no elts or h provided, mode and params provided
+#' ## Using 5-fold cross validation and no BIC refit
 #' est8 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
 #'           lambda_ratio=2, symmetric="and", lambda_length=100,
-#'           mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE)
+#'           mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE,
+#'           BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 #'
 #' ## Non-centered estimates, no elts provided, h provided; equivalent to est5
+#' ## Using 5-fold cross validation and no BIC refit
 #' est9 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
-#'           lambda_ratio=2, symmetric="and", lambda_length=100,
-#'           h_hp=h_hp, diag=dm, return_raw=TRUE)
+#'           lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp, 
+#'           diag=dm, return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 #' compare_two_results(est8, est9) ## Should be almost all 0
 #'
 #' elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=FALSE,
 #'                 profiled=FALSE, diag=dm)
 #' ## Non-centered estimates, elts provided; equivalent to est8~9
-#' est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np,
-#'            centered=FALSE, lambda_ratio=2, symmetric="and",
-#'            lambda_length=100, diag=NULL, return_raw=TRUE)
+#' ## Using 5-fold cross validation and no BIC refit
+#' est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np, centered=FALSE, 
+#'            lambda_ratio=2, symmetric="and", lambda_length=100, diag=NULL, 
+#'            return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 #' compare_two_results(est8, est10) ## Should be almost all 0
 #'
 #' @export
@@ -2383,7 +2414,7 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
                      lambda1s=NULL, lambda_length=NULL, lambda_ratio=Inf, mode=NULL, param1=NULL,
                      param2=NULL, h_hp=NULL, unif_dist=NULL, verbose=TRUE, verbosetext="", tol=1e-6, maxit=1000,
                      BIC_refit=TRUE, warmstart=TRUE, diagonal_multiplier=NULL, eBIC_gammas=c(0,0.5,1),
-                     return_raw=FALSE){
+                     cv_fold=NULL, cv_fold_seed=NULL, return_raw=FALSE){
   ## BIC_refit: calculate BIC (with refit) or not
   ## return_raw: return the raw estimates or not
   ## If elts is given, centered, scale, mode, param1, param2, h, hp are all ignored
@@ -2394,7 +2425,7 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
     diagonal_multiplier <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
   if (!is.null(elts) && setting != elts$setting)
     stop(paste("The setting you chose was ", setting, ", but elts$setting was ", elts$setting, ".", sep=""))
-
+  
   changed_from_nc_to_c <- FALSE
   if (lambda_ratio == 0) {
     centered <- changed_from_nc_to_c <- TRUE;
@@ -2461,6 +2492,8 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
       #  stop(paste("h(0)=", h(0), ", larger than 0. Stopped.", sep=""))
     }
   }
+  if (!is.null(cv_fold) && (cv_fold %% 1 != 0 || cv_fold <= 1))
+    stop("cv_fold must be an integer larger than 1 if provided.")
   s_output("Calculating elements necessary for estimation.", verbose, verbosetext)
   if (is.null(elts))
     elts <- get_elts(h_hp, x, setting, domain, centered=centered,
@@ -2512,9 +2545,10 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
     BICs[lambda_index, ] <- eBIC(res, elts, BIC_refit=BIC_refit, gammas=eBIC_gammas)
     #if (BIC_refit && any(is.infinite(BICs[lambda_index, (length(eBIC_gammas)+1):(2*length(eBIC_gammas))]))) ## If asked for BIC with refit but the BIC is infinity
     #  warning("Design sub-matrix not invertible, returning Inf eBIC.\n")
-    if (verbose && lambda_length > 10 && lambda_index %in% checkpoints)
-      s_output(paste(floor(lambda_index/lambda_length*100), "% done", sep=""), verbose, verbosetext)
-    #setTxtProgressBar(pb, lambda_index / lambda_length)
+    if (verbose && lambda_length > 10 && lambda_index %in% checkpoints) {
+      pretext <- ifelse (is.null(cv_fold), "", "Entire dataset: ")
+      s_output(paste(pretext, floor(lambda_index/lambda_length*100), "% done", sep=""), verbose, verbosetext)
+    }
     if (length(res$edges) == elts$p*(elts$p-1) && lambda_index < lambda_length){ ## If all edges are selected for some lambda, end early
       BICs[(lambda_index+1):lambda_length, ] <- Inf
       convergeds[(lambda_index+1):lambda_length] <- 0#convergeds[lambda_index]
@@ -2529,6 +2563,29 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
       break
     }
   }
+  if (!is.null(cv_fold)) {
+    ids <- make_folds(n, cv_fold, cv_fold_seed)
+    cv_losses <- matrix(Inf, nrow=lambda_length, ncol=cv_fold)
+    res <- NULL
+    for (fold in 1:cv_fold) {
+      this_ids <- ids[[fold]]; rest_ids <- Reduce("c", (ids[c(-fold)]))
+      elts_this <- get_elts(h_hp, x[this_ids,], setting, domain, centered=centered,
+                            profiled_if_noncenter = FALSE, scale=scale, diagonal_multiplier=1,
+                            unif_dist=unif_dist)
+      elts_rest <- get_elts(h_hp, x[rest_ids,], setting, domain, centered=centered,
+                            profiled_if_noncenter = is.infinite(lambda_ratio) && (domain$type != "simplex"), # profiled not supported for models on the simplex
+                            scale=scale, diagonal_multiplier=diagonal_multiplier, unif_dist=unif_dist)
+      for (lambda_index in 1:lambda_length){
+        if (!warmstart)
+          res <- NULL
+        res <- get_results(elts_rest, symmetric, lambda1=lambda1s[lambda_index], lambda2=lambda1s[lambda_index]/lambda_ratio, tol=tol, maxit=maxit, previous_res=res, is_refit=FALSE)
+        cv_losses[lambda_index, fold] <- calc_crit(elts_this, res, penalty=FALSE)
+        if (verbose && lambda_length > 10 && lambda_index %in% checkpoints)
+          s_output(paste("CV fold ", fold, ": ", floor(lambda_index/lambda_length*100), "% done", sep=""), verbose, verbosetext)
+      }
+    }
+  }
+  
   s_output("Done.", verbose, verbosetext)
   return (list("edgess"=edgess,
                "etas"=switch(changed_from_nc_to_c+1, etas, matrix(0, nrow=lambda_length, ncol=p)),
@@ -2536,6 +2593,7 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
                "BIC_refits"=switch(BIC_refit+1, NULL, BICs[,(length(eBIC_gammas)+1):(2*length(eBIC_gammas))]),
                "lambda1s"=lambda1s,
                "lambda2s"=switch(1+elts$centered+2*(!elts$centered && elts$profiled), lambda1s/lambda_ratio, NULL, rep(0, length(lambda1s))),
+               "cv_losses"=switch(1+is.null(cv_fold), cv_losses, NULL),
                "converged"=convergeds, "iters"=iters, "raw_estimates"=raw_estimates, "symmetric"=symmetric))
 }
 
@@ -2811,16 +2869,16 @@ calc_crit <- function(elts, res, penalty) {
       })) - sum(res$eta * elts$g_eta) + sum(res$eta ^ 2 * elts$Gamma_eta) / 2
     }
     if (elts$domain_type == "simplex") {
+      crit <- crit + sum(sapply(1:(elts$p-1), function(i){
+        res$K[,i] %*% elts$Gamma_K_jp[, (i-1)*elts$p+1:elts$p] %*% res$K[,elts$p]
+      }))
+      if (!elts$centered) {
         crit <- crit + sum(sapply(1:(elts$p-1), function(i){
-          res$K[,i] %*% elts$Gamma_K_jp[, (i-1)*elts$p+1:elts$p] %*% res$K[,elts$p]
+          res$K[,i] %*% elts$Gamma_Kj_etap[,i] * res$eta[elts$p] +
+            res$K[elts$p,] %*% elts$Gamma_Kp_etaj[,i] * res$eta[i] +
+            res$eta[i] * elts$Gamma_eta_jp[i] * res$eta[elts$p]
         }))
-        if (!elts$centered) {
-          crit <- crit + sum(sapply(1:(elts$p-1), function(i){
-            res$K[,i] %*% elts$Gamma_Kj_etap[,i] * res$eta[elts$p] +
-              res$K[elts$p,] %*% elts$Gamma_Kp_etaj[,i] * res$eta[i] +
-              res$eta[i] * elts$Gamma_eta_jp[i] * res$eta[elts$p]
-          }))
-        }
+      }
     }
   }
   if (penalty) {
@@ -2907,14 +2965,14 @@ get_crit_nopenalty <- function(elts, exclude=NULL, exclude_eta=NULL, previous_re
       }))
     } else {
       sum(sapply(1:elts$p, function(j){
-          this_j_edges <- switch(is.null(exclude)+1, which(exclude[,j]==0), 1:elts$p)
-          GamKj <- elts$Gamma_K[this_j_edges, this_j_edges]
-          ind_j <- match(j, this_j_edges) ## index of j in this_j_edges
-          gKj <- replace(numeric(length(this_j_edges)), ind_j, 1)
-          if (!elts$centered && !elts$profiled_if_noncenter && (is.null(exclude_eta) || exclude_eta[j] == 0)){
-            GamKj <- GamKj-tcrossprod(elts$Gamma_K_eta[this_j_edges])
-          }
-          return (-solve(GamKj,gKj)[ind_j]/2)
+        this_j_edges <- switch(is.null(exclude)+1, which(exclude[,j]==0), 1:elts$p)
+        GamKj <- elts$Gamma_K[this_j_edges, this_j_edges]
+        ind_j <- match(j, this_j_edges) ## index of j in this_j_edges
+        gKj <- replace(numeric(length(this_j_edges)), ind_j, 1)
+        if (!elts$centered && !elts$profiled_if_noncenter && (is.null(exclude_eta) || exclude_eta[j] == 0)){
+          GamKj <- GamKj-tcrossprod(elts$Gamma_K_eta[this_j_edges])
+        }
+        return (-solve(GamKj,gKj)[ind_j]/2)
       }))
     }
   }, error=function(s){

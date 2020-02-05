@@ -314,7 +314,7 @@ avgrocs <- function(rocs, num_true_edges, p){
 #' @param relative A boolean, default to \code{FALSE}. If \code{TRUE}, returns the relative difference (sum of absolute differences divided by the elementwise minimum between \code{l1} and \code{l2}).
 #' @return The sum of (relative) absolute differences in \code{l1} and \code{l2}, or a positive integer if two vectors differ in length or hold \code{NA}, \code{NULL} or \code{Inf} values in different places.
 diff_vecs <- function(l1, l2, relative=FALSE){
-  if (length(l1) == length(l2)) {return (0)}
+  if (length(l1) == 0 && length(l2) == 0) return (0)
   if (length(l1) != length(l2)) {return (abs(length(l1)-length(l2)))}
   tmp1 <- which(is.null(l1) | is.na(l1) | is.infinite(l1))
   tmp2 <- which(is.null(l2) | is.na(l2) | is.infinite(l2))
@@ -395,13 +395,14 @@ compare_two_results <- function(res, res2){
          "lambda1s"=diff_vecs(res$lambda1s, res2$lambda1s),
          "lambda2s"=diff_vecs(res$lambda2s, res2$lambda2s)
          )
-  if (!is.null(res[["etas"]]) || !is.null(res2[["etas"]])){
-    if (is.null(res[["etas"]]) || is.null(res2[["etas"]]))
-      d["etas"] <- Inf
-    else
-      d["etas"] <- diff_vecs(res$etas, res2$etas)
-  }
-  for (name in c("BICs", "BIC_refits"))
+  for (name in c("etas", "cv_losses", "BIC_refits"))
+    if (!is.null(res[[name]]) || !is.null(res2[[name]])){
+      if (is.null(res[[name]]) || is.null(res2[[name]]))
+        d[name] <- Inf
+      else
+        d[name] <- diff_vecs(res[[name]], res2[[name]])
+    }
+  for (name in c("BICs"))
     d[name] <- diff_vecs(res[[name]], res2[[name]], relative=TRUE)
   return (d)
 }

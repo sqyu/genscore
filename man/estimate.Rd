@@ -28,6 +28,8 @@ estimate(
   warmstart = TRUE,
   diagonal_multiplier = NULL,
   eBIC_gammas = c(0, 0.5, 1),
+  cv_fold = NULL,
+  cv_fold_seed = NULL,
   return_raw = FALSE
 )
 }
@@ -78,18 +80,29 @@ estimate(
 
 \item{eBIC_gammas}{Optional. A number of a vector of numbers. The \eqn{\gamma} parameter in eBIC. Default to \code{c(0,0.5,1)}.}
 
+\item{cv_fold}{Optional. An integer larger than 1 if provided. The number of folds used for cross validation. If provided, losses will be calculated on each fold with model fitted on the other folds, and a \code{lambda_length x cv_fold} matrix \code{cv_losses} will be returned.}
+
+\item{cv_fold_seed}{Optional. Seed for generating folds for cross validation.}
+
 \item{return_raw}{A boolean, whether to return the raw estimates of \code{K}. Default to \code{FALSE}.}
 }
 \value{
 \item{edgess}{A list of vectors of integers: indices of the non-zero edges.}
-   \item{etas}{If applicable, a \code{lambda_length}*\code{p} matrix of \code{eta} estimates with the \eqn{i}-th row corresponding to the \eqn{i}-th \code{lambda1}, and may contain \code{NA}s after the first lambda that gives the complete graph. Otherwise \code{NULL}.}
    \item{BICs}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of raw eBIC scores (without refitting). May contain \code{Inf}s for rows after the first lambda that gives the complete graph.}
-   \item{BIC_refits}{\code{NULL} if \code{BIC_refit == FALSE}, otherwise a \code{lambda_length} by \code{length(eBIC_gammas)} matrix of refitted eBIC scores, obtained by refitting unpenalized models restricted to the estimated edges. May contain \code{Inf}s for rows after the first lambda that gives the graph restricted to which an unpenalized model does not have a solution (loss unbounded from below).}
    \item{lambda1s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda1}s over which the estimates are obtained.}
-   \item{lambda2s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda2}s over which the estimates are obtained, if applicable, otherwise \code{NULL}.}
    \item{converged}{A vector of booleans of length \code{lambda_length}: indicators of convergence for each fit. May contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
    \item{iters}{A vector of integers of length \code{lambda_length}: the number of iterations run for each fit. May contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
    \item{raw_estimate}{An empty list if \code{return_raw == FALSE}, otherwise a list that contains \code{lambda_length} estimates for \code{K} of size \code{ncol(x)}*\code{ncol(x)}. May contain \code{ncol(x)}*\code{ncol(x)} matrices of \code{NA}s for all lambdas after the first lambda that gives the complete graph.}
+   
+   In addition,
+   if \code{centered == FALSE},
+   \item{etas}{A \code{lambda_length}*\code{p} matrix of \code{eta} estimates with the \eqn{i}-th row corresponding to the \eqn{i}-th \code{lambda1}, and may contain \code{NA}s after the first lambda that gives the complete graph. Otherwise \code{NULL}.}
+   if \code{centered == FALSE} and non-profiled,
+   \item{lambda2s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda2}s over which the estimates are obtained.}
+   if \code{BIC_refit == TRUE},
+   \item{BIC_refits}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of refitted eBIC scores, obtained by refitting unpenalized models restricted to the estimated edges. May contain \code{Inf}s for rows after the first lambda that gives the graph restricted to which an unpenalized model does not have a solution (loss unbounded from below).}
+   if \code{cv_fold} is not \code{NULL},
+   \item{cv_losses}{A \code{lambda_length x cv_fold} matrix}
 }
 \description{
 The main function for the generalized score-matching estimator for graphical models.
@@ -161,22 +174,26 @@ compare_two_results(est5, est7) ## Should be almost all 0
 
 
 ## Non-centered estimates, no elts or h provided, mode and params provided
+## Using 5-fold cross validation and no BIC refit
 est8 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=2, symmetric="and", lambda_length=100,
-          mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE)
+          mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE,
+          BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 
 ## Non-centered estimates, no elts provided, h provided; equivalent to est5
+## Using 5-fold cross validation and no BIC refit
 est9 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
-          lambda_ratio=2, symmetric="and", lambda_length=100,
-          h_hp=h_hp, diag=dm, return_raw=TRUE)
+          lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp, 
+          diag=dm, return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 compare_two_results(est8, est9) ## Should be almost all 0
 
 elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=FALSE,
                 profiled=FALSE, diag=dm)
 ## Non-centered estimates, elts provided; equivalent to est8~9
-est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np,
-           centered=FALSE, lambda_ratio=2, symmetric="and",
-           lambda_length=100, diag=NULL, return_raw=TRUE)
+## Using 5-fold cross validation and no BIC refit
+est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np, centered=FALSE, 
+           lambda_ratio=2, symmetric="and", lambda_length=100, diag=NULL, 
+           return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 compare_two_results(est8, est10) ## Should be almost all 0
 
 }
