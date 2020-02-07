@@ -58,7 +58,7 @@ mu <- rep(0, p)
 K <- diag(p)
 eta <- K \%*\% mu
 domain <- make_domain("R+", p=p)
-x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1, 3)
 h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary

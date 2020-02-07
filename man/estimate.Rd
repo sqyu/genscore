@@ -88,28 +88,29 @@ estimate(
 }
 \value{
 \item{edgess}{A list of vectors of integers: indices of the non-zero edges.}
-   \item{BICs}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of raw eBIC scores (without refitting). May contain \code{Inf}s for rows after the first lambda that gives the complete graph.}
+   \item{BICs}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of raw eBIC scores (without refitting). If \code{return_raw == FALSE}, may contain \code{Inf}s for rows after the first lambda that gives the complete graph.}
    \item{lambda1s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda1}s over which the estimates are obtained.}
-   \item{converged}{A vector of booleans of length \code{lambda_length}: indicators of convergence for each fit. May contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
-   \item{iters}{A vector of integers of length \code{lambda_length}: the number of iterations run for each fit. May contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
-   \item{raw_estimate}{An empty list if \code{return_raw == FALSE}, otherwise a list that contains \code{lambda_length} estimates for \code{K} of size \code{ncol(x)}*\code{ncol(x)}. May contain \code{ncol(x)}*\code{ncol(x)} matrices of \code{NA}s for all lambdas after the first lambda that gives the complete graph.}
-   
+   \item{converged}{A vector of booleans of length \code{lambda_length}: indicators of convergence for each fit. If \code{return_raw == FALSE}, may contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
+   \item{iters}{A vector of integers of length \code{lambda_length}: the number of iterations run for each fit. If \code{return_raw == FALSE}, may contain \code{0}s for all lambdas after the first lambda that gives the complete graph.}
+
    In addition,
    if \code{centered == FALSE},
-   \item{etas}{A \code{lambda_length}*\code{p} matrix of \code{eta} estimates with the \eqn{i}-th row corresponding to the \eqn{i}-th \code{lambda1}, and may contain \code{NA}s after the first lambda that gives the complete graph. Otherwise \code{NULL}.}
+   \item{etas}{A \code{lambda_length}*\code{p} matrix of \code{eta} estimates with the \eqn{i}-th row corresponding to the \eqn{i}-th \code{lambda1}. If \code{return_raw == FALSE},  may contain \code{NA}s after the first lambda that gives the complete graph.}
    if \code{centered == FALSE} and non-profiled,
    \item{lambda2s}{A vector of numbers of length \code{lambda_length}: the grid of \code{lambda2}s over which the estimates are obtained.}
+   if \code{return_raw == TRUE},
+   \item{raw_estimate}{A list that contains \code{lambda_length} estimates for \code{K} of size \code{ncol(x)}*\code{ncol(x)}.}
    if \code{BIC_refit == TRUE},
    \item{BIC_refits}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of refitted eBIC scores, obtained by refitting unpenalized models restricted to the estimated edges. May contain \code{Inf}s for rows after the first lambda that gives the graph restricted to which an unpenalized model does not have a solution (loss unbounded from below).}
    if \code{cv_fold} is not \code{NULL},
-   \item{cv_losses}{A \code{lambda_length x cv_fold} matrix}
+   \item{cv_losses}{A \code{lambda_length x cv_fold} matrix of cross validation losses. If \code{return_raw == FALSE}, may contain \code{Inf}s for all lambdas after the first lambda that gives the complete graph.}
 }
 \description{
 The main function for the generalized score-matching estimator for graphical models.
 }
 \examples{
 # Examples are shown for Gaussian truncated to R+^p only. For other distributions
-#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, 
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #   as the way to call this function (\code{estimate()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
    stop("Please install package \"tmvtnorm\".")
@@ -140,7 +141,7 @@ elts_gauss_c <- get_elts(h_hp, x, setting="gaussian", domain=domain,
 ## Centered estimates, elts provided; equivalent to est1 and est2
 ## Here diagonal_multiplier will be set to the default value, equal to dm above
 est3 <- estimate(x, "gaussian", domain=domain, elts=elts_gauss_c,
-          symmetric="symmetric", lambda1s=lambda1s, diag=NULL, 
+          symmetric="symmetric", lambda1s=lambda1s, diag=NULL,
           return_raw=TRUE)
 compare_two_results(est1, est3) ## Should be almost all 0
 
@@ -183,7 +184,7 @@ est8 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
 ## Non-centered estimates, no elts provided, h provided; equivalent to est5
 ## Using 5-fold cross validation and no BIC refit
 est9 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
-          lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp, 
+          lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp,
           diag=dm, return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 compare_two_results(est8, est9) ## Should be almost all 0
 
@@ -191,8 +192,8 @@ elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=F
                 profiled=FALSE, diag=dm)
 ## Non-centered estimates, elts provided; equivalent to est8~9
 ## Using 5-fold cross validation and no BIC refit
-est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np, centered=FALSE, 
-           lambda_ratio=2, symmetric="and", lambda_length=100, diag=NULL, 
+est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np, centered=FALSE,
+           lambda_ratio=2, symmetric="and", lambda_length=100, diag=NULL,
            return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
 compare_two_results(est8, est10) ## Should be almost all 0
 

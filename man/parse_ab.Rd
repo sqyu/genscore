@@ -22,7 +22,7 @@ Parses an ab setting into rational numbers a and b.
 \examples{
 parse_ab("ab_1_1") # gaussian: a = 1, b = 1
 parse_ab("ab_2_5/4") # a = 2, b = 5/4
-parse_ab("ab_5/4_3/2") # a = 5/4, b = 3/2 
+parse_ab("ab_5/4_3/2") # a = 5/4, b = 3/2
 parse_ab("ab_3/2_0/0") # a = 3/2, b = 0/0 (log)
 parse_ab("ab_1/2_0/0") # exp: a = 1/2, b = 0/0 (log)
 }

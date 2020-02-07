@@ -43,7 +43,7 @@ This function calls \code{test_lambda_bounds} three times with \code{step} set t
 }
 \examples{
 # Examples are shown for Gaussian truncated to R+^p only. For other distributions
-#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the 
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #   way to call this function (\code{test_lambda_bounds2()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
    stop("Please install package \"tmvtnorm\".")

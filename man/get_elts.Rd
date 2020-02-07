@@ -98,7 +98,7 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 domain <- make_domain("R", p=p)
 x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 # Equivalently:
-#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
 #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 get_elts(NULL, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 get_elts(NULL, x, "gaussian", domain, FALSE, profiled=FALSE, scale="sd", diag=dm)
@@ -109,7 +109,7 @@ x <- tmvtnorm::rtmvnorm(n, mean = solve(K, eta), sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 # Equivalently:
-#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
 #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1, 3)
 get_elts(h_hp, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
@@ -119,7 +119,7 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2",
        ineqs=list(list("expression"="sum(x^2)>1", abs=FALSE, nonnegative=FALSE),
                       list("expression"="sum(x^(1/3))>1", abs=FALSE, nonnegative=FALSE)))
 xinit <- rep(sqrt(2/p), p)
-x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1, 3)
 get_elts(h_hp, x, "gaussian", domain, centered=FALSE,
@@ -127,13 +127,13 @@ get_elts(h_hp, x, "gaussian", domain, centered=FALSE,
 
 # exp on ([0, 1] v [2,3])^p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 h_hp <- get_h_hp("min_pow", 1.5, 3)
 get_elts(h_hp, x, "exp", domain, centered=TRUE, scale="", diag=dm)
 get_elts(h_hp, x, "exp", domain, centered=FALSE,
        profiled_if_noncenter=FALSE, scale="", diag=dm)
- 
+
 # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
 domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
        ineqs=list(list("expression"="x1>1", abs=FALSE, nonnegative=TRUE),
@@ -141,7 +141,7 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=TRUE)))
 set.seed(1)
 xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
-x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1.5, 3)
 get_elts(h_hp, x, "gamma", domain, centered=TRUE, scale="", diag=dm)
@@ -154,7 +154,7 @@ domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 xinit <- rep(1, p)
-x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
 h_hp <- get_h_hp("min_pow", 1.4, 3)
 get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=TRUE, scale="", diag=dm)
@@ -162,12 +162,12 @@ get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=FALSE,
        profiled_if_noncenter=TRUE, scale="", diag=dm)
 
 # log_log model on {x in R_+^p: sum_j j * xj <= 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
-x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
-       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100, 
+x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
+       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100,
        verbose=TRUE)
 h_hp <- get_h_hp("min_pow", 2, 3)
 get_elts(h_hp, x, "log_log", domain, centered=TRUE, scale="", diag=dm)
@@ -189,7 +189,7 @@ g0 <- function(x) {
        }))
        list("g0"=g0, "g0d"=g0d)
 }
-get_elts(NULL, x, "exp", domain, centered=TRUE, profiled_if_noncenter=FALSE, 
+get_elts(NULL, x, "exp", domain, centered=TRUE, profiled_if_noncenter=FALSE,
        scale="", diag=dm, unif_dist=g0)
 
 # log_log_sum0 model on the simplex with K having row and column sums 0 (Aitchison model)
@@ -197,7 +197,7 @@ domain <- make_domain("simplex", p=p)
 K <- -cov_cons("band", p=p, spars=3, eig=1)
 diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 h_hp <- get_h_hp("min_pow", 2, 3)
 h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary

@@ -36,48 +36,48 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 domain <- make_domain("R", p=p)
 x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 # Equivalently:
-#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
 #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
-dist <- get_dist(x, domain) 
+dist <- get_dist(x, domain)
 # dx is all Inf and dpx is all 0 since each coordinate is unbounded with domain R
 c(all(is.infinite(dist$dx)), all(dist$dpx==0))
 
 # exp on R_+^p:
 domain <- make_domain("R+", p=p)
-x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 dist <- get_dist(x, domain)
 # dx is x and dpx is 1; with domain R+, the distance of x to the boundary is just x itself
-c(max(abs(dist$dx - x))<.Machine$double.eps^0.5, all(dist$dpx == 1)) 
+c(max(abs(dist$dx - x))<.Machine$double.eps^0.5, all(dist$dpx == 1))
 
 # Gaussian on sum(x^2) > p with x allowed to be negative
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste("sum(x^2)>", p), abs=FALSE, nonnegative=FALSE)))
-x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 dist <- get_dist(x, domain)
 quota <- p - (rowSums(x^2) - x^2) # How much should xij^2 at least be so that sum(xi^2) > p?
 # How far is xij from +/-sqrt(quota), if quota >= 0?
-dist_to_bound <- abs(x[quota >= 0]) - abs(sqrt(quota[quota >= 0])) 
+dist_to_bound <- abs(x[quota >= 0]) - abs(sqrt(quota[quota >= 0]))
 max(abs(dist$dx[is.finite(dist$dx)] - dist_to_bound)) # Should be equal to our own calculations
 # dist'(x) should be the same as the sign of x
 all(dist$dpx[is.finite(dist$dx)] == sign(x[quota >= 0]))
-# quota is negative <-> sum of x_{i,-j}^2 already > p <-> xij unbounded 
+# quota is negative <-> sum of x_{i,-j}^2 already > p <-> xij unbounded
 #   given others <-> distance to boundary is Inf
-all(quota[is.infinite(dist$dx)] < 0) 
+all(quota[is.infinite(dist$dx)] < 0)
 
 # gamma on ([0, 1] v [2,3])^p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 dist <- get_dist(x, domain)
 # If 0 <= xij <= 1, distance to boundary is min(x-0, 1-x)
 max(abs(dist$dx - pmin(x, 1-x))[x >= 0 & x <= 1])
-# If 0 <= xij <= 1, dist'(xij) is 1 if it is closer to 0, or -1 if it is closer 1, 
+# If 0 <= xij <= 1, dist'(xij) is 1 if it is closer to 0, or -1 if it is closer 1,
 #   assuming xij \%in\% c(0, 0.5, 1) with probability 0
 all((dist$dpx == 2 * (1-x > x) - 1)[x >= 0 & x <= 1])
-# If 2 <= xij <= 3, distance to boundary is min(x-2, 3-x) 
-max(abs(dist$dx - pmin(x-2, 3-x))[x >= 2 & x <= 3]) 
+# If 2 <= xij <= 3, distance to boundary is min(x-2, 3-x)
+max(abs(dist$dx - pmin(x-2, 3-x))[x >= 2 & x <= 3])
 # If 2 <= xij <= 3, dist'(xij) is 1 if it is closer to 2, or -1 if it is closer 3,
 #   assuming xij \%in\% c(2, 2.5, 3) with probability 0
 all((dist$dpx == 2 * (3-x > x-2) - 1)[x >= 2 & x <= 3])
@@ -89,43 +89,43 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 set.seed(1)
 xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2)) + log(1.3))
-x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, 
-       finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100, 
+x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
+       finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100,
        verbose=TRUE)
 dist <- get_dist(x, domain)
 # x_{i1} has uniform bound [1, +Inf), so its distance to its boundary is x_{i1} - 1
-max(abs(dist$dx[,1] - (x[,1] - 1))) 
-# x_{i2} has uniform bound [log(1.3), 1], so its distance to its boundary 
+max(abs(dist$dx[,1] - (x[,1] - 1)))
+# x_{i2} has uniform bound [log(1.3), 1], so its distance to its boundary
 #   is min(x_{i2} - log(1.3), 1 - x_{i2})
-max(abs(dist$dx[,2] - pmin(x[,2] - log(1.3), 1 - x[,2]))) 
-# x_{ij} for j >= 3 has uniform bound [log(1.3), +Inf), so its distance to its boundary 
+max(abs(dist$dx[,2] - pmin(x[,2] - log(1.3), 1 - x[,2])))
+# x_{ij} for j >= 3 has uniform bound [log(1.3), +Inf), so its distance to its boundary
 #   is simply x_{ij} - log(1.3)
-max(abs(dist$dx[,3:p] - (x[,3:p] - log(1.3)))) 
+max(abs(dist$dx[,3:p] - (x[,3:p] - log(1.3))))
 # dist\'(xi2) is 1 if it is closer to log(1.3), or -1 if it is closer 1,
 #   assuming x_{i2} \%in\% c(log(1.3), (1+log(1.3))/2, 1) with probability 0
-all((dist$dpx[,2] == 2 * (1 - x[,2] > x[,2] - log(1.3)) - 1)) 
+all((dist$dpx[,2] == 2 * (1 - x[,2] > x[,2] - log(1.3)) - 1))
 # x_{ij} for j != 2 is bounded from below but unbounded from above, so dist\'(xij) is always 1
-all(dist$dpx[,-2] == 1) 
+all(dist$dpx[,-2] == 1)
 
 # log_log model on {x in R_+^p: sum_j j * xj <= 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
-x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 dist <- get_dist(x, domain)
 # Upper bound for j * xij so that sum_j j * xij <= 1
 quota <- 1 - (rowSums(t(t(x) * 1:p)) - t(t(x) * 1:p))
 # Distance of xij to its boundary is min(xij - 0, quota_{i,j} / j - xij)
-max(abs(dist$dx - pmin((t(t(quota) / 1:p) - x), x))) 
+max(abs(dist$dx - pmin((t(t(quota) / 1:p) - x), x)))
 
 # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
 domain <- make_domain("simplex", p=p)
 K <- -cov_cons("band", p=p, spars=3, eig=1)
 diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, 
+x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
         xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
 # Note that dist$dx and dist$dpx only has p-1 columns -- excluding the last coordinate in x
 dist <- get_dist(x, domain)

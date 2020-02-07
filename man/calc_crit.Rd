@@ -25,7 +25,7 @@ This function calculates the loss in some estimated \code{K} and \code{eta} give
 \examples{
 # In the following examples, all printed numbers should be close to 0.
 # In practice, \code{res} need not be estimates fit to \code{elts},
-# but in the examples we use \code{res <- get_results(elts)} just to 
+# but in the examples we use \code{res <- get_results(elts)} just to
 # demonstrate that the loss this function returns matches that returned
 # by the C code during estimation using \code{get_results}.
 
@@ -38,18 +38,18 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 domains <- list(make_domain("R", p=p),
                 make_domain("R+", p=p),
                 make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3)),
-                make_domain("polynomial", p=p, 
+                make_domain("polynomial", p=p,
                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))),
-                make_domain("polynomial", p=p, 
+                make_domain("polynomial", p=p,
                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
-                make_domain("polynomial", p=p, 
+                make_domain("polynomial", p=p,
                   ineqs=list(list("expression"=paste(paste(sapply(1:p,
                      function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE))),
                 make_domain("simplex", p=p))
 for (domain in domains) {
-  if (domain$type == "R" || 
-       (domain$type == "uniform" && any(domain$lefts < 0)) || 
+  if (domain$type == "R" ||
+       (domain$type == "uniform" && any(domain$lefts < 0)) ||
        (domain$type == "polynomial" && !domain$ineqs[[1]]$nonnegative))
     settings <- c("gaussian")
   else if (domain$type == "simplex")
@@ -61,14 +61,14 @@ for (domain in domains) {
     symms <- c("symmetric")
   else
     symms <- c("symmetric", "and", "or")
-  
+
   for (setting in settings) {
-    x <- gen(n, setting=setting, abs=FALSE, eta=eta, K=K, domain=domain, 
+    x <- gen(n, setting=setting, abs=FALSE, eta=eta, K=K, domain=domain,
          finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
     h_hp <- get_h_hp("min_pow", 1, 3)
-    
+
     for (symm in symms) {
-       
+
        # Centered, penalized loss
        elts <- get_elts(h_hp, x, setting, domain, centered=TRUE, scale="", diag=dm)
        res <- get_results(elts, symm, 0.1)
@@ -89,9 +89,9 @@ for (domain in domains) {
        elts_nc_np_nopen <- get_elts(h_hp, x, setting, domain, centered=FALSE,
          profiled_if_noncenter=FALSE, scale="", diag=1)
        res_nc_np_nopen <- get_results(elts_nc_np_nopen, symm, lambda1=0, lambda2=0)
-       print(calc_crit(elts_nc_np_nopen, res_nc_np_nopen, penalty=FALSE) - 
+       print(calc_crit(elts_nc_np_nopen, res_nc_np_nopen, penalty=FALSE) -
          res_nc_np_nopen$crit) # Close to 0
-      
+
        if (domain$type != "simplex") {
          # Non-centered, profiled, penalized loss
          elts_nc_p <- get_elts(h_hp, x, setting, domain, centered=FALSE,
@@ -101,20 +101,20 @@ for (domain in domains) {
            res_nc_p$crit <- res_nc_p$crit - sum(elts_nc_np$g_eta ^ 2 / elts_nc_np$Gamma_eta) / 2
          print(calc_crit(elts_nc_np, res_nc_p, penalty=TRUE) - res_nc_p$crit)  # Close to 0
          # Note that the elts argument cannot be profiled, so
-         # calc_crit(elts_nc_p, res_nc_p, penalty=TRUE) is not allowed 
+         # calc_crit(elts_nc_p, res_nc_p, penalty=TRUE) is not allowed
 
          # Non-centered, profiled, unpenalized loss
          elts_nc_p_nopen <- get_elts(h_hp, x, setting, domain, centered=FALSE,
            profiled_if_noncenter=TRUE, scale="", diag=1)
          res_nc_p_nopen <- get_results(elts_nc_p_nopen, symm, lambda1=0)
          if (elts_nc_np_nopen$setting != setting || elts_nc_np_nopen$domain_type != "R")
-           res_nc_p_nopen$crit <- (res_nc_p_nopen$crit - 
+           res_nc_p_nopen$crit <- (res_nc_p_nopen$crit -
               sum(elts_nc_np_nopen$g_eta ^ 2 / elts_nc_np_nopen$Gamma_eta) / 2)
-         print(calc_crit(elts_nc_np_nopen, res_nc_p_nopen, penalty=TRUE) - 
+         print(calc_crit(elts_nc_np_nopen, res_nc_p_nopen, penalty=TRUE) -
            res_nc_p_nopen$crit) # Close to 0
-          # Again, calc_crit(elts_nc_p_nopen, res_nc_p, penalty=TRUE) is not allowed 
+          # Again, calc_crit(elts_nc_p_nopen, res_nc_p, penalty=TRUE) is not allowed
        } # if domain$type != "simplex"
-       
+
     } # for symm in symms
   } # for setting in settings
 } # for domain in domains

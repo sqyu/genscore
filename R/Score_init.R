@@ -445,12 +445,27 @@ compare_two_results <- function(res, res2){
 #' get_g0(domain, 1)(x)
 #'
 #' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)>1.3", "nonnegative"=TRUE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
 #'      list(list("expression"="sum(x^2)<1.3", "nonnegative"=FALSE, "abs"=FALSE)))
 #' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
 #' get_g0(domain, 1)(x)
 #'
 #' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)<1.3", "nonnegative"=TRUE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
 #'      list(list("expression"="sum(x)<1.3", "nonnegative"=FALSE, "abs"=TRUE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0(domain, 1)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x)<1.3", "nonnegative"=TRUE, "abs"=TRUE)))
 #' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
 #' get_g0(domain, 1)(x)
 #'
@@ -472,7 +487,7 @@ get_g0 <- function(domain, C) {
   } else if (domain$type == "simplex") {
     unif_dist <- function(x) {
       if (any(!in_bound(x, domain))) stop("x out of domain.")
-      p <- domain$p
+      p <- domain$p_deemed
       if (ncol(x) == domain$p) x <- x[,-p,drop=FALSE]
       row_min <- apply(x, 1, min)
       row_which_min <- apply(x, 1, which.min)
@@ -510,14 +525,20 @@ get_g0 <- function(domain, C) {
   } else if (length(domain$ineqs)==1 && !domain$ineqs[[1]]$uniform
              && all(domain$ineqs[[1]]$power_numers == 2)
              && all(domain$ineqs[[1]]$power_denoms==1)
-             && all(domain$ineqs[[1]]$coeffs == 1)
-             && !domain$ineqs[[1]]$nonnegative) { # sum(x^2) <= d or sum(x^2) >= d
+             && all(domain$ineqs[[1]]$coeffs == 1)) { # sum(x^2) <= d or sum(x^2) >= d, can be restricted to nonnegative
     unif_dist <- function(x) {
       if (any(!in_bound(x, domain))) stop("x out of domain.")
       g0 <- apply(x, 1, function(xx){sqrt(domain$ineqs[[1]]$const) - sqrt(sum(xx^2))})
       g0d <- t(apply(x, 1, function(xx){-xx/sqrt(sum(xx^2))}))
       if (domain$ineqs[[1]]$larger) {
         g0 <- -g0; g0d <- -g0d
+      }
+      if (domain$ineqs[[1]]$nonnegative) {
+        row_min <- apply(x, 1, min)
+        for (rowi in which(row_min < g0)) {
+          g0[rowi] <- row_min[rowi]
+          g0d[rowi, ] <- 0; g0d[rowi, which.min(x[rowi,])] <- 1
+        }
       }
       g0d[which(g0 >= C), ] <- 0
       list("g0"=pmin(g0, C), "g0d"=g0d)
@@ -526,13 +547,19 @@ get_g0 <- function(domain, C) {
              && !domain$ineqs[[1]]$larger && all(domain$ineqs[[1]]$power_numers == 1)
              && all(domain$ineqs[[1]]$power_denoms==1)
              && all(domain$ineqs[[1]]$coeffs == 1)
-             && domain$ineqs[[1]]$abs
-             && !domain$ineqs[[1]]$nonnegative) { # sum(abs(x)) <= d
+             && domain$ineqs[[1]]$abs) { # sum(abs(x)) <= d, can be restricted to nonnegative
     unif_dist <- function(x) {
       if (any(!in_bound(x, domain))) stop("x out of domain.")
-      lambdas <- apply(x, 1, function(xx){(domain$ineqs[[1]]$const - sum(abs(xx))) / domain$p})
-      g0 <- lambdas * sqrt(domain$p)
+      lambdas <- apply(x, 1, function(xx){(domain$ineqs[[1]]$const - sum(abs(xx)))})
+      g0 <- lambdas / sqrt(domain$p)
       g0d <- -sign(x) / sqrt(domain$p)
+      if (domain$ineqs[[1]]$nonnegative) {
+        row_min <- apply(x, 1, min)
+        for (rowi in which(row_min < g0)) {
+          g0[rowi] <- row_min[rowi]
+          g0d[rowi, ] <- 0; g0d[rowi, which.min(x[rowi,])] <- 1
+        }
+      }
       g0d[which(g0 >= C), ] <- 0
       list("g0"=pmin(g0, C), "g0d"=g0d)
     }

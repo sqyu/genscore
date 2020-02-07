@@ -43,7 +43,7 @@ get_results(
     \item{n}{An integer, the number of samples.}
     \item{p}{An integer, the dimension.}
     \item{is_refit,lambda1,maxit,previous_lambda1,symmetric,tol}{Same as in the input.}
-    \item{lambda2}{Same as in the input, and returned only if \code{elts$centered == FALSE} and \cr 
+    \item{lambda2}{Same as in the input, and returned only if \code{elts$centered == FALSE} and \cr
              \code{elts$profiled_if_noncenter == FALSE}.}
 }
 \description{

@@ -50,12 +50,27 @@ x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
 get_g0(domain, 1)(x)
 
 domain <- make_domain("polynomial", p=p, ineqs=
+     list(list("expression"="sum(x^2)>1.3", "nonnegative"=TRUE, "abs"=FALSE)))
+x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+get_g0(domain, 1)(x)
+
+domain <- make_domain("polynomial", p=p, ineqs=
      list(list("expression"="sum(x^2)<1.3", "nonnegative"=FALSE, "abs"=FALSE)))
 x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
 get_g0(domain, 1)(x)
 
 domain <- make_domain("polynomial", p=p, ineqs=
+     list(list("expression"="sum(x^2)<1.3", "nonnegative"=TRUE, "abs"=FALSE)))
+x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+get_g0(domain, 1)(x)
+
+domain <- make_domain("polynomial", p=p, ineqs=
      list(list("expression"="sum(x)<1.3", "nonnegative"=FALSE, "abs"=TRUE)))
+x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+get_g0(domain, 1)(x)
+
+domain <- make_domain("polynomial", p=p, ineqs=
+     list(list("expression"="sum(x)<1.3", "nonnegative"=TRUE, "abs"=TRUE)))
 x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
 get_g0(domain, 1)(x)
 

@@ -23,7 +23,7 @@ Calculates the eBIC score both with and without refitting an unpenalized model r
 }
 \examples{
 # Examples are shown for Gaussian truncated to R+^p only. For other distributions
-#   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, 
+#   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #   as the way to call this function (\code{eBIC()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
    stop("Please install package \"tmvtnorm\".")
