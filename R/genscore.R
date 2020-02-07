@@ -2303,6 +2303,7 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #' @param cv_fold Optional. An integer larger than 1 if provided. The number of folds used for cross validation. If provided, losses will be calculated on each fold with model fitted on the other folds, and a \code{lambda_length x cv_fold} matrix \code{cv_losses} will be returned.
 #' @param cv_fold_seed Optional. Seed for generating folds for cross validation.
 #' @param return_raw A boolean, whether to return the raw estimates of \code{K}. Default to \code{FALSE}.
+#' @param return_elts A boolean, whether to return the \code{elts} used for estimation. Default to \code{FALSE}.
 #' @return
 #'    \item{edgess}{A list of vectors of integers: indices of the non-zero edges.}
 #'    \item{BICs}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of raw eBIC scores (without refitting). If \code{return_raw == FALSE}, may contain \code{Inf}s for rows after the first lambda that gives the complete graph.}
@@ -2321,6 +2322,8 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #'    \item{BIC_refits}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of refitted eBIC scores, obtained by refitting unpenalized models restricted to the estimated edges. May contain \code{Inf}s for rows after the first lambda that gives the graph restricted to which an unpenalized model does not have a solution (loss unbounded from below).}
 #'    if \code{cv_fold} is not \code{NULL},
 #'    \item{cv_losses}{A \code{lambda_length x cv_fold} matrix of cross validation losses. If \code{return_raw == FALSE}, may contain \code{Inf}s for all lambdas after the first lambda that gives the complete graph.}
+#'    if \code{return_elts == TRUE},
+#'    \item{elts}{A list of elements returned from \code{get_elts()}.}
 #' @examples
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
@@ -2415,7 +2418,8 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
                      lambda1s=NULL, lambda_length=NULL, lambda_ratio=Inf, mode=NULL, param1=NULL,
                      param2=NULL, h_hp=NULL, unif_dist=NULL, verbose=TRUE, verbosetext="", tol=1e-6,
                      maxit=1000, BIC_refit=TRUE, warmstart=TRUE, diagonal_multiplier=NULL,
-                     eBIC_gammas=c(0,0.5,1), cv_fold=NULL, cv_fold_seed=NULL, return_raw=FALSE){
+                     eBIC_gammas=c(0,0.5,1), cv_fold=NULL, cv_fold_seed=NULL, return_raw=FALSE,
+                     return_elts=FALSE){
   ## BIC_refit: calculate BIC (with refit) or not
   ## return_raw: return the raw estimates or not
   ## If elts is given, centered, scale, mode, param1, param2, h, hp are all ignored
@@ -2591,7 +2595,9 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
                "lambda1s"=lambda1s,
                "lambda2s"=switch(1+elts$centered+2*(!elts$centered && elts$profiled), lambda1s/lambda_ratio, NULL, rep(0, length(lambda1s))),
                "cv_losses"=switch(1+is.null(cv_fold), cv_losses, NULL),
-               "converged"=convergeds, "iters"=iters, "raw_estimates"=raw_estimates, "symmetric"=symmetric))
+               "converged"=convergeds, "iters"=iters,
+               "raw_estimates"=raw_estimates, "symmetric"=symmetric,
+               "elts"=switch(1+return_elts, NULL, elts)))
 }
 
 #' Loss for a refitted (restricted) unpenalized model

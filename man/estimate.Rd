@@ -30,7 +30,8 @@ estimate(
   eBIC_gammas = c(0, 0.5, 1),
   cv_fold = NULL,
   cv_fold_seed = NULL,
-  return_raw = FALSE
+  return_raw = FALSE,
+  return_elts = FALSE
 )
 }
 \arguments{
@@ -85,6 +86,8 @@ estimate(
 \item{cv_fold_seed}{Optional. Seed for generating folds for cross validation.}
 
 \item{return_raw}{A boolean, whether to return the raw estimates of \code{K}. Default to \code{FALSE}.}
+
+\item{return_elts}{A boolean, whether to return the \code{elts} used for estimation. Default to \code{FALSE}.}
 }
 \value{
 \item{edgess}{A list of vectors of integers: indices of the non-zero edges.}
@@ -104,6 +107,8 @@ estimate(
    \item{BIC_refits}{A \code{lambda_length} by \code{length(eBIC_gammas)} matrix of refitted eBIC scores, obtained by refitting unpenalized models restricted to the estimated edges. May contain \code{Inf}s for rows after the first lambda that gives the graph restricted to which an unpenalized model does not have a solution (loss unbounded from below).}
    if \code{cv_fold} is not \code{NULL},
    \item{cv_losses}{A \code{lambda_length x cv_fold} matrix of cross validation losses. If \code{return_raw == FALSE}, may contain \code{Inf}s for all lambdas after the first lambda that gives the complete graph.}
+   if \code{return_elts == TRUE},
+   \item{elts}{A list of elements returned from \code{get_elts()}.}
 }
 \description{
 The main function for the generalized score-matching estimator for graphical models.
