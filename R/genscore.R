@@ -1316,17 +1316,13 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
       stop("Please install package \"mvtnorm\".")
     Sigma <- solve(K)
     return (mvtnorm::rmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma))
-  } else if (setting == "gaussian" && (
-    domain$type == "R+" ||
-    (domain$type == "uniform" && length(domain$lefts) == 1))) {
+  } else if (setting == "gaussian" && domain$type == "R+") {
     if (!requireNamespace("tmvtnorm", quietly = TRUE))
       stop("Please install package \"tmvtnorm\".")
-    if (domain$type == "R+") {left <- 0; right <- Inf
-    } else {left <- domain$lefts[1]; right <- domain$rights[1]}
     Sigma <- solve(K)
     return (tmvtnorm::rtmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma,
-                               lower=rep(left, domain$p),
-                               upper=rep(right, domain$p), algorithm = "gibbs",
+                               lower=rep(0, domain$p),
+                               upper=rep(Inf, domain$p), algorithm = "gibbs",
                                burn.in.samples = burn_in, thinning = thinning))
   }
 
