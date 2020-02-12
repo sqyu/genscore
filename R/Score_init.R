@@ -69,6 +69,8 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
   if (p < 2) stop("p must be a positive integer >= 2.")
   if (!is.null(seed)) set.seed(seed)
   if (mode == "random"){
+    if (spars <= 0 || spars >= 1)
+      stop("spars must be in (0, 1).")
     ## spars: p in binomial for the whole graph
     K <- ran_mat(p)
     K[upper.tri(K)] <- K[upper.tri(K)] * matrix(stats::rbinom(p^2,1,spars),p,p)[upper.tri(diag(p))]
@@ -76,6 +78,8 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
     K <- K + diag(p) * (eig - min(eigen(K)$values))
   } else if (mode == "sub"){ # From Section 4.2 of Lin et al (2016)
     ## spars: p in binomial for each subgraph
+    if (spars <= 0 || spars >= 1)
+      stop("spars must be in (0, 1).")
     if (!requireNamespace("Matrix", quietly=TRUE))
       stop("Please install package \"Matrix\".")
     if (subgraphs < 1 || p %% subgraphs) {stop("subgraphs must be a positive integer and p must be an exact multiple of subgraphs.")}
@@ -85,6 +89,8 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
       mat <- mat + diag(p_sub) * (eig - min(eigen(mat)$values))})))
   } else if (mode == "er"){
     ## spars: p in binomial for the whole graph
+    if (spars <= 0 || spars >= 1)
+      stop("spars must be in (0, 1).")
     if (!requireNamespace("igraph", quietly = TRUE))
       stop("Please install package \"igraph\".")
     K <- as.matrix(igraph::get.adjacency(igraph::erdos.renyi.game(p, spars))) # Not sure why t(K) below would cause an error otherwise
@@ -93,6 +99,8 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
   } else if (mode == "band"){
     ## spars: bandwidth, i.e. Kij != 0 iff |i-j| <= spars
     ## non-random so seed not needed
+    if (spars <= 0 || spars %% 1 != 0)
+      stop("spars must be a positive integer.")
     K <- matrix(0,p,p)
     entries <- seq(1,0,length.out=spars+2)[2:(spars+1)]
     for (i in 1:spars)

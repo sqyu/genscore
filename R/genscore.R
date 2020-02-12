@@ -1311,6 +1311,11 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
   if ((a_numer == 0 && a_denom != 0) || (b_numer == 0 && b_denom != 0))
     stop("For a and b in the density, if the numerator is 0 then the denominator must also be 0 (-> log), otherwise the density is not defined (x^(0/n) for n!=0 always evaluates to 1 and we do not allow this; set eta to 0 instead).")
 
+  if (a_denom != 1 || b_denom != 1) {
+    if (domain$type == "R" || (domain$type == "uniform" && domain$lefts[1] < 0))
+      stop("For settings with non-integer a and/or b, the domain must be non-negative.")
+  }
+  
   if (setting == "gaussian" && domain$type == "R") {
     if (!requireNamespace("mvtnorm", quietly = TRUE))
       stop("Please install package \"mvtnorm\".")
@@ -1390,7 +1395,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
                          list("verbose"=as.integer(verbose), "errno"=as.integer(0))
   ))
   if (res$errno)
-    stop("Error occurred in C -> rab_arms() called in gen().")
+    stop("Error occurred in C -> rab_arms() called in gen(). Check if the density is well-defined on your domain. (If any fractional powers are involved, i.e. a and/or b are non-integer, the domain must be non-negative.)")
   x <- t(matrix(res$xres, nrow=domain$p))
   if (remove_outofbound) {
     if (verbose)
