@@ -1616,7 +1616,7 @@ get_dist <- function(x, domain){
 #'     \item{\code{truncated_sin}}{A truncated sin function applied element-wise: \eqn{\sin(\mathrm{para}\cdot x)}{sin(para*x)} if \eqn{\mathrm{para}\cdot x\leq\pi/2}{para*x<=\pi/2}, or 1 otherwise. Bounded and takes one parameter.}
 #'     \item{\code{truncated_tan}}{A truncated tan function applied element-wise: \eqn{\tan(\mathrm{para}\cdot x)}{tan(para*x)} if \eqn{\mathrm{para}\cdot x\leq\pi/4}{para*x<=\pi/4}, or 1 otherwise. Bounded and takes one parameter.}
 #'  }
-#' For the adaptive modes (names ending with \code{"_ada"}), \code{h} and \code{hp} are first applied to \code{x} without truncation. Then inside each column, values that are larger than the \code{para2}-th quantile will be truncated.
+#' For the adaptive modes (names ending with \code{"_ada"}), \code{h} and \code{hp} are first applied to \code{x} without truncation. Then inside each column, values that are larger than the \code{para2}-th quantile will be truncated. The quantile is calculated using finite values only, and if no finite values exist the quantile is set to 1.
 #' For example, if \code{mode == "min_pow_ada"}, \code{para == 2}, \code{para2 == 0.4}, the \code{j}-th column of the returned \code{hx} will be \code{pmin(x[,j]^2, stats::quantile(x[,j]^2, 0.4))}, and the \code{j}-th column of \code{hpx} will be \code{2*x[,j]*(x[,j] <= stats::quantile(x[,j]^2, 0.4))}.
 #' @examples
 #' get_h_hp("mcp", 2, 4)(0:10)
@@ -1671,7 +1671,8 @@ get_h_hp_adaptive <- function(mode, para, percentile){
       hx_hpx <- t(apply(x, 1, h_hp))
       hx <- hx_hpx[,1:ncol(x)]; hpx <- hx_hpx[,ncol(x)+1:ncol(x)]
       for (j in 1:ncol(x)) {
-        quant <- stats::quantile(hx[,j], percentile)
+        quant <- stats::quantile(hx[,j][is.finite(hx[,j])], percentile)
+        if (is.na(quant)) quant <- 1
         truncated <- which(hx[,j] > quant)
         hx[truncated,j] <- quant
         hpx[truncated,j] <- 0

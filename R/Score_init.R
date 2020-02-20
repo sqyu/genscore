@@ -589,7 +589,7 @@ get_g0 <- function(domain, C) {
 #' Adaptively truncates the l2 distance to the boundary of the domain and its gradient for some domains.
 #'
 #' @param domain A list returned from \code{make_domain()} that represents the domain.
-#' @param percentile A number between 0 and 1, the percentile. The returned l2 distance will be truncated to its \code{percentile}-th quantile, i.e. the function returns \code{pmin(g0(x), stats::quantile(g0(x), percentile))} and its gradient.
+#' @param percentile A number between 0 and 1, the percentile. The returned l2 distance will be truncated to its \code{percentile}-th quantile, i.e. the function returns \code{pmin(g0(x), stats::quantile(g0(x), percentile))} and its gradient. The quantile is calculated using finite values only, and if no finite values exist the quantile is set to 1.
 #' @details Calculates the l2 distance to the boundary of the domain, with the distance truncated above at a specified quantile. Matches the \code{g0} function and its gradient from Liu (2019) if \code{percentile == 1} and domain is bounded.
 #' Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
 #' @return A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
@@ -657,7 +657,7 @@ get_g0_ada <- function(domain, percentile) {
     g0 <- get_g0(domain, Inf)
     return (function(x) {
       g0x_g0dx <- g0(x); g0x <- g0x_g0dx$g0; g0dx <- g0x_g0dx$g0d
-      quant <- stats::quantile(g0x, percentile)
+      quant <- stats::quantile(g0x[is.finite(g0x)], percentile)
       truncated <- which(g0x > quant)
       g0x[truncated] <- quant
       g0dx[truncated,] <- 0

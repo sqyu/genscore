@@ -9,7 +9,7 @@ get_g0_ada(domain, percentile)
 \arguments{
 \item{domain}{A list returned from \code{make_domain()} that represents the domain.}
 
-\item{percentile}{A number between 0 and 1, the percentile. The returned l2 distance will be truncated to its \code{percentile}-th quantile, i.e. the function returns \code{pmin(g0(x), stats::quantile(g0(x), percentile))} and its gradient.}
+\item{percentile}{A number between 0 and 1, the percentile. The returned l2 distance will be truncated to its \code{percentile}-th quantile, i.e. the function returns \code{pmin(g0(x), stats::quantile(g0(x), percentile))} and its gradient. The quantile is calculated using finite values only, and if no finite values exist the quantile is set to 1.}
 }
 \value{
 A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
