@@ -1544,7 +1544,7 @@ get_dist <- function(x, domain){
   }
 
   if (domain$type == "simplex" && ncol(x) == domain$p)
-    x <- x[, 1:domain$p_deemed]
+    x <- x[, 1:domain$p_deemed, drop=FALSE]
   if (ncol(x) != domain$p_deemed)
     stop("x must have domain$p = ", domain$p, " (or ", domain$p_deemed, " for simplex) columns.")
   if (!"checked" %in% names(domain))
@@ -1582,8 +1582,8 @@ get_dist <- function(x, domain){
 #'
 #' @param mode A string, see details.
 #' @param para May be optional. A number, the first parameter. Default to \code{NULL}.
-#' @param para2 May be optional. A number, the second parameter. Default to \code{NULL}.
-#' @return A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.
+#' @param para2 May be optional. A number, the second parameter. If \code{mode} is one of the adaptive mode below, this specifies the percentile (see details). Default to \code{NULL}.
+#' @return A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector (for mode names not ending with \code{"_ada"} only) or a matrix \code{x}, with both of the results having the same shape as \code{x}.
 #' @details
 #' The \code{mode} parameter can be chosen from the options listed below along with the corresponding definitions of \code{h} under appropriate choices of \code{para} and \code{para2} parameters. Unless otherwise noted, \code{para} and \code{para2}, must both be strictly positive if provided, and are set to 1 if not provided. Functions \code{h} and \code{hp} should only be applied to non-negative values \code{x} and this is not enforced or checked by the functions.
 #' Internally calls \code{get_h_hp_vector}.
@@ -1595,12 +1595,19 @@ get_dist <- function(x, domain){
 #'     \item{\code{log_pow}}{A power function on a log scale \eqn{\boldsymbol{h}(\boldsymbol{x})=\log(1+\boldsymbol{x})^{\mathrm{para}}}{log(1+x)^para}. Unbounded and takes one parameter. Equivalent to \code{min_log_pow(x, para, Inf)}.}
 #'     \item{\code{mcp}}{Treating \eqn{\lambda}=para, \eqn{\gamma}=para2, the step-wise MCP function applied element-wise: \eqn{\lambda x-x^2/(2\gamma)}{\lambdax-x^2/(2\gamma)} if \eqn{x\leq\lambda\gamma}{x<=\lambda\gamma}, or \eqn{\gamma\lambda^2/2} otherwise. Bounded and takes two parameters.}
 #'     \item{\code{min_asinh}}{A truncated asinh function applied element-wise: \eqn{\min(\mathrm{asinh}(\mathrm{para}\cdot\boldsymbol{x}),\mathrm{para}_2)}{pmin(asinh(para*x), para2)}. Bounded and takes two parameters.}
+#'     \item{\code{min_asinh_ada}}{Adaptive version of \code{min_asinh}.}
 #'     \item{\code{min_cosh}}{A truncated shifted cosh function applied element-wise: \eqn{\min(\cosh(\mathrm{para}\cdot\boldsymbol{x})-1,\mathrm{para}_2)}{pmin(cosh(para*x)-1, para2)}. Bounded and takes two parameters.}
+#'     \item{\code{min_cosh_ada}}{Adaptive version of \code{min_cosh}.}
 #'     \item{\code{min_exp}}{A truncated shifted exponential function applied element-wise: \eqn{\boldsymbol{h}(\boldsymbol{x})=\min(\exp(\mathrm{para}\cdot\boldsymbol{x})-1,\mathrm{para}_2)}{pmin(exp(para*x)-1, para2)}. Bounded and takes two parameters.}
+#'     \item{\code{min_exp_ada}}{Adaptive version of \code{min_exp}.}
 #'     \item{\code{min_log_pow}}{A truncated power on a log scale applied element-wise: \eqn{\boldsymbol{h}(\boldsymbol{x})=\min(\log(1+\boldsymbol{x}),\mathrm{para}_2)^{\mathrm{para}}}{pmin(log(1+x), para2)^para}. Bounded and takes two parameters.}
+#'     \item{\code{min_log_pow_ada}}{Adaptive version of \code{min_log_pow}.}
 #'     \item{\code{min_pow}}{A truncated power function applied element-wise: \eqn{\boldsymbol{h}(\boldsymbol{x})=\min(\boldsymbol{x},\mathrm{para}_2)^{\mathrm{para}}}{pmin(x, para2)^para}. Bounded and takes two parameters.}
+#'     \item{\code{min_pow_ada}}{Adaptive version of \code{min_pow}.}
 #'     \item{\code{min_sinh}}{A truncated sinh function applied element-wise: \eqn{\min(\sinh(\mathrm{para}\cdot\boldsymbol{x}),\mathrm{para}_2)}{pmin(sinh(para*x), para2)}. Bounded and takes two parameters.}
+#'     \item{\code{min_sinh_ada}}{Adaptive version of \code{min_sinh}.}
 #'     \item{\code{min_softplus}}{A truncated shifted softplus function applied element-wise: \eqn{\min(\log(1+\exp(\mathrm{para}\cdot\boldsymbol{x}))-\log(2),\mathrm{para}_2)}{pmin(log(1+exp(para*x))-log(2), para2)}. Bounded and takes two parameters.}
+#'     \item{\code{min_softplus_ada}}{Adaptive version of \code{min_softplus}.}
 #'     \item{\code{pow}}{A power function \eqn{\boldsymbol{h}(\boldsymbol{x})=\boldsymbol{x}^{\mathrm{para}}}{h(x)=x^para}. Unbounded and takes two parameter. Equivalent to \code{min_pow(x, para, Inf)}.}
 #'     \item{\code{scad}}{Treating \eqn{\lambda}=para, \eqn{\gamma}=para2, the step-wise SCAD function applied element-wise: \eqn{\lambda x}{\lambdax} if \eqn{x\leq\lambda}{x<=\lambda}, or \eqn{(2\gamma\lambda x-x^2-\lambda^2)/(2(\gamma-1))}{(2\gamma\lambdax-x^2-\lambda^2)/(2(\gamma-1))} if \eqn{\lambda<x<\gamma\lambda}, or \eqn{\lambda^2(\gamma+1)/2} otherwise. Bounded and takes two parameters, where \code{para2} must be larger than 1, and will be set to 2 by default if not provided.}
 #'     \item{\code{sinh}}{A sinh function \eqn{\boldsymbol{h}(\boldsymbol{x})=\sinh(\mathrm{para}\cdot\boldsymbol{x})}{h(x)=sinh(para*x)}. Unbounded and takes one parameter. Equivalent to \code{min_sinh(x, para, Inf)}.}
@@ -1609,26 +1616,69 @@ get_dist <- function(x, domain){
 #'     \item{\code{truncated_sin}}{A truncated sin function applied element-wise: \eqn{\sin(\mathrm{para}\cdot x)}{sin(para*x)} if \eqn{\mathrm{para}\cdot x\leq\pi/2}{para*x<=\pi/2}, or 1 otherwise. Bounded and takes one parameter.}
 #'     \item{\code{truncated_tan}}{A truncated tan function applied element-wise: \eqn{\tan(\mathrm{para}\cdot x)}{tan(para*x)} if \eqn{\mathrm{para}\cdot x\leq\pi/4}{para*x<=\pi/4}, or 1 otherwise. Bounded and takes one parameter.}
 #'  }
+#' For the adaptive modes (names ending with \code{"_ada"}), \code{h} and \code{hp} are first applied to \code{x} without truncation. Then inside each column, values that are larger than the \code{para2}-th quantile will be truncated.
+#' For example, if \code{mode == "min_pow_ada"}, \code{para == 2}, \code{para2 == 0.4}, the \code{j}-th column of the returned \code{hx} will be \code{pmin(x[,j]^2, stats::quantile(x[,j]^2, 0.4))}, and the \code{j}-th column of \code{hpx} will be \code{2*x[,j]*(x[,j] <= stats::quantile(x[,j]^2, 0.4))}.
 #' @examples
 #' get_h_hp("mcp", 2, 4)(0:10)
 #' get_h_hp("min_log_pow", 1, log(1+3))(matrix(0:11, nrow=3))
 #' get_h_hp("min_pow", 1.5, 3)(seq(0, 5, by=0.5))
 #' get_h_hp("min_softplus")(matrix(seq(0, 2, by=0.1), nrow=7))
+#' 
+#' get_h_hp("min_log_pow_ada", 1, 0.4)(matrix(0:49, nrow=10))
+#' get_h_hp("min_pow_ada", 2, 0.3)(matrix(0:49, nrow=10))
+#' get_h_hp("min_softplus_ada", 2, 0.6)(matrix(seq(0, 0.49, by=0.01), nrow=10))
 #' @export
 get_h_hp <- function(mode, para=NULL, para2=NULL){
-  h_hp_matrix <- function(h_hp) {
-    # Takes a h_hp function and returns a function that applies h_hp to each row
-    return (function(x) {
-      if (is.matrix(x)) {
-        hx_hpx <- t(apply(x, 1, h_hp))
-        return (list(hx=hx_hpx[,1:ncol(x)], hpx=hx_hpx[,ncol(x)+1:ncol(x)]))
-      } else {
-        hx_hpx <- h_hp(x)
-        return (list(hx=hx_hpx[,1], hpx=hx_hpx[,2]))
+  if (startsWith(mode, "min_") && endsWith(mode, "_ada"))
+    return (get_h_hp_adaptive(gsub("_ada$", "", mode), para, para2))
+  h_hp <- get_h_hp_vector(mode, para, para2)
+  return (function(x) {
+    if (is.matrix(x)) {
+      hx_hpx <- t(apply(x, 1, h_hp))
+      return (list(hx=hx_hpx[,1:ncol(x)], hpx=hx_hpx[,ncol(x)+1:ncol(x)]))
+    } else {
+      hx_hpx <- h_hp(x)
+      return (list(hx=hx_hpx[,1], hpx=hx_hpx[,2]))
+    }
+  })
+}
+
+#' Generator of adaptive h and hp (derivative of h) functions.
+#'
+#' Generator of adaptive \code{h} and \code{hp} (derivative of \eqn{h}) functions.
+#'
+#' @param mode A string, the corresponding mode (with the suffix \code{"_ada"} removed from the input to \code{get_h_hp()}). Must be one of the modes starting with \code{"min_"} supported by \code{get_h_hp_vector()}.
+#' @param para Must be provided, but can be \code{NULL}. A number, the first parameter; see \code{get_h_hp()} or \code{get_h_hp_vector()}.
+#' @param percentile A number, the percentile for column-wise truncation on \code{hx} and \code{hpx}. 
+#' @return A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a matrix \code{x}, with both of the results having the same shape as \code{x}.
+#' @details
+#' Helper function of \code{get_h_hp()}. Please refer to \code{get_hs_hp()}.
+#' @examples
+#' get_h_hp_adaptive("min_log_pow", 1, 0.4)(matrix(0:49, nrow=10))
+#' get_h_hp_adaptive("min_pow", 2, 0.3)(matrix(0:49, nrow=10))
+#' get_h_hp_adaptive("min_softplus", 2, 0.6)(matrix(seq(0, 0.49, by=0.01), nrow=10))
+#' 
+#' hx_hpx <- get_h_hp_adaptive("min_log_pow", 1, 0.4)(matrix(0:49, nrow=10))
+#' hx_hpx2 <- get_h_hp("min_log_pow_ada", 1, 0.4)(matrix(0:49, nrow=10))
+#' c(max(abs(hx_hpx$hx - hx_hpx2$hx)), max(abs(hx_hpx$hpx - hx_hpx2$hpx)))
+#' @export
+get_h_hp_adaptive <- function(mode, para, percentile){
+  if (percentile < 0 || percentile > 1) stop("para2 for adaptive modes must be between 0 and 1.")
+  h_hp <- get_h_hp_vector(mode, para, Inf)
+  return (function(x) {
+    if (!is.matrix(x)) {stop("h_hp with adaptive modes can only be applied to matrices.")
+    } else {
+      hx_hpx <- t(apply(x, 1, h_hp))
+      hx <- hx_hpx[,1:ncol(x)]; hpx <- hx_hpx[,ncol(x)+1:ncol(x)]
+      for (j in 1:ncol(x)) {
+        quant <- stats::quantile(hx[,j], percentile)
+        truncated <- which(hx[,j] > quant)
+        hx[truncated,j] <- quant
+        hpx[truncated,j] <- 0
       }
-    })
-  }
-  return (h_hp_matrix(get_h_hp_vector(mode, para, para2)))
+      return (list(hx=hx, hpx=hpx))
+    }
+  })
 }
 
 #' Generator of h and hp (derivative of h) functions.
@@ -1650,9 +1700,10 @@ get_h_hp <- function(mode, para=NULL, para2=NULL){
 get_h_hp_vector <- function(mode, para=NULL, para2=NULL){
   if (is.null(mode) || mode == "")
     stop ("Mode must be chosen from one of the following:",
-          "1, asinh, cosh, exp, identity, log_pow, mcp, min_asinh, min_cosh, ",
-          "min_exp, min_log_pow, min_pow, min_sinh, min_softplus, pow, scad, ",
-          "sinh, softplus, tanh, truncated_sin, truncated_tan.")
+          "1, asinh, cosh, exp, identity, log_pow, mcp, min_asinh, min_asinh_ada, ",
+          "min_cosh, min_cosh_ada, min_exp, min_exp_ada, min_log_pow, min_log_pow_ada, ",
+          "min_pow, min_pow_ada, min_sinh, min_sinh_ada, min_softplus, min_softplus_ada, ",
+          "pow, scad, sinh, softplus, tanh, truncated_sin, truncated_tan.")
   number_of_params <- list("1"=0, "asinh"=1, "cosh"=1, "exp"=1, "identity"=0, "log_pow"=1, "mcp"=2,
                            "min_asinh"=2, "min_cosh"=2, "min_exp"=2, "min_log_pow"=2,
                            "min_pow"=2, "min_sinh"=2, "min_softplus"=2, "pow"=1,
@@ -1662,12 +1713,12 @@ get_h_hp_vector <- function(mode, para=NULL, para2=NULL){
     stop("Mode ", mode, " not supported.")
   }
   if (number_of_params[[mode]]){
-    if (is.null(para)) {cat("para not provided, default to 1."); para <- 1
+    if (is.null(para)) {cat("para not provided, default to 1.\n"); para <- 1
     } else if (para <= 0) {stop("para must be strictly positive.")}
   }
   if (number_of_params[[mode]] == 2){
     if (is.null(para2)) {
-      if (mode == "scad") {cat("para2 not provided, default to 2."); para2 <- 2}
+      if (mode == "scad") {cat("para2 not provided, default to 2.\n"); para2 <- 2}
       else {cat("para2 not provided, default to 1."); para2 <- 1}
     } else if (para2 <= 0) {stop("para2 must be strictly positive.")}
   }
@@ -2492,7 +2543,7 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
       if (is.null(param1))
         stop("param1 (and param2 optionally) must be provided with mode.")
       h_hp <- get_h_hp(mode=mode, para=param1, para2=param2);
-      if (length(h_hp(1))==0)
+      if (length(h_hp(matrix(1:4, nrow=2)))==0)
         stop("Error occurred in generating h_hp. Possibly due to invalid param1 and/or param2.")
       #if (abs(h(0)) > tol)
       #  stop(paste("h(0)=", h(0), ", larger than 0. Stopped.", sep=""))

@@ -488,15 +488,19 @@ get_g0 <- function(domain, C) {
   } else if (domain$type == "R+") {
     unif_dist <- function(x) {
       if (any(!in_bound(x, domain))) stop("x out of domain.")
-      dist_origin <- sqrt(rowSums(x^2))
-      list("g0"=pmin(dist_origin, C),
-           "g0d"=replicate(ncol(x), as.numeric(dist_origin < C)))
+      row_min <- apply(x, 1, min)
+      row_which_min <- apply(x, 1, which.min)
+      list("g0"=pmin(row_min, C),
+           "g0d"=t(sapply(1:nrow(x), function(i){
+             if (row_min[i] >= C){tmp <- numeric(p)
+             } else {tmp <- numeric(p); tmp[row_which_min[i]] <- 1; tmp}
+             })))
     }
   } else if (domain$type == "simplex") {
     unif_dist <- function(x) {
       if (any(!in_bound(x, domain))) stop("x out of domain.")
-      p <- domain$p_deemed
       if (ncol(x) == domain$p) x <- x[,-p,drop=FALSE]
+      p <- domain$p_deemed
       row_min <- apply(x, 1, min)
       row_which_min <- apply(x, 1, which.min)
       dist_to_sum_boundary <- apply(x, 1, function(xx){(1-sum(xx))/sqrt(p)})
@@ -576,4 +580,88 @@ get_g0 <- function(domain, C) {
     unif_dist <- NULL
   }
   return (unif_dist)
+}
+
+
+
+#' Adaptively truncates the l2 distance to the boundary of the domain and its gradient for some domains.
+#'
+#' Adaptively truncates the l2 distance to the boundary of the domain and its gradient for some domains.
+#'
+#' @param domain A list returned from \code{make_domain()} that represents the domain.
+#' @param percentile A number between 0 and 1, the percentile. The returned l2 distance will be truncated to its \code{percentile}-th quantile, i.e. the function returns \code{pmin(g0(x), stats::quantile(g0(x), percentile))} and its gradient.
+#' @details Calculates the l2 distance to the boundary of the domain, with the distance truncated above at a specified quantile. Matches the \code{g0} function and its gradient from Liu (2019) if \code{percentile == 1} and domain is bounded.
+#' Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
+#' @return A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
+#' @examples
+#' n <- 100
+#' p <- 20
+#' K <- diag(p)
+#' eta <- numeric(p)
+#'
+#' domain <- make_domain("R", p=p)
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.3)(x)
+#'
+#' domain <- make_domain("R+", p=p)
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.3)(x)
+#'
+#' domain <- make_domain("uniform", p=p, lefts=c(-Inf,-3,3), rights=c(-5,1,Inf))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.6)(x)
+#'
+#' domain <- make_domain("simplex", p=p)
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' max(abs(get_g0_ada(domain, 0.4)(x)$g0 - get_g0_ada(domain, 0.4)(x[,-p])$g0))
+#' max(abs(get_g0_ada(domain, 0.4)(x)$g0d - get_g0_ada(domain, 0.4)(x[,-p])$g0d))
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)>1.3", "nonnegative"=FALSE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.5)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)>1.3", "nonnegative"=TRUE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.7)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)<1.3", "nonnegative"=FALSE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.6)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x^2)<1.3", "nonnegative"=TRUE, "abs"=FALSE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.25)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x)<1.3", "nonnegative"=FALSE, "abs"=TRUE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.37)(x)
+#'
+#' domain <- make_domain("polynomial", p=p, ineqs=
+#'      list(list("expression"="sum(x)<1.3", "nonnegative"=TRUE, "abs"=TRUE)))
+#' x <- gen(n, "gaussian", FALSE, eta, K, domain, 100)
+#' get_g0_ada(domain, 0.45)(x)
+#'
+#' @export
+get_g0_ada <- function(domain, percentile) {
+  if (percentile < 0 || percentile > 1) stop("percentile must be between 0 and 1.")
+  if (domain$type == "R") {
+    return (function(x) {
+      list("g0"=rep(1, nrow(x)), "g0d"=matrix(0, nrow=nrow(x), ncol=ncol(x)))
+    })
+  } else {
+    g0 <- get_g0(domain, Inf)
+    return (function(x) {
+      g0x_g0dx <- g0(x); g0x <- g0x_g0dx$g0; g0dx <- g0x_g0dx$g0d
+      quant <- stats::quantile(g0x, percentile)
+      truncated <- which(g0x > quant)
+      g0x[truncated] <- quant
+      g0dx[truncated,] <- 0
+      return (list("g0"=g0x, "g0d"=g0dx))
+    })
+  }
 }

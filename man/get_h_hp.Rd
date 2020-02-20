@@ -11,10 +11,10 @@ get_h_hp(mode, para = NULL, para2 = NULL)
 
 \item{para}{May be optional. A number, the first parameter. Default to \code{NULL}.}
 
-\item{para2}{May be optional. A number, the second parameter. Default to \code{NULL}.}
+\item{para2}{May be optional. A number, the second parameter. If \code{mode} is one of the adaptive mode below, this specifies the percentile (see details). Default to \code{NULL}.}
 }
 \value{
-A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector or a matrix \code{x}, both of which has the same shape as \code{x}.
+A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a vector (for mode names not ending with \code{"_ada"} only) or a matrix \code{x}, with both of the results having the same shape as \code{x}.
 }
 \description{
 Generator of \code{h} and \code{hp} (derivative of \eqn{h}) functions.
@@ -30,12 +30,19 @@ Internally calls \code{get_h_hp_vector}.
     \item{\code{log_pow}}{A power function on a log scale \eqn{\boldsymbol{h}(\boldsymbol{x})=\log(1+\boldsymbol{x})^{\mathrm{para}}}{log(1+x)^para}. Unbounded and takes one parameter. Equivalent to \code{min_log_pow(x, para, Inf)}.}
     \item{\code{mcp}}{Treating \eqn{\lambda}=para, \eqn{\gamma}=para2, the step-wise MCP function applied element-wise: \eqn{\lambda x-x^2/(2\gamma)}{\lambdax-x^2/(2\gamma)} if \eqn{x\leq\lambda\gamma}{x<=\lambda\gamma}, or \eqn{\gamma\lambda^2/2} otherwise. Bounded and takes two parameters.}
     \item{\code{min_asinh}}{A truncated asinh function applied element-wise: \eqn{\min(\mathrm{asinh}(\mathrm{para}\cdot\boldsymbol{x}),\mathrm{para}_2)}{pmin(asinh(para*x), para2)}. Bounded and takes two parameters.}
+    \item{\code{min_asinh_ada}}{Adaptive version of \code{min_asinh}.}
     \item{\code{min_cosh}}{A truncated shifted cosh function applied element-wise: \eqn{\min(\cosh(\mathrm{para}\cdot\boldsymbol{x})-1,\mathrm{para}_2)}{pmin(cosh(para*x)-1, para2)}. Bounded and takes two parameters.}
+    \item{\code{min_cosh_ada}}{Adaptive version of \code{min_cosh}.}
     \item{\code{min_exp}}{A truncated shifted exponential function applied element-wise: \eqn{\boldsymbol{h}(\boldsymbol{x})=\min(\exp(\mathrm{para}\cdot\boldsymbol{x})-1,\mathrm{para}_2)}{pmin(exp(para*x)-1, para2)}. Bounded and takes two parameters.}
+    \item{\code{min_exp_ada}}{Adaptive version of \code{min_exp}.}
     \item{\code{min_log_pow}}{A truncated power on a log scale applied element-wise: \eqn{\boldsymbol{h}(\boldsymbol{x})=\min(\log(1+\boldsymbol{x}),\mathrm{para}_2)^{\mathrm{para}}}{pmin(log(1+x), para2)^para}. Bounded and takes two parameters.}
+    \item{\code{min_log_pow_ada}}{Adaptive version of \code{min_log_pow}.}
     \item{\code{min_pow}}{A truncated power function applied element-wise: \eqn{\boldsymbol{h}(\boldsymbol{x})=\min(\boldsymbol{x},\mathrm{para}_2)^{\mathrm{para}}}{pmin(x, para2)^para}. Bounded and takes two parameters.}
+    \item{\code{min_pow_ada}}{Adaptive version of \code{min_pow}.}
     \item{\code{min_sinh}}{A truncated sinh function applied element-wise: \eqn{\min(\sinh(\mathrm{para}\cdot\boldsymbol{x}),\mathrm{para}_2)}{pmin(sinh(para*x), para2)}. Bounded and takes two parameters.}
+    \item{\code{min_sinh_ada}}{Adaptive version of \code{min_sinh}.}
     \item{\code{min_softplus}}{A truncated shifted softplus function applied element-wise: \eqn{\min(\log(1+\exp(\mathrm{para}\cdot\boldsymbol{x}))-\log(2),\mathrm{para}_2)}{pmin(log(1+exp(para*x))-log(2), para2)}. Bounded and takes two parameters.}
+    \item{\code{min_softplus_ada}}{Adaptive version of \code{min_softplus}.}
     \item{\code{pow}}{A power function \eqn{\boldsymbol{h}(\boldsymbol{x})=\boldsymbol{x}^{\mathrm{para}}}{h(x)=x^para}. Unbounded and takes two parameter. Equivalent to \code{min_pow(x, para, Inf)}.}
     \item{\code{scad}}{Treating \eqn{\lambda}=para, \eqn{\gamma}=para2, the step-wise SCAD function applied element-wise: \eqn{\lambda x}{\lambdax} if \eqn{x\leq\lambda}{x<=\lambda}, or \eqn{(2\gamma\lambda x-x^2-\lambda^2)/(2(\gamma-1))}{(2\gamma\lambdax-x^2-\lambda^2)/(2(\gamma-1))} if \eqn{\lambda<x<\gamma\lambda}, or \eqn{\lambda^2(\gamma+1)/2} otherwise. Bounded and takes two parameters, where \code{para2} must be larger than 1, and will be set to 2 by default if not provided.}
     \item{\code{sinh}}{A sinh function \eqn{\boldsymbol{h}(\boldsymbol{x})=\sinh(\mathrm{para}\cdot\boldsymbol{x})}{h(x)=sinh(para*x)}. Unbounded and takes one parameter. Equivalent to \code{min_sinh(x, para, Inf)}.}
@@ -44,10 +51,16 @@ Internally calls \code{get_h_hp_vector}.
     \item{\code{truncated_sin}}{A truncated sin function applied element-wise: \eqn{\sin(\mathrm{para}\cdot x)}{sin(para*x)} if \eqn{\mathrm{para}\cdot x\leq\pi/2}{para*x<=\pi/2}, or 1 otherwise. Bounded and takes one parameter.}
     \item{\code{truncated_tan}}{A truncated tan function applied element-wise: \eqn{\tan(\mathrm{para}\cdot x)}{tan(para*x)} if \eqn{\mathrm{para}\cdot x\leq\pi/4}{para*x<=\pi/4}, or 1 otherwise. Bounded and takes one parameter.}
  }
+For the adaptive modes (names ending with \code{"_ada"}), \code{h} and \code{hp} are first applied to \code{x} without truncation. Then inside each column, values that are larger than the \code{para2}-th quantile will be truncated.
+For example, if \code{mode == "min_pow_ada"}, \code{para == 2}, \code{para2 == 0.4}, the \code{j}-th column of the returned \code{hx} will be \code{pmin(x[,j]^2, stats::quantile(x[,j]^2, 0.4))}, and the \code{j}-th column of \code{hpx} will be \code{2*x[,j]*(x[,j] <= stats::quantile(x[,j]^2, 0.4))}.
 }
 \examples{
 get_h_hp("mcp", 2, 4)(0:10)
 get_h_hp("min_log_pow", 1, log(1+3))(matrix(0:11, nrow=3))
 get_h_hp("min_pow", 1.5, 3)(seq(0, 5, by=0.5))
 get_h_hp("min_softplus")(matrix(seq(0, 2, by=0.1), nrow=7))
+
+get_h_hp("min_log_pow_ada", 1, 0.4)(matrix(0:49, nrow=10))
+get_h_hp("min_pow_ada", 2, 0.3)(matrix(0:49, nrow=10))
+get_h_hp("min_softplus_ada", 2, 0.6)(matrix(seq(0, 0.49, by=0.01), nrow=10))
 }

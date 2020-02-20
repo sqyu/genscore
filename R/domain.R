@@ -1091,19 +1091,19 @@ read_one_term <- function(s) { # Assumes no whitespace, read one term from an in
 #' @details Finds the intersection between the union of all intervals in \code{A} and the union of all intervals in \code{B}.
 #' @return A list of vectors of size 2, whose union represents the intersection between \code{A} and \code{B}.
 #' @examples
-#' intersection(list(c(1.2,1.5), c(2.3,2.7)),
+#' interval_intersection(list(c(1.2,1.5), c(2.3,2.7)),
 #'        list(c(0.6,1.4), c(2.5,3.6), c(6.3,6.9)))
-#' intersection(list(c(-0.3,0.55), c(2.35,2.8)),
+#' interval_intersection(list(c(-0.3,0.55), c(2.35,2.8)),
 #'        list(c(0.54,0.62), c(2.5,2.9)))
-#' intersection(list(c(0,1)), list(c(1,2)))
-#' intersection(list(c(0,1+1e-8)), list(c(1,2)))
-#' intersection(list(c(0,1), c(2,3)),
+#' interval_intersection(list(c(0,1)), list(c(1,2)))
+#' interval_intersection(list(c(0,1+1e-8)), list(c(1,2)))
+#' interval_intersection(list(c(0,1), c(2,3)),
 #'        list(c(1,2)))
-#' intersection(list(c(0,1+1e-8), c(2-1e-8,3)),
+#' interval_intersection(list(c(0,1+1e-8), c(2-1e-8,3)),
 #'        list(c(1,2)))
-#' intersection(list(c(0,1)), list())
+#' interval_intersection(list(c(0,1)), list())
 #' @export
-intersection <- function(A, B) {
+interval_intersection <- function(A, B) {
   ai <- bi <- 1; res <- list()
   while (ai <= length(A) && bi <= length(B)) {
     if (A[[ai]][2] > B[[bi]][1] && B[[bi]][2] > A[[ai]][1])
@@ -1124,19 +1124,19 @@ intersection <- function(A, B) {
 #' @details Finds the union between the union of all intervals in \code{A} and the union of all intervals in \code{B}.
 #' @return A list of vectors of size 2, whose union represents the union between \code{A} and \code{B}.
 #' @examples
-#' setunion(list(c(1.2,1.5), c(2.3,2.7)),
+#' interval_union(list(c(1.2,1.5), c(2.3,2.7)),
 #'        list(c(0.6,1.4), c(2.5,3.6), c(6.3,6.9)))
-#' setunion(list(c(-0.3,0.55), c(2.35,2.8)),
+#' interval_union(list(c(-0.3,0.55), c(2.35,2.8)),
 #'        list(c(0.54,0.62), c(2.5,2.9)))
-#' setunion(list(c(0,1)), list(c(1,2)))
-#' setunion(list(c(0,1-1e-8)), list(c(1,2)))
-#' setunion(list(c(0,1), c(2,3)),
+#' interval_union(list(c(0,1)), list(c(1,2)))
+#' interval_union(list(c(0,1-1e-8)), list(c(1,2)))
+#' interval_union(list(c(0,1), c(2,3)),
 #'        list(c(1,2)))
-#' setunion(list(c(0,1-1e-8), c(2+1e-8,3)),
+#' interval_union(list(c(0,1-1e-8), c(2+1e-8,3)),
 #'        list(c(1,2)))
-#' setunion(list(c(0,1)), list())
+#' interval_union(list(c(0,1)), list())
 #' @export
-setunion <- function(A, B) {
+interval_union <- function(A, B) {
   if (length(A) == 0) return (B)
   if (length(B) == 0) return (A)
   lefts <- sort(c(sapply(A, function(x){x[1]}), sapply(B, function(x){x[1]})))
