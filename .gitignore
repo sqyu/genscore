@@ -2,3 +2,5 @@ inst/doc
 .Rproj.user
 doc
 Meta
+genscore.Rproj
+.Rbuildignore

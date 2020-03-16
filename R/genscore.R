@@ -21,7 +21,7 @@
 #' \code{h_of_dist(h_hp, x, domain)} simply returns \code{h_hp(dist(x, domain))$hx} and \code{h_hp(dist(x, domain))$hpx * dist\'(x, domain)} (element-wise derivative of \code{h_hp(dist(x, domain))$hx} w.r.t. \code{x}).
 #' @examples
 #' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    stop("Please install package \"mvtnorm\".")
+#'    install.packages("mvtnorm")
 #' n <- 20
 #' p <- 10
 #' eta <- rep(0, p)
@@ -555,7 +555,7 @@ get_elts_trun_gauss <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncent
 #' @details For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 #' @examples
 #' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    stop("Please install package \"mvtnorm\".")
+#'    install.packages("mvtnorm")
 #' n <- 50
 #' p <- 30
 #' mu <- rep(0, p)
@@ -867,7 +867,7 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{vec}(\hat{\mathbf{K}}).}{\hat{\eta}=t1-t2*vec(\hat{K}).}
 #' @examples
 #' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    stop("Please install package \"mvtnorm\".")
+#'    install.packages("mvtnorm")
 #' n <- 50
 #' p <- 30
 #' eta <- rep(0, p)
@@ -1318,12 +1318,12 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
   
   if (setting == "gaussian" && domain$type == "R") {
     if (!requireNamespace("mvtnorm", quietly = TRUE))
-      stop("Please install package \"mvtnorm\".")
+      install.packages("mvtnorm")
     Sigma <- solve(K)
     return (mvtnorm::rmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma))
   } else if (setting == "gaussian" && domain$type == "R+") {
     if (!requireNamespace("tmvtnorm", quietly = TRUE))
-      stop("Please install package \"tmvtnorm\".")
+      install.packages("tmvtnorm")
     Sigma <- solve(K)
     return (tmvtnorm::rtmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma,
                                lower=rep(0, domain$p),
@@ -1422,7 +1422,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' Returned matrix \code{dpx} contains the component-wise derivatives of \code{dx} in its components. That is, its \code{i,j}-th component is 0 if \eqn{x_{i,j}} is unbounded or is bounded from both below and above or is at the boundary, or -1 if \eqn{x_{i,j}} is closer to its lower boundary (or if its bounded from below but unbounded from above), or 1 otherwise.
 #' @examples
 #' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    stop("Please install package \"mvtnorm\".")
+#'    install.packages("mvtnorm")
 #' n <- 20
 #' p <- 10
 #' eta <- rep(0, p)
@@ -1810,7 +1810,7 @@ get_h_hp_vector <- function(mode, para=NULL, para2=NULL){
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{get_results()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2007,7 +2007,7 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{test_lambda_bounds()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2081,7 +2081,7 @@ test_lambda_bounds <- function(elts, symmetric, lambda=1, lambda_ratio=1, step=2
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{test_lambda_bounds2()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2135,7 +2135,7 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{lambda_max()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2382,7 +2382,7 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{estimate()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2666,7 +2666,7 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{refit()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2732,7 +2732,7 @@ refit <- function(res, elts){
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{eBIC()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2966,7 +2966,7 @@ calc_crit <- function(elts, res, penalty) {
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{get_crit_nopenalty()}) is exactly the same in those cases.
 #' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    stop("Please install package \"tmvtnorm\".")
+#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -3182,7 +3182,7 @@ get_trun <- function(mode, param1, param2){
 #' @export
 varhat <- function(mu, sigmasq, mode, param1, param2, est_mu){
   if (!requireNamespace("cubature", quietly = TRUE))
-    stop("Please install package \"cubature\".")
+    install.package("cubature")
   sigma <- sqrt(sigmasq)
   inte <- function(f,from=0,to=Inf){stats::integrate(f,lower=from,upper=to,rel.tol=1e-10)$value}
   adaptinte <- function(f,from=0,to=Inf){cubature::adaptIntegrate(function(t){x<-t/(1-t);1/(1-t)^2*f(x)},lowerLimit=from/(from+1),upperLimit=ifelse(is.infinite(to),1,to/(to+1)),tol=1e-10)$integral}

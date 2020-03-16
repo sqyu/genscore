@@ -81,7 +81,7 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
     if (spars <= 0 || spars >= 1)
       stop("spars must be in (0, 1).")
     if (!requireNamespace("Matrix", quietly=TRUE))
-      stop("Please install package \"Matrix\".")
+      install.packages("Matrix")
     if (subgraphs < 1 || p %% subgraphs) {stop("subgraphs must be a positive integer and p must be an exact multiple of subgraphs.")}
     p_sub <- p / subgraphs
     K <- as.matrix(Matrix::bdiag(lapply(1:subgraphs, function(x){mat <- matrix(stats::runif(p_sub^2, 0.5, 1) * stats::rbinom(p_sub^2, 1, spars), p_sub, p_sub);
@@ -92,7 +92,7 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
     if (spars <= 0 || spars >= 1)
       stop("spars must be in (0, 1).")
     if (!requireNamespace("igraph", quietly = TRUE))
-      stop("Please install package \"igraph\".")
+      install.packages("igraph")
     K <- as.matrix(igraph::get.adjacency(igraph::erdos.renyi.game(p, spars))) # Not sure why t(K) below would cause an error otherwise
     K <- K * matrix(stats::runif(p^2, 0.5, 1), p, p); K[upper.tri(K)] <- 0; K <- K + t(K)
     K <- K + diag(p) * (eig - min(eigen(K)$values))
@@ -196,7 +196,7 @@ tp_fp <- function(edges, true_edges, p){
 #' @export
 AUC <- function(tpfp){
   if (!requireNamespace("zoo", quietly = TRUE))
-    stop("Please install package \"zoo\".")
+    install.packages("zoo")
   if (min(tpfp) < 0 || max(tpfp) > 1) {stop("All values in tpfp must be between 0 and 1.")}
   if (ncol(tpfp) != 2) {stop("tpfp must be a matrix of two columns, namely the true and false positive rates.")}
   tpfp <- tpfp[order(tpfp[,2]), ]

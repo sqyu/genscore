@@ -44,7 +44,7 @@ For details on the returned values, please refer to \code{get_elts_ab} or \code{
 }
 \examples{
 if (!requireNamespace("mvtnorm", quietly = TRUE))
-   stop("Please install package \"mvtnorm\".")
+   install.packages("mvtnorm")
 n <- 50
 p <- 30
 mu <- rep(0, p)

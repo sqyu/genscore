@@ -118,7 +118,7 @@ The main function for the generalized score-matching estimator for graphical mod
 #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #   as the way to call this function (\code{estimate()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
-   stop("Please install package \"tmvtnorm\".")
+   install.packages("tmvtnorm")
 n <- 50
 p <- 30
 domain <- make_domain("R+", p=p)

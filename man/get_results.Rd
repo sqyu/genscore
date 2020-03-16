@@ -58,7 +58,7 @@ If \code{elts$domain_type == "simplex"} and \code{elts$setting} constains substr
 #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #   way to call this function (\code{get_results()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
-   stop("Please install package \"tmvtnorm\".")
+   install.packages("tmvtnorm")
 n <- 50
 p <- 30
 domain <- make_domain("R+", p=p)

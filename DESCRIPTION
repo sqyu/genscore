@@ -19,7 +19,8 @@ Suggests:
     rmarkdown,
     cubature,
     stringr
-Imports: Rdpack
+Imports: 
+    Rdpack
 RdMacros: Rdpack
 RoxygenNote: 7.0.2
 VignetteBuilder: knitr

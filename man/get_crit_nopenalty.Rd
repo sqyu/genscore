@@ -34,7 +34,7 @@ If \code{previous_res} is provided, \code{exclude} and \code{exclude_eta} must b
 #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #   way to call this function (\code{get_crit_nopenalty()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
-   stop("Please install package \"tmvtnorm\".")
+   install.packages("tmvtnorm")
 n <- 50
 p <- 30
 domain <- make_domain("R+", p=p)

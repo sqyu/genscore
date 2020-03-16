@@ -87,7 +87,7 @@ so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{ve
 }
 \examples{
 if (!requireNamespace("mvtnorm", quietly = TRUE))
-   stop("Please install package \"mvtnorm\".")
+   install.packages("mvtnorm")
 n <- 50
 p <- 30
 eta <- rep(0, p)

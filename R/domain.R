@@ -806,7 +806,7 @@ domain_for_C <- function(domain){
 #' @export
 parse_ineq <- function(s, p) {
   if (!requireNamespace("stringr", quietly = TRUE))
-    stop("Please install package \"stringr\".")
+    install.packages("stringr")
   s <- base::gsub("[[:space:]]", "", s) # Remove space
   s <- base::gsub(">=", ">", base::gsub("<=", "<", s)) # Remove = from >= / <=
   const_loc <- stringr::str_locate(s, "[<>][-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$") # e.g. location of >2.34 or <-.3e6

@@ -28,7 +28,7 @@ Define \code{dist\'(x, domain)} as the component-wise derivative of \code{dist(x
 }
 \examples{
 if (!requireNamespace("mvtnorm", quietly = TRUE))
-   stop("Please install package \"mvtnorm\".")
+   install.packages("mvtnorm")
 n <- 20
 p <- 10
 eta <- rep(0, p)

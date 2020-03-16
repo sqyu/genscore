@@ -50,7 +50,7 @@ Searches for the smallest lambda that gives the empty graph (if \code{lower == F
 #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #   way to call this function (\code{test_lambda_bounds()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
-   stop("Please install package \"tmvtnorm\".")
+   install.packages("tmvtnorm")
 n <- 50
 p <- 30
 domain <- make_domain("R+", p=p)

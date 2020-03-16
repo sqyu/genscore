@@ -25,7 +25,7 @@ Returned matrix \code{dpx} contains the component-wise derivatives of \code{dx} 
 }
 \examples{
 if (!requireNamespace("mvtnorm", quietly = TRUE))
-   stop("Please install package \"mvtnorm\".")
+   install.packages("mvtnorm")
 n <- 20
 p <- 10
 eta <- rep(0, p)

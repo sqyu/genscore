@@ -26,7 +26,7 @@ Calculates the eBIC score both with and without refitting an unpenalized model r
 #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #   as the way to call this function (\code{eBIC()}) is exactly the same in those cases.
 if (!requireNamespace("tmvtnorm", quietly = TRUE))
-   stop("Please install package \"tmvtnorm\".")
+   install.packages("tmvtnorm")
 n <- 50
 p <- 30
 domain <- make_domain("R+", p=p)
