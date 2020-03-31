@@ -33,13 +33,13 @@ domain_for_C(domain)
 # The non-negative orthant of the 30-dimensional real space, R+^30
 domain <- make_domain("R+", p=p)
 domain_for_C(domain)
- 
+
 # x such that sum(x^2) > 10 && sum(x^(1/3)) > 10 with x allowed to be negative
 domain <- make_domain("polynomial", p=p, rule="1 && 2",
        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
                       list("expression"="sum(x^(1/3))>10", abs=FALSE, nonnegative=FALSE)))
 domain_for_C(domain)
-                      
+
 # ([0, 1] v [2,3]) ^ p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 domain_for_C(domain)
@@ -50,16 +50,16 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
                       list("expression"="x2<1", abs=FALSE, nonnegative=TRUE),
                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 domain_for_C(domain)
-                      
+
 # x in R_+^p such that {sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
        ineqs=list(list("expression"="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 domain_for_C(domain)
-                      
+
 # x in R_+^p such that {x in R_+^p: sum_j j * xj <= 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
@@ -70,7 +70,7 @@ domain <- make_domain("simplex", p=p)
 domain_for_C(domain)
 
 # The l-1 ball {sum(|x|) < 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 domain_for_C(domain)
 }

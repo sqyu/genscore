@@ -24,8 +24,6 @@ Returned matrix \code{dx} has its \code{i,j}-th component the distance of \eqn{x
 Returned matrix \code{dpx} contains the component-wise derivatives of \code{dx} in its components. That is, its \code{i,j}-th component is 0 if \eqn{x_{i,j}} is unbounded or is bounded from both below and above or is at the boundary, or -1 if \eqn{x_{i,j}} is closer to its lower boundary (or if its bounded from below but unbounded from above), or 1 otherwise.
 }
 \examples{
-if (!requireNamespace("mvtnorm", quietly = TRUE))
-   install.packages("mvtnorm")
 n <- 20
 p <- 10
 eta <- rep(0, p)

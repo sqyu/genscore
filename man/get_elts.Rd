@@ -86,10 +86,8 @@ In the profiled non-centered setting, the function also returns \eqn{t_1}{t1} an
 so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{vec}(\hat{\mathbf{K}}).}{\hat{\eta}=t1-t2*vec(\hat{K}).}
 }
 \examples{
-if (!requireNamespace("mvtnorm", quietly = TRUE))
-   install.packages("mvtnorm")
-n <- 50
-p <- 30
+n <- 30
+p <- 10
 eta <- rep(0, p)
 K <- diag(p)
 dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))

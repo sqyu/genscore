@@ -26,7 +26,7 @@
 
 
 void poly_domain_nonnegative_1d(int a, int b, double c, int larger,
-								int *num_intervals, double **lefts_pt, double **rights_pt, int *errno){
+								int *num_intervals, double **lefts_pt, double **rights_pt, int *errno_status){
 	// If requires x to be non-negative.
 	*num_intervals = 0; // Default
 	*lefts_pt = (double*)malloc(sizeof(double)); // Max num of intervals is 1
@@ -83,16 +83,16 @@ void poly_domain_nonnegative_1d(int a, int b, double c, int larger,
 	} else { // b != 0 and a != 0 and c > 0
 		*num_intervals = 1;
 		if ((a > 0) ^ larger) { // x^(a/b) < c for a > 0 or x^(a/b) > c for a < 0
-			**lefts_pt = 0; **rights_pt = frac_pow(c, b, a, false, TRUE, errno);
+			**lefts_pt = 0; **rights_pt = frac_pow(c, b, a, false, TRUE, errno_status);
 		} else { // x^(a/b) > c for a > 0 or x^(a/b) < c for a < 0
-			**lefts_pt = frac_pow(c, b, a, false, TRUE, errno); **rights_pt = INFINITY;
+			**lefts_pt = frac_pow(c, b, a, false, TRUE, errno_status); **rights_pt = INFINITY;
 		}
 	}
 	return;
 }
 
 void log_exp_domain_1d(int a, double c, int larger, int abs,
-					   int *num_intervals, double **lefts_pt, double **rights_pt, int *errno) {
+					   int *num_intervals, double **lefts_pt, double **rights_pt, int *errno_status) {
 	if (a == 0) { // a == 0, b == 0 -> log
 		if (abs) { // log(|x|)
 			if (larger) { // log(|x|) > c
@@ -170,7 +170,7 @@ void log_exp_domain_1d(int a, double c, int larger, int abs,
 }
 
 void poly_domain_1d(int a, int b, double c, int larger, int abs, int nonnegative,
-					  int *num_intervals, double **lefts_pt, double **rights_pt, int *errno){
+					  int *num_intervals, double **lefts_pt, double **rights_pt, int *errno_status){
 	/* Returns the intervals on which x^(a/b) >/< c (larger == 1 or 0), or abs(x) if abs == 1.
 	 Assumes b > 0, and a and b coprime. Ignores Lebesgue null sets and
 	 joins intervals whenever possible (i.e. (-INF,0),(0,INF) will be joined to (-INF,INF)).
@@ -179,16 +179,16 @@ void poly_domain_1d(int a, int b, double c, int larger, int abs, int nonnegative
 	*lefts_pt = (double*)malloc(2 * sizeof(double)); // Max num of intervals is 2, so preset for convenience
 	*rights_pt = (double*)malloc(2 * sizeof(double));
 	if (b < 0) {
-		*errno = 1;
+		*errno_status = 1;
 		Rprintf("!!!power denominator must be > 0!! Got %d!!!\n", b);
 		return;
 	}
 	if (nonnegative) {
-		poly_domain_nonnegative_1d(a, b, c, larger, num_intervals, lefts_pt, rights_pt, errno);
+		poly_domain_nonnegative_1d(a, b, c, larger, num_intervals, lefts_pt, rights_pt, errno_status);
 		return;
 	}
 	if (b == 0) { // Special functions log and exp for b == 0
-		log_exp_domain_1d(a, c, larger, abs, num_intervals, lefts_pt, rights_pt, errno);
+		log_exp_domain_1d(a, c, larger, abs, num_intervals, lefts_pt, rights_pt, errno_status);
 		return;
 	}
 	if (a == 0) { // For b != 0, x^(a/b) always 1.0
@@ -206,7 +206,7 @@ void poly_domain_1d(int a, int b, double c, int larger, int abs, int nonnegative
 				**rights_pt = INFINITY;
 			}
 		} else { // b even, c > 0
-			double cba = frac_pow(c, b, a, false, TRUE, errno); // c^(b/a)
+			double cba = frac_pow(c, b, a, false, TRUE, errno_status); // c^(b/a)
 			if (abs) {
 				if ((a > 0) ^ larger) { // |x| < C^(b/a): [-c^(b/a), c^(b/a)]
 					*num_intervals = 1;
@@ -234,7 +234,7 @@ void poly_domain_1d(int a, int b, double c, int larger, int abs, int nonnegative
 					**lefts_pt = -INFINITY; **rights_pt = INFINITY;
 				}
 			} else { // b odd, abs or a even, c > 0
-				double cba = frac_pow(c, b, a, false, TRUE, errno);
+				double cba = frac_pow(c, b, a, false, TRUE, errno_status);
 				if ((a > 0) ^ larger) { // [-c^(b/a), c^(b/a)]
 					*num_intervals = 1;
 					**lefts_pt = -cba; **rights_pt = cba;
@@ -252,7 +252,7 @@ void poly_domain_1d(int a, int b, double c, int larger, int abs, int nonnegative
 					*num_intervals = 1; **lefts_pt = -INFINITY; **rights_pt = 0;
 				}
 			} else { // b odd, no abs and a odd, c != 0
-				double cba = frac_pow(c, b, a, false, TRUE, errno);
+				double cba = frac_pow(c, b, a, false, TRUE, errno_status);
 				if (a > 0) { // b odd, no abs and a odd, c != 0, a > 0
 					*num_intervals = 1;
 					if (larger) { // x^(a/b) | c is simply x | c^(b/a): [c^(b/a), INF)
@@ -291,7 +291,7 @@ void domain_1d(const int *idx, const int *p, const double *x,
 			  const int *num_int_params, int *int_params,
 			  const int *num_double_params, double *double_params,
 			  int *num_intervals, double **lefts_pt, double **rights_pt,
-			  double **cache, int *errno){
+			  double **cache, int *errno_status){
 	/*
 	 cache: For caching results common to all *idx to speed up calculation of h. Boundary type-specific. Defined as double** since each boundary type may need to allocate different size of memory.
 	 	uniform: Not used.
@@ -310,12 +310,12 @@ void domain_1d(const int *idx, const int *p, const double *x,
 	 	If int_params[3] is 1, x will be restricted to the non-negative orthant.
 	 */
 	if (*num_char_params < 1) {
-		*errno = 1;
+		*errno_status = 1;
 		Rprintf("!!!In domain_1d(): Number of string parameters must be at least 1 and the first string must be the domain type!!!\n");
 		return;
 	}
 	if (*idx < 0 || *idx >= *p) {
-		*errno = 1;
+		*errno_status = 1;
 		Rprintf("!!!In domain_1d(): Invalid index %d. Should be between [0, %d]!!!\n", *idx, *p-1);
 		return;
 	}
@@ -328,7 +328,7 @@ void domain_1d(const int *idx, const int *p, const double *x,
 		return;
 	} else if (strcmp(char_params[0], "uniform") == 0) {
 		if (*num_double_params % 2 || *num_double_params <= 0 || *num_int_params != 2) {
-			*errno = 1;
+			*errno_status = 1;
 			Rprintf("!!!In domain_1d(): For uniform boundaries, num_double_params must be an even positive number and double params should contain the left endpoints followed by the right endpoints, and num_int_params must be 2 with int_params[0] indicating whether lefts[0] is -Inf and int_params[1] whether rights[-1] is Inf!!!\n");
 			return;
 		}
@@ -346,14 +346,14 @@ void domain_1d(const int *idx, const int *p, const double *x,
 		else {
 			for (int j = 0; j < *p; j++) {
 				if (x[j] <= -TOL) { //// Or <= TOL?
-					*errno = 1;
+					*errno_status = 1;
 					Rprintf("!!!In domain_1d(): x[%d] = %f <= 0 not allowed for the simplex!!!\n", j, x[j]);
 					return;
 				}
 				sum_all += x[j];
 			}
 			if (sum_all >= 1) { //// Or >= 1 - TOL?
-				*errno = 1;
+				*errno_status = 1;
 				Rprintf("!!!In domain_1d(): sum(x) = %f >= 1 not allowed for the simplex!!!\n", sum_all);
 				return;
 			}
@@ -371,7 +371,7 @@ void domain_1d(const int *idx, const int *p, const double *x,
 		return;
 	} else if (strcmp(char_params[0], "polynomial") == 0) {
 		if (*num_char_params != 2) {
-			*errno = 1;
+			*errno_status = 1;
 			Rprintf("!!!In domain_1d(): Number of string parameters must be 2 for polynomial type boundary, where the second string parameter is the rule for combining the boundaries defined by each polynomial!!!\n");
 			return;
 		}
@@ -395,8 +395,8 @@ void domain_1d(const int *idx, const int *p, const double *x,
 				double budget = *double_params++;
 				int_params += 7;
 				poly_domain_1d(power_numer, power_denom, budget, larger, abs, nonneg,
-							   num_intervals_list + eq_i, lefts_list + eq_i, rights_list + eq_i, errno);
-				if (*errno) {
+							   num_intervals_list + eq_i, lefts_list + eq_i, rights_list + eq_i, errno_status);
+				if (*errno_status) {
 					Rprintf("!!!In domain_1d(): Error occurred when calling poly_domain_1d() for (uniform) inequality %d. Trying to find domain for %sx%d%s^(%d/%d)%s%f (nonneg=%d)!!!\n", eq_i + 1, abs?"|":"", *idx + 1, abs?"|":"", power_numer, power_denom, larger?">":"<", budget, nonneg);
 					return;
 				}
@@ -406,9 +406,9 @@ void domain_1d(const int *idx, const int *p, const double *x,
 							num_intervals_list[eq_i] = 0;
 							break;
 						}
-						double tmp = frac_pow(x[i], power_numer, power_denom, abs, FALSE, errno);
-						if (*errno || (tmp < budget && larger) || (tmp > budget && !larger)) {
-							*errno = 0;
+						double tmp = frac_pow(x[i], power_numer, power_denom, abs, FALSE, errno_status);
+						if (*errno_status || (tmp < budget && larger) || (tmp > budget && !larger)) {
+							*errno_status = 0;
 							num_intervals_list[eq_i] = 0;
 							break;
 						}
@@ -446,14 +446,14 @@ void domain_1d(const int *idx, const int *p, const double *x,
 					power_numer_this = int_params[5]; power_denom_this = int_params[6];
 					if (cache && *idx != 0 && !isnan((*cache)[eq_i])) {// If pow sum already calculated (p != 0) and cached
 						sum_all = (*cache)[eq_i];
-						sum_other = sum_all - double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno);
+						sum_other = sum_all - double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno_status);
 					}
 					else {
 						for (int j = 0; j < *p; j++)
 							if (j != *idx && double_params[j] != 0.0)
 								// Calculate sum_other and then sum_all so that even when x[*idx] is out of bound so that frac_pow returns NAN, we can still calculate its domain as long as frac_pow is valid for all other components; calculating sum_all and then sum_other will make both NAN in that case
-								sum_other += double_params[j] * frac_pow(x[j], int_params[5], int_params[6], abs, FALSE, errno); // FALSE: do not produce warning if power not well-defined
-						sum_all = sum_other + double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno);
+								sum_other += double_params[j] * frac_pow(x[j], int_params[5], int_params[6], abs, FALSE, errno_status); // FALSE: do not produce warning if power not well-defined
+						sum_all = sum_other + double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno_status);
 					}
 					int_params += 7;
 				} else { // Different powers
@@ -461,26 +461,26 @@ void domain_1d(const int *idx, const int *p, const double *x,
 					power_numer_this = int_params[*idx + 5]; power_denom_this = int_params[*idx + 5 + *p];
 					if (cache && *idx != 0 && !isnan((*cache)[eq_i])) {// If pow sum already calculated (p != 0) and cached
 						sum_all = (*cache)[eq_i];
-						sum_other = sum_all - double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno);
+						sum_other = sum_all - double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno_status);
 					}
 					else {
 						for (int j = 0; j < *p; j++)
 							if (j != *idx && double_params[j] != 0.0){
 								reduce_gcd(int_params + 5 + j, int_params + 5 + *p + j); // Make the numer and denom coprime
 								// Calculate sum_other and then sum_all so that even when x[*idx] is out of bound so that frac_pow returns NAN, we can still calculate its domain as long as frac_pow is valid for all other components; calculating sum_all and then sum_other will make both NAN in that case
-								sum_other += double_params[j] * frac_pow(x[j], int_params[5 + j], int_params[5 + *p + j], abs, FALSE, errno); // FALSE: do not produce warning if power not well-defined
+								sum_other += double_params[j] * frac_pow(x[j], int_params[5 + j], int_params[5 + *p + j], abs, FALSE, errno_status); // FALSE: do not produce warning if power not well-defined
 							}
-						sum_all = sum_other + double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno);
+						sum_all = sum_other + double_params[*idx] * frac_pow(x[*idx], power_numer_this, power_denom_this, abs, FALSE, errno_status);
 					}
 					int_params += 5 + 2 * (*p);
 				}
 				if (cache && *idx == 0) { // If need to cache pow sum
 					(*cache)[eq_i] = sum_all; // Cache even if NaN otherwise other *idx might not know the current x is out of domain for inequality eq_i
 				}
-				if (*errno && !isnan(sum_other)) // If has errno but sum_other not NAN, an error occurred whenn calculating frac_pow for this index but not for the others, so can still proceed with finding the domain for this index
-					*errno = 0;
-				if (*errno || isnan(sum_other)) { // It is possible that error occurs in frac_pow for other some x[j] at the current x; this x may be generated from other inequalities with an OR rule, and becomes out of bound for the current inequality; simply set the domain for the current inequality to empty set. (E.g. x = [-1,-1,-1] generated from "x^(1/2)>1 || x < 0". Then the domain for x^(1/2)>1 for all components will be set to empty at x = [-1,-1,-1].)
-					*errno = 0;
+				if (*errno_status && !isnan(sum_other)) // If has errno_status but sum_other not NAN, an error occurred whenn calculating frac_pow for this index but not for the others, so can still proceed with finding the domain for this index
+					*errno_status = 0;
+				if (*errno_status || isnan(sum_other)) { // It is possible that error occurs in frac_pow for other some x[j] at the current x; this x may be generated from other inequalities with an OR rule, and becomes out of bound for the current inequality; simply set the domain for the current inequality to empty set. (E.g. x = [-1,-1,-1] generated from "x^(1/2)>1 || x < 0". Then the domain for x^(1/2)>1 for all components will be set to empty at x = [-1,-1,-1].)
+					*errno_status = 0;
 					num_intervals_list[eq_i] = 0;
 					double_params += *p + 1;
 					continue;
@@ -507,8 +507,8 @@ void domain_1d(const int *idx, const int *p, const double *x,
 						budget = budget / double_params[*idx];
 					poly_domain_1d(power_numer_this, power_denom_this,
 							   budget, larger, abs, nonneg,
-							   num_intervals_list + eq_i, lefts_list + eq_i, rights_list + eq_i, errno);
-					if (*errno) {
+							   num_intervals_list + eq_i, lefts_list + eq_i, rights_list + eq_i, errno_status);
+					if (*errno_status) {
 						Rprintf("!!!In domain_1d(): Error occurred when calling poly_domain_1d() for (non-uniform) inequality %d. Trying to find domain for %sx%d%s^(%d/%d)%s%f (nonneg=%d)!!!\n", eq_i + 1, abs?"|":"", *idx + 1, abs?"|":"", power_numer_this, power_denom_this, larger?">":"<", budget, nonneg);
 						return;
 					}
@@ -518,7 +518,7 @@ void domain_1d(const int *idx, const int *p, const double *x,
 		}
 		// Evaluates the domain using domains for each inequality with intersections/unions
 		evaluate_logic(&num_eqs, postfix, num_intervals_list, lefts_list,
-					   rights_list, num_intervals, lefts_pt, rights_pt, errno);
+					   rights_list, num_intervals, lefts_pt, rights_pt, errno_status);
 		
 		/*for (int i = 0; i < num_eqs; i++) {
 			Rprintf("\nSubinterval for x%d in eq %d: ", *idx, i);
@@ -529,18 +529,18 @@ void domain_1d(const int *idx, const int *p, const double *x,
 		free(num_intervals_list); free(lefts_list); free(rights_list);
 		return;
 	} else {
-		*errno = 1;
+		*errno_status = 1;
 		Rprintf("!!!In domain_1d(): domain type %s not supported!!!\n", char_params[0]);
 		return;
 	}
 }
 
 
-void poly_domain_1d_for_R(int *a, int *b, double *c, int *larger, int *abs, int *nonnegative, int *num_intervals, double *lefts, double *rights, int *print, int *errno){
+void poly_domain_1d_for_R(int *a, int *b, double *c, int *larger, int *abs, int *nonnegative, int *num_intervals, double *lefts, double *rights, int *print, int *errno_status){
 	// Prints and returns 1d domain for a domain specified by a polynomial x^(a/b) >/< c, used for calls from R. Assumes lefts and rights have been allocated at least 2 elements since the max number of intervals is 2.
 	double *lefts0, *rights0;
-	poly_domain_1d(*a, *b, *c, *larger, *abs, *nonnegative, num_intervals, &lefts0, &rights0, errno);
-	if (*errno) {
+	poly_domain_1d(*a, *b, *c, *larger, *abs, *nonnegative, num_intervals, &lefts0, &rights0, errno_status);
+	if (*errno_status) {
 		Rprintf("!!!Error occurred when calling poly_domain_1d in poly_domain_1d_for_R()!!!\n");
 		return;
 	}
@@ -555,27 +555,27 @@ void poly_domain_1d_for_R(int *a, int *b, double *c, int *larger, int *abs, int 
 void h(const int *p, const double *x, double *hx, double *hpx, const double *h_pow, const double *h_trunc,
 	   const int *num_char_params, const char **char_params,
 	   const int *num_int_params, int *int_params,
-	   int *num_double_params, double *double_params, int *errno){
+	   int *num_double_params, double *double_params, int *errno_status){
 	double *lefts, *rights;
 	double **cache = (double**)malloc(sizeof(double*)); // Caching results common to all idx
 	int num_intervals;
-	if (*h_pow < 0) {*errno = 1; Rprintf("!!!h_pow must be >= 0!!!\n"); return;}
-	if (*h_trunc <= 0) {*errno = 1; Rprintf("!!!h_trunc must be > 0!!!\n"); return;}
+	if (*h_pow < 0) {*errno_status = 1; Rprintf("!!!h_pow must be >= 0!!!\n"); return;}
+	if (*h_trunc <= 0) {*errno_status = 1; Rprintf("!!!h_trunc must be > 0!!!\n"); return;}
 	for (int idx = 0; idx < *p; idx++) {
 		domain_1d(&idx, p, x, num_char_params, char_params,
 			   num_int_params, int_params, num_double_params, double_params,
-			   &num_intervals, &lefts, &rights, cache, errno);
-		if (*errno) {
+			   &num_intervals, &lefts, &rights, cache, errno_status);
+		if (*errno_status) {
 			Rprintf("!!!Error ocurred when calling domain_1d() in h()!!!\n");
 			return;
 		}
-		int bin = search_unfused(lefts, rights, num_intervals, x[idx], errno);
-		if (*errno) {
+		int bin = search_unfused(lefts, rights, num_intervals, x[idx], errno_status);
+		if (*errno_status) {
 			Rprintf("!!!Error occurred when calling search_unfused() in h()!!!\n");
 			return;
 		}
 		if (bin == -1) {
-			*errno = 1;
+			*errno_status = 1;
 			Rprintf("!!!h: x given not in domain!!!\n");
 			return;
 		}
@@ -611,7 +611,7 @@ void h(const int *p, const double *x, double *hx, double *hpx, const double *h_p
 void dist(const int *n, const int *p, const double *x, double *dists, int *dist_ps,
 	   const int *num_char_params, const char **char_params,
 	   const int *num_int_params, int *int_params,
-	   int *num_double_params, double *double_params, int *errno){
+	   int *num_double_params, double *double_params, int *errno_status){
 	/*
 	 x: of size p (num parameters) * n (num samples)
 	 dists: of size p * n
@@ -624,19 +624,19 @@ void dist(const int *n, const int *p, const double *x, double *dists, int *dist_
 		for (int idx = 0; idx < *p; idx++) {
 			domain_1d(&idx, p, x, num_char_params, char_params,
 					  num_int_params, int_params, num_double_params, double_params,
-					  &num_intervals, &lefts, &rights, cache, errno);
-			if (*errno) {
+					  &num_intervals, &lefts, &rights, cache, errno_status);
+			if (*errno_status) {
 				Rprintf("!!!Error ocurred when calling domain_1d() in h()!!!\n");
 				return;
 			}
 			
-			int bin = search_unfused(lefts, rights, num_intervals, x[idx], errno);
-			if (*errno) {
+			int bin = search_unfused(lefts, rights, num_intervals, x[idx], errno_status);
+			if (*errno_status) {
 				Rprintf("!!!Error occurred when calling search_unfused() in h()!!!\n");
 				return;
 			}
 			if (bin == -1) {
-				*errno = 1;
+				*errno_status = 1;
 				Rprintf("!!!h: x given not in domain!!!\n");
 				return;
 			}
@@ -666,7 +666,7 @@ void dist(const int *n, const int *p, const double *x, double *dists, int *dist_
 
 
 void fuse_endpoints(const int *num_intervals, const double *lefts, const double *rights,
-					double *fused, double *disp, int *errno)
+					double *fused, double *disp, int *errno_status)
 /* to fuse intervals with endpoints specified by lefts and rights, left-aligned;
  [x1, x2], [x3, x4], [x5, x6] becomes {x1, x2, x2+x4-x3, x2+x4-x3+x6-x5}
  *num_intervals: number of intervals
@@ -681,7 +681,7 @@ void fuse_endpoints(const int *num_intervals, const double *lefts, const double 
 	fused[1] = rights[0];
 	disp[0] = 0.0;
 	if (*num_intervals < 1) {
-		*errno = 1;
+		*errno_status = 1;
 		Rprintf("!!!In fuse_endpoints: number of intervals < 1!!!\n");
 	}
 	for (int interval = 1; interval < *num_intervals; interval++){
@@ -692,7 +692,7 @@ void fuse_endpoints(const int *num_intervals, const double *lefts, const double 
 
 /* ********************************************************************* */
 
-int binarySearch_fused(const double *arr, int l, int r, double x, int *errno)
+int binarySearch_fused(const double *arr, int l, int r, double x, int *errno_status)
 /* Binary search for the left endpoint of the FUSED interval x belongs to.
  Assumes arr has at least 2 elements and x is inside the range of arr.
  *arr: an array
@@ -704,13 +704,13 @@ int binarySearch_fused(const double *arr, int l, int r, double x, int *errno)
 	if (r > l + 1) {
 		int mid = (l + r) / 2;
 		if (arr[mid] >= x)
-			return binarySearch_fused(arr, l, mid, x, errno);
-		return binarySearch_fused(arr, mid, r, x, errno);
+			return binarySearch_fused(arr, l, mid, x, errno_status);
+		return binarySearch_fused(arr, mid, r, x, errno_status);
 	}
 	return l;
 }
 
-int naiveSearch_fused(const double *arr, int length, double x, int *errno)
+int naiveSearch_fused(const double *arr, int length, double x, int *errno_status)
 /* Naive search for the left endpoint of the FUSED interval x belongs to.
  Assumes arr has at least 2 elements and x is inside the range of arr.
  *arr: an array
@@ -721,12 +721,12 @@ int naiveSearch_fused(const double *arr, int length, double x, int *errno)
 	for (int i = 1; i <= length - 1; i++)
 		if (arr[i] >= x)
 			return i - 1;
-	*errno = 1;
+	*errno_status = 1;
 	Rprintf("!!!search_fused: %f not in fused domain!!!\n", x);
 	return -1;
 }
 
-int search_fused(const double *arr, int length, double x, int *errno)
+int search_fused(const double *arr, int length, double x, int *errno_status)
 /* to return the index of left endpoint of the FUSED interval x belongs to using
  naive search; i.e. find smallest i s.t. arr[i] <= x <= arr[i+1]
  (if x is at the boundaries the smaller index is picked).
@@ -737,15 +737,15 @@ int search_fused(const double *arr, int length, double x, int *errno)
  */
 {
 	if (length < 2 || x < arr[0] || x > arr[length - 1]){
-		*errno = 1;
+		*errno_status = 1;
 		Rprintf("!!!search_fused: %f not in fused domain!!!\n", x);
 		return -1;
 	}
-	return (length > 8) ? binarySearch_fused(arr, 0, length - 1, x, errno) : naiveSearch_fused(arr, length, x, errno);
+	return (length > 8) ? binarySearch_fused(arr, 0, length - 1, x, errno_status) : naiveSearch_fused(arr, length, x, errno_status);
 }
 
 double translate_unfuse(double x, int num_intervals, const double *fused,
-						const double *disp, int *errno)
+						const double *disp, int *errno_status)
 /* translates x (relative the fused intervals) back to the x in the original domain.
  Example: [0, 1], [3, 6], [10, 15], [21, 28] is fused into {0,1,4,9,16};
  given x = 5, search for the bin it belongs to ([4,9]) and add back 6 (since
@@ -756,16 +756,16 @@ double translate_unfuse(double x, int num_intervals, const double *fused,
  *disp: displacements of intervals after fusion, an array of length num_intervals
  */
 {	if (num_intervals == 1) return x;  // No translation required
-	int bucket = search_fused(fused, num_intervals + 1, x, errno);
-	if (bucket == -1 || *errno == 1) {
-		*errno = 1;
+	int bucket = search_fused(fused, num_intervals + 1, x, errno_status);
+	if (bucket == -1 || *errno_status == 1) {
+		*errno_status = 1;
 		Rprintf("!!!In translate_unfuse(): error occurred when calling search_fused(). Unable to find a bin for %f!!!\n", x);
 		return fused[0] - 1; // Return an invalid value
 	}
 	return x + disp[bucket];
 }
 
-int search_unfused(const double *lefts, const double *rights, int length, double x, int *errno)
+int search_unfused(const double *lefts, const double *rights, int length, double x, int *errno_status)
 /* to return the index of left endpoint of the ORIGINAL interval x belongs to using
  naive search; i.e. find the unique i s.t. lefts[i] <= x <= rights[i]. Uses naive search.
  *lefts: left bounds, an array of length num_intervals
@@ -775,7 +775,7 @@ int search_unfused(const double *lefts, const double *rights, int length, double
  */
 {
 	if (length < 1 || x < lefts[0] || x > rights[length - 1]) {
-		*errno = 1;
+		*errno_status = 1;
 		Rprintf("!!!search_unfused: %f not in domain. lefts[0] = %f, rights[%d] = %f. If %f is the finite_infinity you set in make_domain(), please increase the value!!!\n", x, lefts[0], length, rights[length-1], rights[length-1]);
 		return -1;
 	}
@@ -784,18 +784,18 @@ int search_unfused(const double *lefts, const double *rights, int length, double
 			if (rights[i] >= x)
 				return i;
 			else {
-				*errno = 1;
+				*errno_status = 1;
 				Rprintf("!!!search_unfused: %f not in domain!!!\n", x);
 				return -1;
 			}
 		}
-	*errno = 1;
+	*errno_status = 1;
 	Rprintf("!!!search_unfused: %f not in domain!!!\n", x);
 	return -1;
 }
 
 double translate_fuse(double x, int num_intervals, const double *lefts,
-					  const double *rights, const double *disp, int *errno)
+					  const double *rights, const double *disp, int *errno_status)
 /* translates x in the original domain to its position relative to the fused intervals.
  Example: [0, 1], [3, 6], [10, 15], [21, 28] is fused into {0,1,4,9,16};
  given x = 11, search for the bin it belongs to ([10,15]) and subtract 6 (since
@@ -807,8 +807,8 @@ double translate_fuse(double x, int num_intervals, const double *lefts,
  *disp: displacements of intervals after fusion, an array of length num_intervals
  */
 {	if (num_intervals == 1) return x;  // No translation required
-	int bucket = search_unfused(lefts, rights, num_intervals, x, errno);
-	if (*errno || bucket == -1) {
+	int bucket = search_unfused(lefts, rights, num_intervals, x, errno_status);
+	if (*errno_status || bucket == -1) {
 		Rprintf("!!!Error occurred when calling search_unfused() in translate_fuse()!!!\n");
 		return lefts[0] - 1; // Return an invalid value
 	}

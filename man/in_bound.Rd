@@ -18,14 +18,14 @@ A logical vector of length equal to the number of rows in \code{x} (\code{1} if 
 Returns whether a vector or each row of a matrix falls inside a domain.
 }
 \details{
-Returns whether a vector or each row of a matrix falls inside a domain. 
+Returns whether a vector or each row of a matrix falls inside a domain.
 If \code{domain$type == "simplex"}, if the length/number of columns is \code{domain$p}, returns \code{all(x > 0) && abs(sum(x) - 1) < domain$simplex_tol}; if the dimension is \code{domain$p-1}, returns \code{all(x > 0) && sum(x) < 1}.
 }
 \examples{
 p <- 30
 n <- 10
 
-# The 30-dimensional real space R^30, assuming probability of 
+# The 30-dimensional real space R^30, assuming probability of
 domain <- make_domain("R", p=p)
 in_bound(1:p, domain)
 in_bound(matrix(1:(p*n), ncol=p), domain)
@@ -34,7 +34,7 @@ in_bound(matrix(1:(p*n), ncol=p), domain)
 domain <- make_domain("R+", p=p)
 in_bound(matrix(1:(p*n), ncol=p), domain)
 in_bound(matrix(1:(p*n) * (2*rbinom(p*n, 1, 0.98)-1), ncol=p), domain)
- 
+
 # x such that sum(x^2) > 10 && sum(x^(1/3)) > 10 with x allowed to be negative
 domain <- make_domain("polynomial", p=p, rule="1 && 2",
        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
@@ -45,7 +45,7 @@ in_bound(rep((15/p)^3, p), domain)
 in_bound(rep((5/p)^(1/2), p), domain)
 in_bound(rep((10/p)^(1/2), p), domain)
 in_bound(rep((15/p)^(1/2), p), domain)
-                      
+
 # ([0, 1] v [2,3]) ^ p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 in_bound(c(0.5, 2.5)[rbinom(p, 1, 0.5)+1], domain)
@@ -61,7 +61,7 @@ in_bound(c(1.5, (log(1.3)+1)/2, rep(log(1.3)*2, p-2)), domain)
 in_bound(c(0.5, (log(1.3)+1)/2, rep(log(1.3)*2, p-2)), domain)
 in_bound(c(1.5, log(1.3)/2, rep(log(1.3)*2, p-2)), domain)
 in_bound(c(1.5, (log(1.3)+1)/2, rep(log(1.3)/2, p-2)), domain)
-                      
+
 # x in R_+^p such that {sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
        ineqs=list(list("expression"="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
@@ -69,9 +69,9 @@ domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 in_bound(rep(exp(1/p), p), domain)
 in_bound(c(1, 1, rep(1e5, p-2)), domain)
-                      
+
 # x in R_+^p such that {x in R_+^p: sum_j j * xj <= 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
@@ -84,7 +84,7 @@ in_bound(rep(1/p^2, p), domain)
 domain <- make_domain("simplex", p=p)
 x <- abs(matrix(rnorm(p*n), ncol=p))
 x <- x / rowSums(x)
-in_bound(x, domain) # TRUE 
+in_bound(x, domain) # TRUE
 in_bound(x[,1:(p-1)], domain) # TRUE
 x2 <- x
 x2[,1] <- -x2[,1]
@@ -98,7 +98,7 @@ x3[,1] <- x3[,1] + x3[,p]
 in_bound(x3[,1:(p-1)], domain) # FALSE since the first (p-1) elts in each row now sum to > 1
 
 # The l-1 ball {sum(|x|) < 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 in_bound(rep(0.5/p, p)*(2*rbinom(p, 1, 0.5)-1), domain)
 in_bound(rep(1.5/p, p)*(2*rbinom(p, 1, 0.5)-1), domain)

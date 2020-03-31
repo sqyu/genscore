@@ -27,8 +27,6 @@ Define \code{dist\'(x, domain)} as the component-wise derivative of \code{dist(x
 \code{h_of_dist(h_hp, x, domain)} simply returns \code{h_hp(dist(x, domain))$hx} and \code{h_hp(dist(x, domain))$hpx * dist\'(x, domain)} (element-wise derivative of \code{h_hp(dist(x, domain))$hx} w.r.t. \code{x}).
 }
 \examples{
-if (!requireNamespace("mvtnorm", quietly = TRUE))
-   install.packages("mvtnorm")
 n <- 20
 p <- 10
 eta <- rep(0, p)

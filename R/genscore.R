@@ -2,7 +2,9 @@
 
 ## Package:
 #library(knitr); library(rmarkdown); library(devtools); library(roxygen2)
+#tools::package_native_routine_registration_skeleton(".") // Manually add dist, rab_arms
 #document(); build(); install(); check()
+#check_win_devel(); check_win_release(); check_rhub()
 
 
 #' Finds the distance of each element in a matrix x to the its boundary of the domain while fixing the others in the same row (dist(x, domain)), and calculates element-wise h(dist(x, domain)) and h\'(dist(x, domain)) (w.r.t. each element in x).
@@ -20,8 +22,6 @@
 #' Define \code{dist\'(x, domain)} as the component-wise derivative of \code{dist(x, domain)} in its components. That is, its \code{i,j}-th component is 0 if \eqn{x_{i,j}} is unbounded or is bounded from both below and above or is at the boundary, or -1 if \eqn{x_{i,j}} is closer to its lower boundary (or if its bounded from below but unbounded from above), or 1 otherwise.\cr
 #' \code{h_of_dist(h_hp, x, domain)} simply returns \code{h_hp(dist(x, domain))$hx} and \code{h_hp(dist(x, domain))$hpx * dist\'(x, domain)} (element-wise derivative of \code{h_hp(dist(x, domain))$hx} w.r.t. \code{x}).
 #' @examples
-#' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    install.packages("mvtnorm")
 #' n <- 20
 #' p <- 10
 #' eta <- rep(0, p)
@@ -554,8 +554,6 @@ get_elts_trun_gauss <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncent
 #'   \item{t1,t2}{Returned in the profiled non-centered setting, where the\eqn{\boldsymbol{\eta}}{\eta} estimate can be retrieved from \eqn{\boldsymbol{t_1}-\boldsymbol{t_2}\hat{\mathbf{K}}}{t1-t2*\hat{K}} after appropriate resizing.}
 #' @details For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 #' @examples
-#' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    install.packages("mvtnorm")
 #' n <- 50
 #' p <- 30
 #' mu <- rep(0, p)
@@ -866,10 +864,8 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' \deqn{\boldsymbol{t}_1\equiv\boldsymbol{\Gamma}_{\boldsymbol{\eta\eta}}^{-1}\boldsymbol{g}_{\boldsymbol{\eta}},\quad\boldsymbol{t}_2\equiv\boldsymbol{\Gamma}_{\boldsymbol{\eta\eta}}^{-1}\boldsymbol{\Gamma}_{\mathbf{K}\boldsymbol{\eta}}^{\top},}{t1=\Gamma_{\eta\eta}^(-1)g_{\eta}, t2=\Gamma_{\eta\eta}^(-1)\Gamma_{K\eta}',}
 #' so that \eqn{\hat{\boldsymbol{\eta}}=\boldsymbol{t}_1-\boldsymbol{t}_2\mathrm{vec}(\hat{\mathbf{K}}).}{\hat{\eta}=t1-t2*vec(\hat{K}).}
 #' @examples
-#' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    install.packages("mvtnorm")
-#' n <- 50
-#' p <- 30
+#' n <- 30
+#' p <- 10
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
@@ -995,7 +991,7 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' max(abs(diag(elts_simplex_1$Gamma_K_eta)))
 #' max(abs(diag(matrix(elts_simplex_1$g_K, nrow=p))))
 #' @export
-#' @useDynLib genscore elts_exp_c elts_exp_np elts_exp_p elts_gamma_np elts_gamma_p elts_gauss_c elts_gauss_np elts_gauss_p elts_loglog_c elts_loglog_np elts_loglog_p elts_loglog_simplex_c elts_loglog_simplex_np elts_ab_c elts_ab_np elts_ab_p
+#' @useDynLib genscore, .registration = TRUE
 get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncenter=TRUE,
                      scale="", diagonal_multiplier=1, use_C=TRUE, tol=.Machine$double.eps^0.5,
                      unif_dist=NULL){
@@ -1214,8 +1210,8 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #' Note that \code{x^(0/0)} is understood as \code{log(x)}, and \code{x^(n/0)} with nonzero \code{n} is \code{exp(n*x)}, and in both cases the \code{a} and \code{b} in the denominators in the density are treated as 1.
 #'
 #' @examples
-#' n <- 50
-#' p <- 30
+#' n <- 20
+#' p <- 10
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
@@ -1275,7 +1271,7 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #' x <- gen(n, setting="ab_2/0_-3/0", abs=FALSE, eta=eta, K=K, domain=domain,
 #'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
 #' @export
-#' @useDynLib genscore rab_arms
+#' @useDynLib genscore, .registration = TRUE
 gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
                 xinit=NULL, seed=NULL, burn_in=1000, thinning=100,
                 verbose=TRUE, remove_outofbound=TRUE) {
@@ -1315,15 +1311,11 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
     if (domain$type == "R" || (domain$type == "uniform" && domain$lefts[1] < 0))
       stop("For settings with non-integer a and/or b, the domain must be non-negative.")
   }
-  
+
   if (setting == "gaussian" && domain$type == "R") {
-    if (!requireNamespace("mvtnorm", quietly = TRUE))
-      install.packages("mvtnorm")
     Sigma <- solve(K)
     return (mvtnorm::rmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma))
   } else if (setting == "gaussian" && domain$type == "R+") {
-    if (!requireNamespace("tmvtnorm", quietly = TRUE))
-      install.packages("tmvtnorm")
     Sigma <- solve(K)
     return (tmvtnorm::rtmvnorm(n, mean=c(Sigma%*%eta), sigma=Sigma,
                                lower=rep(0, domain$p),
@@ -1389,7 +1381,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
                               xres=as.double(numeric(n*domain$p)),
                               eta=as.double(eta),
                               K=as.double(K),
-                              seed=as.integer(seed),
+                              #seed=as.integer(seed),
                               finite_infinity=as.double(finite_infinity)),
                          domain_for_C(domain),
                          list("verbose"=as.integer(verbose), "errno"=as.integer(0))
@@ -1421,8 +1413,6 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' Returned matrix \code{dx} has its \code{i,j}-th component the distance of \eqn{x_{i,j}} to the boundary of \code{domain}, assuming \eqn{x_{i,-j}} are fixed. The matrix has the same size of \code{x} (\code{n} by \code{p}), or if \code{domain$type == "simplex"} and \code{x} has full dimension \code{p}, it has \code{p-1} columns.
 #' Returned matrix \code{dpx} contains the component-wise derivatives of \code{dx} in its components. That is, its \code{i,j}-th component is 0 if \eqn{x_{i,j}} is unbounded or is bounded from both below and above or is at the boundary, or -1 if \eqn{x_{i,j}} is closer to its lower boundary (or if its bounded from below but unbounded from above), or 1 otherwise.
 #' @examples
-#' if (!requireNamespace("mvtnorm", quietly = TRUE))
-#'    install.packages("mvtnorm")
 #' n <- 20
 #' p <- 10
 #' eta <- rep(0, p)
@@ -1531,7 +1521,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' # Distance of x_{i,j} to its boundary is min(xij - 0, quota_{i,j} - xij)
 #' max(abs(dist$dx - pmin(quota - x[,-p], x[,-p])))
 #' @export
-#' @useDynLib genscore dist
+#' @useDynLib genscore, .registration = TRUE
 get_dist <- function(x, domain){
   # x must be a vector of length domain$p or a matrix of size n_sample x domain$p.
   # For simplex, the size can be p - 1 or p, where in the latter case only the first p-1 components are kept.
@@ -1623,7 +1613,7 @@ get_dist <- function(x, domain){
 #' get_h_hp("min_log_pow", 1, log(1+3))(matrix(0:11, nrow=3))
 #' get_h_hp("min_pow", 1.5, 3)(seq(0, 5, by=0.5))
 #' get_h_hp("min_softplus")(matrix(seq(0, 2, by=0.1), nrow=7))
-#' 
+#'
 #' get_h_hp("min_log_pow_ada", 1, 0.4)(matrix(0:49, nrow=10))
 #' get_h_hp("min_pow_ada", 2, 0.3)(matrix(0:49, nrow=10))
 #' get_h_hp("min_softplus_ada", 2, 0.6)(matrix(seq(0, 0.49, by=0.01), nrow=10))
@@ -1649,7 +1639,7 @@ get_h_hp <- function(mode, para=NULL, para2=NULL){
 #'
 #' @param mode A string, the corresponding mode (with the suffix \code{"_ada"} removed from the input to \code{get_h_hp()}). Must be one of the modes starting with \code{"min_"} supported by \code{get_h_hp_vector()}.
 #' @param para Must be provided, but can be \code{NULL}. A number, the first parameter; see \code{get_h_hp()} or \code{get_h_hp_vector()}.
-#' @param percentile A number, the percentile for column-wise truncation on \code{hx} and \code{hpx}. 
+#' @param percentile A number, the percentile for column-wise truncation on \code{hx} and \code{hpx}.
 #' @return A function that returns a list containing \code{hx=h(x)} (element-wise) and \code{hpx=hp(x)} (element-wise derivative of \eqn{h}) when applied to a matrix \code{x}, with both of the results having the same shape as \code{x}.
 #' @details
 #' Helper function of \code{get_h_hp()}. Please refer to \code{get_hs_hp()}.
@@ -1657,7 +1647,7 @@ get_h_hp <- function(mode, para=NULL, para2=NULL){
 #' get_h_hp_adaptive("min_log_pow", 1, 0.4)(matrix(0:49, nrow=10))
 #' get_h_hp_adaptive("min_pow", 2, 0.3)(matrix(0:49, nrow=10))
 #' get_h_hp_adaptive("min_softplus", 2, 0.6)(matrix(seq(0, 0.49, by=0.01), nrow=10))
-#' 
+#'
 #' hx_hpx <- get_h_hp_adaptive("min_log_pow", 1, 0.4)(matrix(0:49, nrow=10))
 #' hx_hpx2 <- get_h_hp("min_log_pow_ada", 1, 0.4)(matrix(0:49, nrow=10))
 #' c(max(abs(hx_hpx$hx - hx_hpx2$hx)), max(abs(hx_hpx$hpx - hx_hpx2$hpx)))
@@ -1809,8 +1799,6 @@ get_h_hp_vector <- function(mode, para=NULL, para2=NULL){
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{get_results()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -1840,7 +1828,7 @@ get_h_hp_vector <- function(mode, para=NULL, para2=NULL){
 #'                lambda2=NULL, previous_res=NULL, is_refit=FALSE)
 #'
 #' @export
-#' @useDynLib genscore simplex_centered simplex_full profiled profiled_asymm full full_asymm
+#' @useDynLib genscore, .registration = TRUE
 get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=10000,
                         previous_res=NULL, is_refit=FALSE){
   if (lambda1 < 0) stop("lambda1 must be non-negative.")
@@ -1935,26 +1923,45 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
     }
   } else {
     if (elts$centered || elts$profiled_if_noncenter){
-      if (symmetric == "symmetric") {call_name <- "profiled"
-      } else {call_name <- "profiled_asymm"}
-      test <- .C(call_name, p = as.integer(elts$p), Gamma_K = as.double(elts$Gamma_K), g_K = as.double(elts$g_K),
-                 K = as.double(previous_res$K), lambda1 = as.double(lambda1), tol = as.double(tol), maxit = as.integer(maxit),
-                 iters = as.integer(0), converged = as.integer(0), crit = as.double(0), exclude = as.integer(exclude),
-                 previous_lambda1 = as.double(previous_res$lambda1), is_refit = as.integer(is_refit),
-                 diagonals_with_multiplier = as.double(elts$diagonals_with_multiplier),
-                 gauss = as.integer(elts$setting=="gaussian" && elts$domain_type=="R"),
-                 PACKAGE="genscore")
-    } else{
-      if (symmetric == "symmetric") {call_name <- "full"}
-      else {call_name <- "full_asymm"}
-      test <- .C(call_name, p = as.integer(elts$p), Gamma_K = as.double(elts$Gamma_K), Gamma_K_eta = as.double(elts$Gamma_K_eta),
-                 Gamma_eta = as.double(elts$Gamma_eta), g_K=as.double(elts$g_K), g_eta=as.double(elts$g_eta), K = as.double(previous_res$K),
-                 eta=as.double(previous_res$eta), lambda1 = as.double(lambda1), lambda2 = as.double(lambda2), tol = as.double(tol),
-                 maxit = as.integer(maxit), iters = as.integer(0), converged = as.integer(0), crit = as.double(0),
-                 exclude = as.integer(exclude), exclude_eta = as.integer(exclude_eta),
-                 previous_lambda1 = as.double(previous_res$lambda1), is_refit = as.integer(is_refit),
-                 diagonals_with_multiplier = as.double(elts$diagonals_with_multiplier),
-                 gauss = as.integer(elts$setting=="gaussian" && elts$domain_type=="R"), PACKAGE="genscore")
+      # Arguments are the same in the two cases. But cannot do call_name <- "..." and .C(call_name, ...) since R would complain.
+      if (symmetric == "symmetric") {
+        test <- .C("profiled", p = as.integer(elts$p), Gamma_K = as.double(elts$Gamma_K), g_K = as.double(elts$g_K),
+                   K = as.double(previous_res$K), lambda1 = as.double(lambda1), tol = as.double(tol), maxit = as.integer(maxit),
+                   iters = as.integer(0), converged = as.integer(0), crit = as.double(0), exclude = as.integer(exclude),
+                   previous_lambda1 = as.double(previous_res$lambda1), is_refit = as.integer(is_refit),
+                   diagonals_with_multiplier = as.double(elts$diagonals_with_multiplier),
+                   gauss = as.integer(elts$setting=="gaussian" && elts$domain_type=="R"),
+                   PACKAGE="genscore")
+      } else {
+        test <- .C("profiled_asymm", p = as.integer(elts$p), Gamma_K = as.double(elts$Gamma_K), g_K = as.double(elts$g_K),
+                   K = as.double(previous_res$K), lambda1 = as.double(lambda1), tol = as.double(tol), maxit = as.integer(maxit),
+                   iters = as.integer(0), converged = as.integer(0), crit = as.double(0), exclude = as.integer(exclude),
+                   previous_lambda1 = as.double(previous_res$lambda1), is_refit = as.integer(is_refit),
+                   diagonals_with_multiplier = as.double(elts$diagonals_with_multiplier),
+                   gauss = as.integer(elts$setting=="gaussian" && elts$domain_type=="R"),
+                   PACKAGE="genscore")
+      }
+    } else {
+      # Arguments are the same in the two cases. But cannot do call_name <- "..." and .C(call_name, ...) since R would complain.
+      if (symmetric == "symmetric") {
+        test <- .C("full", p = as.integer(elts$p), Gamma_K = as.double(elts$Gamma_K), Gamma_K_eta = as.double(elts$Gamma_K_eta),
+                   Gamma_eta = as.double(elts$Gamma_eta), g_K=as.double(elts$g_K), g_eta=as.double(elts$g_eta), K = as.double(previous_res$K),
+                   eta=as.double(previous_res$eta), lambda1 = as.double(lambda1), lambda2 = as.double(lambda2), tol = as.double(tol),
+                   maxit = as.integer(maxit), iters = as.integer(0), converged = as.integer(0), crit = as.double(0),
+                   exclude = as.integer(exclude), exclude_eta = as.integer(exclude_eta),
+                   previous_lambda1 = as.double(previous_res$lambda1), is_refit = as.integer(is_refit),
+                   diagonals_with_multiplier = as.double(elts$diagonals_with_multiplier),
+                   gauss = as.integer(elts$setting=="gaussian" && elts$domain_type=="R"), PACKAGE="genscore")
+      } else {
+        test <- .C("full_asymm", p = as.integer(elts$p), Gamma_K = as.double(elts$Gamma_K), Gamma_K_eta = as.double(elts$Gamma_K_eta),
+                   Gamma_eta = as.double(elts$Gamma_eta), g_K=as.double(elts$g_K), g_eta=as.double(elts$g_eta), K = as.double(previous_res$K),
+                   eta=as.double(previous_res$eta), lambda1 = as.double(lambda1), lambda2 = as.double(lambda2), tol = as.double(tol),
+                   maxit = as.integer(maxit), iters = as.integer(0), converged = as.integer(0), crit = as.double(0),
+                   exclude = as.integer(exclude), exclude_eta = as.integer(exclude_eta),
+                   previous_lambda1 = as.double(previous_res$lambda1), is_refit = as.integer(is_refit),
+                   diagonals_with_multiplier = as.double(elts$diagonals_with_multiplier),
+                   gauss = as.integer(elts$setting=="gaussian" && elts$domain_type=="R"), PACKAGE="genscore")
+      }
       test$eta_support <- which(abs(test$eta) > tol)  ## For refit
       test$Gamma_K_eta <- test$Gamma_eta <- test$exclude_eta <- NULL
     }
@@ -2006,8 +2013,6 @@ get_results <- function(elts, symmetric, lambda1, lambda2=0, tol=1e-6, maxit=100
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{test_lambda_bounds()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2080,8 +2085,6 @@ test_lambda_bounds <- function(elts, symmetric, lambda=1, lambda_ratio=1, step=2
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{test_lambda_bounds2()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2134,8 +2137,6 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{lambda_max()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2381,10 +2382,8 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{estimate()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
-#' n <- 50
-#' p <- 30
+#' n <- 30
+#' p <- 20
 #' domain <- make_domain("R+", p=p)
 #' mu <- rep(0, p)
 #' K <- diag(p)
@@ -2665,8 +2664,6 @@ estimate <- function(x, setting, domain, elts=NULL, centered=TRUE, symmetric="sy
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{refit()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2731,8 +2728,6 @@ refit <- function(res, elts){
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()},
 #' #   as the way to call this function (\code{eBIC()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -2803,8 +2798,8 @@ eBIC <- function(res, elts, BIC_refit=TRUE, gammas=c(0,0.5,1)){
 #' # demonstrate that the loss this function returns matches that returned
 #' # by the C code during estimation using \code{get_results}.
 #'
-#' n <- 50
-#' p <- 30
+#' n <- 6
+#' p <- 3
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
@@ -2814,12 +2809,12 @@ eBIC <- function(res, elts, BIC_refit=TRUE, gammas=c(0,0.5,1)){
 #'                 make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3)),
 #'                 make_domain("polynomial", p=p,
 #'                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))),
-#'                 make_domain("polynomial", p=p,
-#'                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
-#'                 make_domain("polynomial", p=p,
-#'                   ineqs=list(list("expression"=paste(paste(sapply(1:p,
-#'                      function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
-#'                      abs=FALSE, nonnegative=TRUE))),
+#'                 #make_domain("polynomial", p=p,
+#'                 #  ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
+#'                 #make_domain("polynomial", p=p,
+#'                 #  ineqs=list(list("expression"=paste(paste(sapply(1:p,
+#'                 #     function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
+#'                 #     abs=FALSE, nonnegative=TRUE))),
 #'                 make_domain("simplex", p=p))
 #' for (domain in domains) {
 #'   if (domain$type == "R" ||
@@ -2965,8 +2960,6 @@ calc_crit <- function(elts, res, penalty) {
 #' # Examples are shown for Gaussian truncated to R+^p only. For other distributions
 #' #   on other types of domains, please refer to \code{gen()} or \code{get_elts()}, as the
 #' #   way to call this function (\code{get_crit_nopenalty()}) is exactly the same in those cases.
-#' if (!requireNamespace("tmvtnorm", quietly = TRUE))
-#'    install.packages("tmvtnorm")
 #' n <- 50
 #' p <- 30
 #' domain <- make_domain("R+", p=p)
@@ -3182,7 +3175,7 @@ get_trun <- function(mode, param1, param2){
 #' @export
 varhat <- function(mu, sigmasq, mode, param1, param2, est_mu){
   if (!requireNamespace("cubature", quietly = TRUE))
-    install.package("cubature")
+    stop("Please install package \"cubature\".")
   sigma <- sqrt(sigmasq)
   inte <- function(f,from=0,to=Inf){stats::integrate(f,lower=from,upper=to,rel.tol=1e-10)$value}
   adaptinte <- function(f,from=0,to=Inf){cubature::adaptIntegrate(function(t){x<-t/(1-t);1/(1-t)^2*f(x)},lowerLimit=from/(from+1),upperLimit=ifelse(is.infinite(to),1,to/(to+1)),tol=1e-10)$integral}

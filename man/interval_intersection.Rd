@@ -2,7 +2,7 @@
 % Please edit documentation in R/domain.R
 \name{interval_intersection}
 \alias{interval_intersection}
-\title{Finds the intersection betweeen two unions of intervals.}
+\title{Finds the intersection between two unions of intervals.}
 \usage{
 interval_intersection(A, B)
 }
@@ -15,7 +15,7 @@ interval_intersection(A, B)
 A list of vectors of size 2, whose union represents the intersection between \code{A} and \code{B}.
 }
 \description{
-Finds the intersection betweeen two unions of intervals.
+Finds the intersection between two unions of intervals.
 }
 \details{
 Finds the intersection between the union of all intervals in \code{A} and the union of all intervals in \code{B}.

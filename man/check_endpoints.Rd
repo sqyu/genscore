@@ -32,5 +32,5 @@ check_endpoints(lefts=c(-4,-2,0,2,4), rights=c(-3,-1,1,3,5))
 #check_endpoints(lefts=c(0, 1), rights=c(2, 3)) # [0,2] and [1,3] overlap, not allowed
 #check_endpoints(lefts=c(2, 0), rights=c(3, 1)) # [2,3], [0,1] not increasing, not allowed
 ## Singletons and overlapping at the boundary points allowed
-check_endpoints(lefts=c(0, 1, 2), rights=c(0, 2, 3)) 
+check_endpoints(lefts=c(0, 1, 2), rights=c(0, 2, 3))
 }

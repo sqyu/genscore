@@ -29,8 +29,8 @@ This function calculates the loss in some estimated \code{K} and \code{eta} give
 # demonstrate that the loss this function returns matches that returned
 # by the C code during estimation using \code{get_results}.
 
-n <- 50
-p <- 30
+n <- 6
+p <- 3
 eta <- rep(0, p)
 K <- diag(p)
 dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
@@ -40,12 +40,12 @@ domains <- list(make_domain("R", p=p),
                 make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3)),
                 make_domain("polynomial", p=p,
                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))),
-                make_domain("polynomial", p=p,
-                  ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
-                make_domain("polynomial", p=p,
-                  ineqs=list(list("expression"=paste(paste(sapply(1:p,
-                     function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
-                     abs=FALSE, nonnegative=TRUE))),
+                #make_domain("polynomial", p=p,
+                #  ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
+                #make_domain("polynomial", p=p,
+                #  ineqs=list(list("expression"=paste(paste(sapply(1:p,
+                #     function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
+                #     abs=FALSE, nonnegative=TRUE))),
                 make_domain("simplex", p=p))
 for (domain in domains) {
   if (domain$type == "R" ||

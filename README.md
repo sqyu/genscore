@@ -17,7 +17,7 @@ The distributions covered include
 1. "a-b models" (Yu et al, 2019), and
 1. the A^d model (Aitchison, 1985).
 
-# Installation
+# Installation from GitHub
 ```R
 install.packages(c("devtools", "knitr"))
 devtools::install_github("sqyu/genscore", build_vignettes=TRUE)
@@ -31,4 +31,4 @@ vignette("gen_vignette")
 ```
 
 # References
-Some parts of the code were initially dervied from https://github.com/linlina/highscore.
+Some parts of the code were initially dervied from https://github.com/linlina/highscore and http://www1.maths.leeds.ac.uk/~wally.gilks/adaptive.rejection/web_page/Welcome.html.

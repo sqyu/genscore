@@ -119,7 +119,7 @@ search_bin <- function(arr, x){
 #' 
 #' @param n An integer, the number of samples to return.
 #' @param lefts A vector of numbers, must have the same length as \code{rights}. A non-empty vector of numbers (may contain \code{-Inf}), the left endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
-#' @param rights A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required tha \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
+#' @param rights A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
 #' @param m A number, the location parameter of the laplace distributionn.
 #' @param s A number, the scale/dispersion parameter of the laplace distribution.
 #' @details Returns \code{n} random variables from the truncated laplace distribution with density proportional to \eqn{\exp(-|x-m|/s)}{exp(-|x-m|/s)} truncated to the domain defined by the union of [\code{lefts[i]}, \code{rights[i]}].
@@ -161,7 +161,7 @@ rlaplace_truncated <- function(n, lefts, rights, m=0, s=1) {
 #' 
 #' @param n An integer, the number of samples to return.
 #' @param lefts A vector of numbers, must have the same length as \code{rights}. A non-empty vector of numbers (may contain \code{-Inf}), the left endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
-#' @param rights A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required tha \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
+#' @param rights A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
 #' @details For each sample, a random bin \code{i} is uniformly chosen from 1 through \code{length(lefts)}; if the \code{lefts[i]} and \code{rights[i]} define a finite interval, a random uniform variable is drawn from the interval; if the interval is infinite, a truncated laplace variable with location 0 and scale 1 is drawn. Used for randomly generating initial points for generators of truncated multivariate distributions.
 #' @return \code{n} random numbers from the union of intervals.
 #' @examples
@@ -285,7 +285,7 @@ random_init_simplex <- function(p, rdist=stats::rnorm, tol=1e-10, maxtimes=100) 
 #' random_init_polynomial(poly_d(
 #'    "x1^(3/5)+0.9*x2^(2/3)+2.7*x3^(-3/2)+1.1*x4^(-5)+1.1*exp(2x5)+1.3*exp(-3x6)+0.7*log(x7)>2", 
 #'                        abs=FALSE, nng=FALSE))
-#' @useDynLib genscore poly_domain_1d_for_R
+#' @useDynLib genscore, .registration = TRUE
 #' @export
 random_init_polynomial <- function(domain) {
   if (!"checked" %in% names(domain) || domain$type != "polynomial")

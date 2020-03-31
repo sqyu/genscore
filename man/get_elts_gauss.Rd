@@ -43,8 +43,6 @@ The R implementation to get the elements necessary for calculations for the gaus
 For details on the returned values, please refer to \code{get_elts_ab} or \code{get_elts}.
 }
 \examples{
-if (!requireNamespace("mvtnorm", quietly = TRUE))
-   install.packages("mvtnorm")
 n <- 50
 p <- 30
 mu <- rep(0, p)

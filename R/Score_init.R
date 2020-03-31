@@ -81,7 +81,7 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
     if (spars <= 0 || spars >= 1)
       stop("spars must be in (0, 1).")
     if (!requireNamespace("Matrix", quietly=TRUE))
-      install.packages("Matrix")
+      stop("Please install package \"Matrix\".")
     if (subgraphs < 1 || p %% subgraphs) {stop("subgraphs must be a positive integer and p must be an exact multiple of subgraphs.")}
     p_sub <- p / subgraphs
     K <- as.matrix(Matrix::bdiag(lapply(1:subgraphs, function(x){mat <- matrix(stats::runif(p_sub^2, 0.5, 1) * stats::rbinom(p_sub^2, 1, spars), p_sub, p_sub);
@@ -91,8 +91,8 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
     ## spars: p in binomial for the whole graph
     if (spars <= 0 || spars >= 1)
       stop("spars must be in (0, 1).")
-    if (!requireNamespace("igraph", quietly = TRUE))
-      install.packages("igraph")
+    if (!requireNamespace("igraph", quietly=TRUE))
+      stop("Please install package \"igraph\".")
     K <- as.matrix(igraph::get.adjacency(igraph::erdos.renyi.game(p, spars))) # Not sure why t(K) below would cause an error otherwise
     K <- K * matrix(stats::runif(p^2, 0.5, 1), p, p); K[upper.tri(K)] <- 0; K <- K + t(K)
     K <- K + diag(p) * (eig - min(eigen(K)$values))
@@ -195,8 +195,8 @@ tp_fp <- function(edges, true_edges, p){
 #' points(c(0,1), c(0,1), type = "l", lty = 2)
 #' @export
 AUC <- function(tpfp){
-  if (!requireNamespace("zoo", quietly = TRUE))
-    install.packages("zoo")
+  if (!requireNamespace("zoo", quietly=TRUE))
+    stop("Please install package \"zoo\".")
   if (min(tpfp) < 0 || max(tpfp) > 1) {stop("All values in tpfp must be between 0 and 1.")}
   if (ncol(tpfp) != 2) {stop("tpfp must be a matrix of two columns, namely the true and false positive rates.")}
   tpfp <- tpfp[order(tpfp[,2]), ]
@@ -425,8 +425,8 @@ compare_two_results <- function(res, res2){
 #' Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
 #' @return A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
 #' @examples
-#' n <- 100
-#' p <- 20
+#' n <- 30
+#' p <- 10
 #' K <- diag(p)
 #' eta <- numeric(p)
 #'
@@ -492,8 +492,8 @@ get_g0 <- function(domain, C) {
       row_which_min <- apply(x, 1, which.min)
       list("g0"=pmin(row_min, C),
            "g0d"=t(sapply(1:nrow(x), function(i){
-             if (row_min[i] >= C){tmp <- numeric(p)
-             } else {tmp <- numeric(p); tmp[row_which_min[i]] <- 1; tmp}
+             if (row_min[i] >= C){tmp <- numeric(ncol(x))
+             } else {tmp <- numeric(ncol(x)); tmp[row_which_min[i]] <- 1; tmp}
              })))
     }
   } else if (domain$type == "simplex") {
@@ -594,8 +594,8 @@ get_g0 <- function(domain, C) {
 #' Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
 #' @return A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
 #' @examples
-#' n <- 100
-#' p <- 20
+#' n <- 30
+#' p <- 10
 #' K <- diag(p)
 #' eta <- numeric(p)
 #'

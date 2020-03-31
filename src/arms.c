@@ -1,5 +1,5 @@
 /* adaptive rejection metropolis sampling */
-/* By by Wally Gilks, taken from http://www1.maths.leeds.ac.uk/~wally.gilks/adaptive.rejection/web_page/Welcome.html
+/* Adapted from work by Wally Gilks, taken from http://www1.maths.leeds.ac.uk/~wally.gilks/adaptive.rejection/web_page/Welcome.html
  */
 
 /* *********************************************************************** */
@@ -29,6 +29,7 @@ typedef struct envelope {  /* attributes of the entire rejection envelope */
   double ymax;             /* the maximum y-value in the current envelope */
   POINT *p;                /* start of storage of envelope POINTs */
   double *convex;          /* adjustment for convexity */
+  int error;
 } ENVELOPE;
 
 /* *********************************************************************** */
@@ -49,7 +50,7 @@ typedef struct metropolis { /* for metropolis step */
 
 /* *********************************************************************** */
 
-#define RAND_MAX 2147483647      /* For Sun4 : remove this for some systems */ 
+//#define RAND_MAX 2147483647      /* For Sun4 : remove this for some systems */
 #define XEPS  0.00001            /* critical relative x-value difference */
 #define YEPS  0.1                /* critical y-value difference */
 #define EYEPS 0.001              /* critical relative exp(y) difference */
@@ -181,6 +182,7 @@ int arms (double *xinit, int ninit, double *xl, double *xr,
     /* insufficient space */
     return 1006;
   }
+  env->error = 0;
 
   /* start setting up metropolis struct */
   metrop = (METROPOLIS *)malloc(sizeof(METROPOLIS));
@@ -210,9 +212,11 @@ int arms (double *xinit, int ninit, double *xl, double *xr,
   do {
     /* sample a new point */
     sample (env,&pwork);
+	if (env->error) return env->error;
 
     /* perform rejection (and perhaps metropolis) tests */
     i = test(env,&pwork,&lpdf,metrop);
+	if (env->error) return env->error;
     if(i == 1){
       /* point accepted */
       xsamp[msamp++] = pwork.x;
@@ -226,6 +230,7 @@ int arms (double *xinit, int ninit, double *xl, double *xr,
   /* calculate requested envelope centiles */
   for (i=0; i<ncent; i++){
     invert(qcent[i]/100.0,env,&pwork);
+	if (env->error) return env->error;
     xcent[i] = pwork.x;
   }
 
@@ -337,10 +342,12 @@ int initial (double *xinit, int ninit, double xl, double xr, int npoint,
       /* envelope violation without metropolis */
       return 2000;
     }
+	if (env->error) return env->error;
   }
 
   /* exponentiate and integrate envelope */
   cumulate(env);
+  if (env->error) return env->error;
 
   /* note number of POINTs currently in envelope */
   env->cpoint = mpoint;
@@ -362,7 +369,7 @@ void sample(ENVELOPE *env, POINT *p)
   /* sample a uniform */
   prob = u_random();
   /* get x-value correponding to a cumulative probability prob */
-  invert(prob,env,p);
+  invert(prob,env,p); // env->error can be > 0
 
   return;
 }
@@ -377,7 +384,7 @@ void invert(double prob, ENVELOPE *env, POINT *p)
 /* *p      : a working POINT to hold the sampled value */
 
 {
-  double u,xl,xr,yl,yr,eyl,eyr,prop,z;
+	double u,xl,xr,yl,yr,eyl,eyr,prop;//,z;
   POINT *q;
 
   /* find rightmost point in envelope */
@@ -427,10 +434,9 @@ void invert(double prob, ENVELOPE *env, POINT *p)
       p->y = ((p->x - xl)/(xr - xl)) * (yr - yl) + yl;
       p->ey = expshift(p->y, env->ymax);
     }
+	/* guard against imprecision yielding point outside interval */
+	if ((p->x < xl) || (p->x > xr)) env->error = 3001; //exit(1); ////
   }
-
-  /* guard against imprecision yielding point outside interval */
-  if ((p->x < xl) || (p->x > xr))exit(1);
 
   return;
 }
@@ -486,6 +492,7 @@ int test(ENVELOPE *env, POINT *p, FUNBAG *lpdf, METROPOLIS *metrop)
       /* envelope violation without metropolis */
       return -1;
     }
+	if (env->error) return -1; // Returns error in arms
     /* perform rejection test */
     if(y >= ynew){
       /* reject point at rejection step */
@@ -584,7 +591,8 @@ int update(ENVELOPE *env, POINT *p, FUNBAG *lpdf, METROPOLIS *metrop)
     q->pl->pr = q;
   } else {
     /* this should be impossible */
-    exit(10);
+	env->error = 3002; return 0;
+    //exit(10);
   }
 
   /* now adjust position of q within interval if too close to an endpoint */
@@ -609,29 +617,29 @@ int update(ENVELOPE *env, POINT *p, FUNBAG *lpdf, METROPOLIS *metrop)
   }
 
   /* revise intersection points */
-  if(meet(q->pl,env,metrop)){
+  if(meet(q->pl,env,metrop) || env->error){
     /* envelope violation without metropolis */
     return 1;
   }
-  if(meet(q->pr,env,metrop)){
+  if(meet(q->pr,env,metrop) || env->error){
     /* envelope violation without metropolis */
     return 1;
   }
   if(q->pl->pl != NULL){
-    if(meet(q->pl->pl->pl,env,metrop)){
+    if(meet(q->pl->pl->pl,env,metrop) || env->error){
       /* envelope violation without metropolis */
       return 1;
     }
   }
   if(q->pr->pr != NULL){
-    if(meet(q->pr->pr->pr,env,metrop)){
+    if(meet(q->pr->pr->pr,env,metrop) || env->error){
       /* envelope violation without metropolis */
       return 1;
     }
   }
 
   /* exponentiate and integrate new envelope */
-  cumulate(env);
+  cumulate(env); // env->error may be > 0, returns error in test -> arms
 
   return 0;
 }
@@ -664,6 +672,7 @@ void cumulate(ENVELOPE *env)
   /* integrate exponentiated envelope */
   qlmost->cum = 0.;
   for(q = qlmost->pr; q != NULL; q = q->pr){
+	  if(q->pl == NULL){env->error = 3006; return;}
     q->cum = q->pl->cum + area(q);
   }
 
@@ -679,12 +688,13 @@ int meet (POINT *q, ENVELOPE *env, METROPOLIS *metrop)
 /* *metrop   : for metropolis step */
 
 {
-  double gl,gr,grl,dl,dr;
+  double gl = 0.0, gr = 0.0, grl = 0.0, dl = 0.0, dr = 0.0;
   int il,ir,irl;
 
   if(q->f){
     /* this is not an intersection point */
-    exit(30);
+	env->error = 3003; return -1;
+    //exit(30);
   }
 
   /* calculate coordinates of point of intersection */
@@ -768,12 +778,14 @@ int meet (POINT *q, ENVELOPE *env, METROPOLIS *metrop)
     q->y = q->pr->y - gr * (q->pr->x - q->x);
   } else {
     /* gradient on neither side - should be impossible */
-    exit(31);
+	env->error = 3004; return -1;
+    //exit(31);
   }
   if(((q->pl != NULL) && (q->x < q->pl->x)) ||
      ((q->pr != NULL) && (q->x > q->pr->x))){
     /* intersection point outside interval (through imprecision) */
-    exit(32);
+	env->error = 3005; return -1;
+    //exit(32);
   }
   /* successful exit : intersection has been calculated */
   return 0;
@@ -788,10 +800,12 @@ double area(POINT *q)
 {
   double a;
 
-  if(q->pl == NULL){
+  // Condition below commented out as it is now treated in cumulate().
+  //if(q->pl == NULL){
     /* this is leftmost point in envelope */
-    exit(1);
-  } else if(q->pl->x == q->x){
+  //  exit(1);
+  //} else
+  if(q->pl->x == q->x){
     /* interval is zero length */
     a = 0.;
   } else if (fabs(q->y - q->pl->y) < YEPS){
@@ -862,7 +876,7 @@ void display(FILE *f, ENVELOPE *env)
   fprintf(f,"points in use = %d, points available = %d\n",
           env->cpoint,env->npoint);
   fprintf(f,"function evaluations = %d\n",*(env->neval));
-  fprintf(f,"ymax = %f, p = %x\n",env->ymax,env->p);
+  fprintf(f,"ymax = %f, p = %p\n",env->ymax,(void *)(env->p));
   fprintf(f,"convexity adjustment = %f\n",*(env->convex));
   fprintf(f,"--------------------------------------------------------\n");
 
@@ -872,7 +886,7 @@ void display(FILE *f, ENVELOPE *env)
 
   /* now print each POINT from left to right */
   for(q = env->p; q != NULL; q = q->pr){
-    fprintf(f,"point at %x, left at %x, right at %x\n",q,q->pl,q->pr);
+    fprintf(f,"point at %p, left at %p, right at %p\n",(void *)(q),(void *)(q->pl),(void *)(q->pr));
     fprintf(f,"x = %f, y = %f, ey = %f, cum = %f, f = %d\n",
             q->x,q->y,q->ey,q->cum,q->f);
   }
@@ -887,7 +901,7 @@ double u_random()
 
 /* to return a standard uniform random number */
 {
-   return ((double)rand() + 0.5)/((double)RAND_MAX + 1.0);
+  return (unif_rand());//((double)rand() + 0.5)/((double)RAND_MAX + 1.0);
 }
 
 /* *********************************************************************** */

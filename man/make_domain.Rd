@@ -13,7 +13,7 @@ make_domain(type, p, lefts = NULL, rights = NULL, ineqs = NULL, rule = NULL)
 
 \item{lefts}{Optional, required if \code{type == "uniform"} and must have the same length as \code{rights}. A non-empty vector of numbers (may contain \code{-Inf}), the left endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.}
 
-\item{rights}{Optional, required if \code{type == "uniform"} and must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required tha \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.}
+\item{rights}{Optional, required if \code{type == "uniform"} and must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.}
 
 \item{ineqs}{Optional, required if \code{type == "polynomial"}. A list of lists, each sublist representing an inequality that defines the domain. Each sublist must contain fields \code{abs} (logical) and \code{nonnegative} (logical), and in addition either a single \code{expression} (string), or all of the following: \code{uniform} (logical), \code{larger} (logical), \code{power_numers} (1 or \code{p} integers), \code{power_denoms} (1 or \code{p} integers), \code{const} (a number), \code{coeffs} (1 or \code{p} numbers).}
 
@@ -75,7 +75,7 @@ The following types of domains are supported:
         }
 
         In addition, one must in addition specify either a single string \code{"expression"} (highly recommended, detailed below), or all of the following fields (discouraged usage):
-        \describe{   
+        \describe{
           \item{\code{uniform}}{A logical, indicates whether the inequality should be uniformly applied to all components (e.g. \code{"x>1"} -> \code{"x1>1 && ... && xp>1"}).}
           \item{\code{larger}}{A logical, indicates whether the polynomial should be larger or smaller than the constant (e.g. \code{TRUE} for \code{x1 + ... + xp > C}, and \code{FALSE} for \code{x1 + ... + xp < C}).}
           \item{\code{const}}{A number, the constant the polynomial should be compared to  (e.g. \code{2.3} for \code{x1 + ... + xp > 2.3}).}
@@ -84,20 +84,20 @@ The following types of domains are supported:
           \item{\code{coeffs}}{Required if \code{uniform == FALSE}. A vector of \code{p} doubles, where \code{coeffs[i]} is the coefficient on \code{x[i]} in the inequality.}
        }
        The user is recommended to use a single \code{expression} for ease and to avoid potential errors. The user may safely skip the explanations and directly look at the examples to get a better understanding.\cr
-       
+
        The expression should have the form \code{"POLYNOMIAL SIGN CONST"}, where \code{"SIGN"} is one of \code{"<"}, \code{"<="}, \code{">"}, \code{">="}, and \code{"CONST"} is a single number (scientific notation allowed).\cr
-       
+
        \code{"POLYNOMIAL"} must be (1) a single term (see below) in \code{"x"} with no coefficient (e.g. \code{"x^(2/3)"}, \code{"exp(3x)"}), or (2) such a term surrounded by \code{"sum()"} (e.g. \code{"sum(x^(2/3))"}, \code{"sum(exp(3x))"}), or (3) a sum of such terms in \code{"x1"} through \code{"xp"} (one term max for each component) with or without coefficients, separated by the plus or the minus sign (e.g. \cr\code{"2.3x1^(2/3)-3.4exp(x2)+x3^(-3/5)"}).\cr
-       
+
        For (1) and (2), the term must be in one of the following forms: \code{"x"}, \code{"x^2"}, \code{"x^(-2)"}, \code{"x^(2/3)"}, \code{"x^(-2/3)"}, \code{"log(x)"}, \code{"exp(x)"}, \code{"exp(2x)"}, \code{"exp(2*x)"}, \code{"exp(-3x)"}, where the \code{2} and \code{3} can be changed to any other non-zero integers.\cr
        For (3), each term should be as above but in \code{"x1"}, ..., \code{"xp"} instead of \code{"x"}, following an optional double number and optionally a \code{"*"} sign.\cr
-       
+
        Examples: For \code{p=10}, \cr
           (1) \code{"x^2 > 2"} defines the domain \code{abs(x1) > sqrt(2) && ... && abs(x10) > sqrt(2)}.\cr
           (2) \code{"sum(x^2) > 2"} defines the domain \code{x1^2 + ... + x10^2 > 2}.\cr
           (3) \code{"2.3x3^(2/3)-3.4x4+x5^(-3/5)+3.7*x6^(-4)-1.9*log(x7)+1.3e5*exp(-3x8)}\cr
           \code{-2*exp(x9)+0.5exp(2*x10) <= 2"} defines a domain using a polynomial in \code{x3} through \code{x10}, and \code{x1} and \code{x2} are thus allowed to vary freely.\cr
-          
+
        Note that \code{">"} and \code{">="} are not differentiated, and so are \code{"<"} and \code{"<="}.
    }}
 }
@@ -108,7 +108,7 @@ domain <- make_domain("R", p=p)
 
 # The non-negative orthant of the 30-dimensional real space, R+^30
 domain <- make_domain("R+", p=p)
- 
+
 # x such that sum(x^2) > 10 && sum(x^(1/3)) > 10 with x allowed to be negative
 domain <- make_domain("polynomial", p=p, rule="1 && 2",
        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
@@ -119,8 +119,8 @@ domain2 <- make_domain("polynomial", p=p, rule="1 && 2",
                  larger=1, abs=FALSE, nonnegative=FALSE),
                  list(uniform=FALSE, power_numers=1, power_denoms=3, const=10, coeffs=1,
                  larger=1, abs=FALSE, nonnegative=FALSE)))
-                 
-                      
+
+
 # ([0, 1] v [2,3]) ^ p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 
@@ -131,14 +131,14 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 # Alternatively
 domain2 <- make_domain("polynomial", p=p, rule="1 && 2",
-       ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1, 
+       ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1,
                  coeffs=c(1,rep(0,p-1)), larger=1, abs=FALSE, nonnegative=TRUE),
-                 list(uniform=FALSE, power_numers=1, power_denoms=1, const=1, 
+                 list(uniform=FALSE, power_numers=1, power_denoms=1, const=1,
                  coeffs=c(0,1,rep(0,p-2)), larger=0, abs=FALSE, nonnegative=TRUE),
                  list(uniform=TRUE, power_numers=1, power_denoms=0, const=1.3,
                  larger=1, abs=FALSE, nonnegative=FALSE)))
-                      
-                      
+
+
 # x in R_+^p such that {sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
        ineqs=list(list("expression"="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
@@ -146,22 +146,22 @@ domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 # Alternatively
 domain2 <- make_domain("polynomial", p=p, rule="1 && 2",
-       ineqs=list(list(uniform=FALSE, power_numers=0, power_denoms=0, const=2, 
+       ineqs=list(list(uniform=FALSE, power_numers=0, power_denoms=0, const=2,
                  coeffs=1, larger=0, abs=FALSE, nonnegative=TRUE),
-                 list(uniform=FALSE, power_numers=c(2,-3,rep(1,p-2)), power_denoms=c(3,rep(1,p-1)), 
+                 list(uniform=FALSE, power_numers=c(2,-3,rep(1,p-2)), power_denoms=c(3,rep(1,p-1)),
                  const=1, coeffs=c(1.0,-1.3,rep(0,p-2)), larger=0, abs=FALSE, nonnegative=TRUE),
-                 list(uniform=FALSE, power_numers=c(1,2,rep(1,p-2)), power_denoms=c(0,rep(1,p-1)), 
+                 list(uniform=FALSE, power_numers=c(1,2,rep(1,p-2)), power_denoms=c(0,rep(1,p-1)),
                  const=2, coeffs=c(1,2.3,rep(0,p-2)), larger=1, abs=FALSE, nonnegative=TRUE)))
-                      
-                      
+
+
 # x in R_+^p such that {x in R_+^p: sum_j j * xj <= 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
 # Alternatively
 domain2 <- make_domain("polynomial", p=p,
-       ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1, 
+       ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1,
                  coeffs=1:p, larger=0, abs=FALSE, nonnegative=TRUE)))
 
 
@@ -169,6 +169,6 @@ domain2 <- make_domain("polynomial", p=p,
 domain <- make_domain("simplex", p=p)
 
 # The l-1 ball {sum(|x|) < 1}
-domain <- make_domain("polynomial", p=p, 
+domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 }

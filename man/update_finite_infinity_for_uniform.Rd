@@ -24,11 +24,11 @@ Since we assume that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < 
 }
 \examples{
 # Does not change sincee 1000 > 12 * 10
-update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 1000) 
+update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 1000)
 # Changed to 12 * 10
 update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 10)
 # Changed to 12 * 10
-update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,12), 10) 
+update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,12), 10)
 # Changed to 9 * 10
-update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,Inf), 10) 
+update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,Inf), 10)
 }

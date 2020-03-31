@@ -25,43 +25,43 @@
 #define MAXNUMSTACK 100
 
 
-void push_op(char *op_stack, int *op_stack_size, const char new_op, int *errno){
+void push_op(char *op_stack, int *op_stack_size, const char new_op, int *errno_status){
 	if (*op_stack_size >= MAXOPSTACK) {
 		Rprintf("!!!In parsing notation: operator stack size over max limit %d!!!\n", *op_stack_size);
-		*errno = 1;
+		*errno_status = 1;
 		return;
 	}
 	op_stack[(*op_stack_size)++] = new_op;
 }
 
-char pop_op(char *op_stack, int *op_stack_size, int *errno){
+char pop_op(char *op_stack, int *op_stack_size, int *errno_status){
 	if (*op_stack_size <= 0) {
 		Rprintf("!!!In parsing notation: operator stack size 0, nothing to pop!!!\n");
-		*errno = 1;
+		*errno_status = 1;
 		return '\0';
 	}
 	return op_stack[--(*op_stack_size)];
 }
 
-void push_num(int *num_stack, int *num_stack_size, const int new_num, int *errno){
+void push_num(int *num_stack, int *num_stack_size, const int new_num, int *errno_status){
 	if (*num_stack_size >= MAXNUMSTACK) {
 		Rprintf("!!!In parsing notation: number stack size over max limit %d!!!\n", *num_stack_size);
-		*errno = 1;
+		*errno_status = 1;
 		return;
 	}
 	num_stack[(*num_stack_size)++] = new_num;
 }
 
-int pop_num(int *num_stack, int *num_stack_size, int *errno){
+int pop_num(int *num_stack, int *num_stack_size, int *errno_status){
 	if (*num_stack_size <= 0) {
 		Rprintf("!!!In parsing notation: number stack size 0, nothing to pop!!!\n");
-		*errno = 1;
+		*errno_status = 1;
 		return -1;
 	}
 	return num_stack[--(*num_stack_size)];
 }
 
-void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *errno) {
+void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *errno_status) {
 	/*
 	 Translates an infix logic notation into a post-fix notation, where the infix string contains equation numbers from 1 through *num_eqs, + for union, * for intersection, spaces and parentheses only.
 	 For example, ((1 & 2) | 3) & 4 becomes 1 2 & 3 | 4 &.
@@ -88,7 +88,7 @@ void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *
 				for (int i = 0; i <= pos; i++)
 					Rprintf("%c", infix[i]);
 				Rprintf("': numbers cannot be directly followed by another number (e.g. '12 34')!!!\n");
-				*errno = 1;
+				*errno_status = 1;
 				return;
 			}
 			int this_num = 0; // For sanity check if number larger than num_eqs
@@ -98,7 +98,7 @@ void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *
 			}
 			if (this_num <= 0 || this_num > *num_eqs) {
 				Rprintf("!!!In parsing notation: Equation %d out of range. Equation number must be in [1, %d] since you specified %d equations!!!\n", this_num, *num_eqs, *num_eqs);
-				*errno = 1;
+				*errno_status = 1;
 				return;
 			}
 			postfix[postfix_len++] = ' ';
@@ -109,32 +109,32 @@ void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *
 				for (int i = 0; i <= pos; i++)
 					Rprintf("%c", infix[i]);
 				Rprintf("': operations cannot be directly followed by another operation (e.g. '1 & | 2')!!!\n");
-				*errno = 1;
+				*errno_status = 1;
 				return;
 			}
 			if (postfix_len < 1) {
 				Rprintf("!!!In parsing notation: The string cannot start with an operation, and must start with a number instead!!!\n");
-				*errno = 1;
+				*errno_status = 1;
 				return;
 			}
 			while (op_stack_size && op_stack[op_stack_size - 1] != '(') { // If last op | or &
 				if (infix[pos] != op_stack[op_stack_size - 1]) {  // If the previous operator is also | or & but different from the current one -- ambiguous notation and parenthese are required
 					Rprintf("!!!In parsing notation: Ambiguous notation; for chained operations of &/| parenthese required, unless they are of the same time. E.g. '1 & 2 & 3' is okay but '1 & 2 | 3' is not allowed; '(1 & 2) | 3' OR '1 & (2 | 3)' must be used!!!\n");
-					*errno = 1;
+					*errno_status = 1;
 					return;
 				}
-				postfix[postfix_len++] = pop_op(op_stack, &op_stack_size, errno);
+				postfix[postfix_len++] = pop_op(op_stack, &op_stack_size, errno_status);
 			}
-			push_op(op_stack, &op_stack_size, infix[pos], errno);
-			if (*errno) {
+			push_op(op_stack, &op_stack_size, infix[pos], errno_status);
+			if (*errno_status) {
 				Rprintf("!!!In parsing notation: error occurred in push_op()!!!\n");
 				return;
 			}
 			pos++;
 			prev_is = 2;
 		} else if (infix[pos] == '(') {
-			push_op(op_stack, &op_stack_size, '(', errno);
-			if (*errno) {
+			push_op(op_stack, &op_stack_size, '(', errno_status);
+			if (*errno_status) {
 				Rprintf("!!!In parsing notation: error occurred in push_op()!!!\n");
 				return;
 			}
@@ -142,13 +142,13 @@ void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *
 			prev_is = 3;
 		} else if (infix[pos] == ')') {
 			while (op_stack_size && op_stack[op_stack_size - 1] != '(')
-				postfix[postfix_len++] = pop_op(op_stack, &op_stack_size, errno);
+				postfix[postfix_len++] = pop_op(op_stack, &op_stack_size, errno_status);
 			if (op_stack_size == 0) { // No ( found
 				Rprintf("!!!In parsing notation: Mismatched parentheses: extra right parenthesis after '");
 				for (int i = 0; i < pos; i++)
 					Rprintf("%c", infix[i]);
 				Rprintf("'. Please check your input!!!\n", pos + 1);
-				*errno = 1;
+				*errno_status = 1;
 				return;
 			}
 			pos++;
@@ -156,17 +156,17 @@ void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *
 			op_stack_size--; // Discard the (
 		} else {
 			Rprintf("!!!In parsing notation: Invalid character: %c!!!\n", infix[pos]);
-			*errno = 1;
+			*errno_status = 1;
 			return;
 		}
 	}
 	while (op_stack_size > 0) {
 		if (op_stack[op_stack_size - 1] == '(') {
 			Rprintf("!!!In parsing notation: Mismatched parentheses (extra left parenthesis unmatched). Please check your input!!!\n");
-			*errno = 1;
+			*errno_status = 1;
 			return;
 		}
-		postfix[postfix_len++] = pop_op(op_stack, &op_stack_size, errno);
+		postfix[postfix_len++] = pop_op(op_stack, &op_stack_size, errno_status);
 	}
 	postfix[postfix_len] = '\0';
 	free(op_stack);
@@ -176,7 +176,7 @@ void shunting_yard(int *num_eqs, const char **infix_pt, char **postfix_pt, int *
 void evaluate_logic(const int *num_eqs, const char *postfix,
 					int *num_intervals_list, double **lefts_list, double **rights_list,
 					int *res_num_intervals, double **res_lefts, double **res_rights,
-					int *errno) {
+					int *errno_status) {
 	/* Assumes that the max number in postfix appeared is not negative and does not exceed num_eqs.
 	 This is checked in shunting_yard(). Note that non-negativity cannot be checked here since new
 	 intersected/merged domains will be given negative numbers as their index.
@@ -203,8 +203,8 @@ void evaluate_logic(const int *num_eqs, const char *postfix,
 			int this_num = 0;
 			while (pos < postfix_len && isdigit(postfix[pos]))
 				this_num = this_num * 10 + (int)(postfix[pos++] - 48); // Finish reading the number
-			push_num(num_stack, &num_stack_size, this_num, errno);
-			if (*errno) {
+			push_num(num_stack, &num_stack_size, this_num, errno_status);
+			if (*errno_status) {
 				Rprintf("!!!In parsing notation: error occurred in push_num()!!!\n");
 				return;
 			}
@@ -215,12 +215,12 @@ void evaluate_logic(const int *num_eqs, const char *postfix,
 				for (int i = 0; i <= pos; i++)
 					Rprintf("%c", postfix[i]);
 				Rprintf(". Please check your original input!!!\n");
-				*errno = 1;
+				*errno_status = 1;
 				return;
 			}
-			int eqs[2] = {pop_num(num_stack, &num_stack_size, errno),
-				pop_num(num_stack, &num_stack_size, errno)};
-			if (*errno) {
+			int eqs[2] = {pop_num(num_stack, &num_stack_size, errno_status),
+				pop_num(num_stack, &num_stack_size, errno_status)};
+			if (*errno_status) {
 				Rprintf("!!!In parsing notation: error occurred in pop_num()!!!\n");
 				return;
 			}
@@ -229,7 +229,7 @@ void evaluate_logic(const int *num_eqs, const char *postfix,
 			for (int i = 0; i < 2; i++) {
 				if (eqs[i] == 0 || eqs[i] < -num_intermediate_results || eqs[i] > *num_eqs) {
 					Rprintf("!!!In evaluating notation: Equation %d out of range (must be in [%d, -1] or [1, %d])!!!\n", eqs[i], -num_intermediate_results, *num_eqs);
-					*errno = 1;
+					*errno_status = 1;
 					return;
 				}
 				if (eqs[i] > 0) {
@@ -246,48 +246,48 @@ void evaluate_logic(const int *num_eqs, const char *postfix,
 			if (postfix[pos] == '|') {
 				setunion(num_intervals, lefts[0], rights[0],
 						 num_intervals + 1, lefts[1], rights[1],
-						 &new_num_intervals, &new_lefts_pt, &new_rights_pt, errno);
+						 &new_num_intervals, &new_lefts_pt, &new_rights_pt, errno_status);
 			} else {
 				intersection(num_intervals, lefts[0], rights[0],
 							 num_intervals + 1, lefts[1], rights[1],
-							 &new_num_intervals, &new_lefts_pt, &new_rights_pt, errno);
+							 &new_num_intervals, &new_lefts_pt, &new_rights_pt, errno_status);
 			}
 			intermediate_lefts_list[num_intermediate_results] = new_lefts_pt;
 			intermediate_rights_list[num_intermediate_results] = new_rights_pt;
 			intermediate_num_intervals[num_intermediate_results] = new_num_intervals;
 			num_intermediate_results++;
-			push_num(num_stack, &num_stack_size, -num_intermediate_results, errno);
-			if (*errno) {
+			push_num(num_stack, &num_stack_size, -num_intermediate_results, errno_status);
+			if (*errno_status) {
 				Rprintf("!!!In parsing notation: error occurred in push_num()!!!\n");
 				return;
 			}
 			pos++;
 		} else {
 			Rprintf("!!!In evaluating notation: Invalid character in postfix: %c!!!\n", postfix[pos]);
-			*errno = 1;
+			*errno_status = 1;
 			return;
 		}
 	}
 	// After consuming the string, there should be exactly one equation number left in the queue
 	if (num_stack_size != 1) {
 		Rprintf("!!!In evaluating notation: stack size should be exactly 1 after the whole string is consumed. Got size %d!!!\n", num_stack_size);
-		*errno = 1;
+		*errno_status = 1;
 		return;
 	}
-	int res_eq_number = pop_num(num_stack, &num_stack_size, errno);
+	int res_eq_number = pop_num(num_stack, &num_stack_size, errno_status);
 	// If the last number is an original domain (which happens ONLY when there is no operator, i.e. the whole string is just a number)
 	if (res_eq_number == 0 || res_eq_number < -num_intermediate_results || res_eq_number > *num_eqs) {
 		if (no_operator)
 			Rprintf("!!!In evaluating notation: Remaining equation number of range (must be in [1, %d])\n!!!", *num_eqs);
 		else
 			Rprintf("!!!In evaluating notation: Remaining equation number of range (must be in [%d, -1] or [1, %d])\n!!!", -num_intermediate_results, *num_eqs);
-		*errno = 1;
+		*errno_status = 1;
 		return;
 	}
 	if (res_eq_number >= 0) {
 		if (no_operator == 0) {
 			Rprintf("!!!In evaluating notation: There is only one number left in the stack, but the original string does contain an operator!!!\n");
-			*errno = 1;
+			*errno_status = 1;
 			return;
 		}
 		*res_num_intervals = num_intervals_list[res_eq_number - 1];
@@ -305,7 +305,7 @@ void evaluate_logic(const int *num_eqs, const char *postfix,
 }
 
 
-void intersection(const int *A_num_intervals, const double *A_lefts, const double *A_rights, const int *B_num_intervals, const double *B_lefts, const double *B_rights, int *res_num_intervals, double **res_lefts, double **res_rights, int *errno){
+void intersection(const int *A_num_intervals, const double *A_lefts, const double *A_rights, const int *B_num_intervals, const double *B_lefts, const double *B_rights, int *res_num_intervals, double **res_lefts, double **res_rights, int *errno_status){
 	/*
 	 Calculates the intersections between a list of intervals specified by A_lefts and A_rights with those specified by B_lefts and B_rights. Assumes the intervals within each group are disjoint and sorted.
 	 */
@@ -329,7 +329,7 @@ void intersection(const int *A_num_intervals, const double *A_lefts, const doubl
 	}
 }
 
-void merge_sorted_arrays(const int *A_length, const double *A, const int *B_length, const double *B, double **res, int *errno){
+void merge_sorted_arrays(const int *A_length, const double *A, const int *B_length, const double *B, double **res, int *errno_status){
 	// Not using length of result as it's always *A_length + *B_length
 	*res = (double*)malloc((*A_length + *B_length) * sizeof(double));
 	int ai = 0, bi = 0, res_i = 0;
@@ -341,7 +341,7 @@ void merge_sorted_arrays(const int *A_length, const double *A, const int *B_leng
 		(*res)[res_i++] = B[bi++];
 }
 
-void setunion(const int *A_num_intervals, double *A_lefts, double *A_rights, const int *B_num_intervals, double *B_lefts, double *B_rights, int *res_num_intervals, double **res_lefts, double **res_rights, int *errno){
+void setunion(const int *A_num_intervals, double *A_lefts, double *A_rights, const int *B_num_intervals, double *B_lefts, double *B_rights, int *res_num_intervals, double **res_lefts, double **res_rights, int *errno_status){
 	/*
 	 Calculates the intersections between a list of intervals specified by A_lefts and A_rights with those specified by B_lefts and B_rights. Assumes the intervals within each group are disjoint and sorted.
 	 */
@@ -358,8 +358,8 @@ void setunion(const int *A_num_intervals, double *A_lefts, double *A_rights, con
 		*res_rights = A_rights;
 		return;
 	}
-	merge_sorted_arrays(A_num_intervals, A_lefts, B_num_intervals, B_lefts, &merged_lefts, errno);
-	merge_sorted_arrays(A_num_intervals, A_rights, B_num_intervals, B_rights, &merged_rights, errno);
+	merge_sorted_arrays(A_num_intervals, A_lefts, B_num_intervals, B_lefts, &merged_lefts, errno_status);
+	merge_sorted_arrays(A_num_intervals, A_rights, B_num_intervals, B_rights, &merged_rights, errno_status);
 	
 	int max_num_intervals = (*A_num_intervals + *B_num_intervals);
 	*res_lefts = (double*)malloc(max_num_intervals * sizeof(double));

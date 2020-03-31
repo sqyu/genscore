@@ -11,7 +11,7 @@ random_init_uniform(n, lefts, rights)
 
 \item{lefts}{A vector of numbers, must have the same length as \code{rights}. A non-empty vector of numbers (may contain \code{-Inf}), the left endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.}
 
-\item{rights}{A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required tha \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.}
+\item{rights}{A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.}
 }
 \value{
 \code{n} random numbers from the union of intervals.

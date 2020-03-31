@@ -26,9 +26,9 @@ Parses the coefficient in the first exponential term and returns the rest of the
 }
 \examples{
 # Unsuccessful parsing, not starting with exponential, returns \code{NULL}.
-read_exponential("x", FALSE) 
+read_exponential("x", FALSE)
 # Unsuccessful parsing, not starting with exponential, returns \code{NULL}.
-read_exponential("x1^2+exp(2x2)", TRUE) 
+read_exponential("x1^2+exp(2x2)", TRUE)
 read_exponential("exp(x)", FALSE)
 read_exponential("exp(x1)", TRUE)
 read_exponential("exp(-x)", FALSE)

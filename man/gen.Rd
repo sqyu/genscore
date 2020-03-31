@@ -63,8 +63,8 @@ Letting \code{a=a_numer/a_denom} and \code{b=b_numer/b_denom}, the \code{a}-\cod
 Note that \code{x^(0/0)} is understood as \code{log(x)}, and \code{x^(n/0)} with nonzero \code{n} is \code{exp(n*x)}, and in both cases the \code{a} and \code{b} in the denominators in the density are treated as 1.
 }
 \examples{
-n <- 50
-p <- 30
+n <- 20
+p <- 10
 eta <- rep(0, p)
 K <- diag(p)
 dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))

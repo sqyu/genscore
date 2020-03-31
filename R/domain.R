@@ -117,7 +117,7 @@ frac_pow <- Vectorize(function(x, a, b, abs){
 #' #check_endpoints(lefts=c(0, 1), rights=c(2, 3)) # [0,2] and [1,3] overlap, not allowed
 #' #check_endpoints(lefts=c(2, 0), rights=c(3, 1)) # [2,3], [0,1] not increasing, not allowed
 #' ## Singletons and overlapping at the boundary points allowed
-#' check_endpoints(lefts=c(0, 1, 2), rights=c(0, 2, 3)) 
+#' check_endpoints(lefts=c(0, 1, 2), rights=c(0, 2, 3))
 #' @export
 check_endpoints <- function(lefts, rights){
   if (length(lefts) == 0 || length(rights) == 0)
@@ -147,20 +147,20 @@ check_endpoints <- function(lefts, rights){
 #' Since we assume that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}, the function takes the maximum between \code{finite_infinity} and 10 times the absolute values of \code{lefts[1]}, \code{lefts[length(lefts)]}, \code{rights[1]}, and \code{rights[length(rights)]}, if they are finite.
 #' @examples
 #' # Does not change sincee 1000 > 12 * 10
-#' update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 1000) 
+#' update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 1000)
 #' # Changed to 12 * 10
 #' update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 10)
 #' # Changed to 12 * 10
-#' update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,12), 10) 
+#' update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,12), 10)
 #' # Changed to 9 * 10
-#' update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,Inf), 10) 
+#' update_finite_infinity_for_uniform(c(-Inf,-5,0,5,9), c(-8,-3,2,7,Inf), 10)
 #' @export
 update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
   if (is.infinite(finite_infinity))
     stop("finite_infinity must be finite.")
   if (length(lefts) > 1)
     finite_infinity <- max(finite_infinity, 10 * abs(rights[1]), 10 * abs(lefts[length(lefts)]))
-  if (is.finite(lefts[1])) 
+  if (is.finite(lefts[1]))
     finite_infinity <- max(finite_infinity, 10 * abs(lefts[1]))
   if (is.finite(rights[length(rights)]))
     finite_infinity <- max(finite_infinity, 10 * abs(rights[length(rights)]))
@@ -174,7 +174,7 @@ update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
 #' @param type A string, the domain type. Currently support \code{"R"}, \code{"R+"}, \code{"uniform"}, \code{"polynomial"}, \code{"simplex"}. See details.
 #' @param p An integer, the dimension of the domain.
 #' @param lefts Optional, required if \code{type == "uniform"} and must have the same length as \code{rights}. A non-empty vector of numbers (may contain \code{-Inf}), the left endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
-#' @param rights Optional, required if \code{type == "uniform"} and must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required tha \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
+#' @param rights Optional, required if \code{type == "uniform"} and must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
 #' @param ineqs Optional, required if \code{type == "polynomial"}. A list of lists, each sublist representing an inequality that defines the domain. Each sublist must contain fields \code{abs} (logical) and \code{nonnegative} (logical), and in addition either a single \code{expression} (string), or all of the following: \code{uniform} (logical), \code{larger} (logical), \code{power_numers} (1 or \code{p} integers), \code{power_denoms} (1 or \code{p} integers), \code{const} (a number), \code{coeffs} (1 or \code{p} numbers).
 #' @param rule Optional, required if \code{type == "polynomial" && length(ineqs) > 1}. A string containing inequality numbers, spaces, parentheses, '&' and '|' only. Used to indicate the logic operation on how to combine the domains defined by each inequality, i.e. "(1 & 2 && 3) || 4 | 5". Chained operations not separated by parentheses are only allowed for the same type of operation ('&'/'|'), i.e. "1 & 2 | 3" is not allowed; it should be either "(1 & 2) | 3" or "1 & (2 | 3)".
 #' @return A list containing the elements that define the domain.
@@ -227,7 +227,7 @@ update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
 #'         }
 #'
 #'         In addition, one must in addition specify either a single string \code{"expression"} (highly recommended, detailed below), or all of the following fields (discouraged usage):
-#'         \describe{   
+#'         \describe{
 #'           \item{\code{uniform}}{A logical, indicates whether the inequality should be uniformly applied to all components (e.g. \code{"x>1"} -> \code{"x1>1 && ... && xp>1"}).}
 #'           \item{\code{larger}}{A logical, indicates whether the polynomial should be larger or smaller than the constant (e.g. \code{TRUE} for \code{x1 + ... + xp > C}, and \code{FALSE} for \code{x1 + ... + xp < C}).}
 #'           \item{\code{const}}{A number, the constant the polynomial should be compared to  (e.g. \code{2.3} for \code{x1 + ... + xp > 2.3}).}
@@ -236,30 +236,30 @@ update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
 #'           \item{\code{coeffs}}{Required if \code{uniform == FALSE}. A vector of \code{p} doubles, where \code{coeffs[i]} is the coefficient on \code{x[i]} in the inequality.}
 #'        }
 #'        The user is recommended to use a single \code{expression} for ease and to avoid potential errors. The user may safely skip the explanations and directly look at the examples to get a better understanding.\cr
-#'        
+#'
 #'        The expression should have the form \code{"POLYNOMIAL SIGN CONST"}, where \code{"SIGN"} is one of \code{"<"}, \code{"<="}, \code{">"}, \code{">="}, and \code{"CONST"} is a single number (scientific notation allowed).\cr
-#'        
+#'
 #'        \code{"POLYNOMIAL"} must be (1) a single term (see below) in \code{"x"} with no coefficient (e.g. \code{"x^(2/3)"}, \code{"exp(3x)"}), or (2) such a term surrounded by \code{"sum()"} (e.g. \code{"sum(x^(2/3))"}, \code{"sum(exp(3x))"}), or (3) a sum of such terms in \code{"x1"} through \code{"xp"} (one term max for each component) with or without coefficients, separated by the plus or the minus sign (e.g. \cr\code{"2.3x1^(2/3)-3.4exp(x2)+x3^(-3/5)"}).\cr
-#'        
+#'
 #'        For (1) and (2), the term must be in one of the following forms: \code{"x"}, \code{"x^2"}, \code{"x^(-2)"}, \code{"x^(2/3)"}, \code{"x^(-2/3)"}, \code{"log(x)"}, \code{"exp(x)"}, \code{"exp(2x)"}, \code{"exp(2*x)"}, \code{"exp(-3x)"}, where the \code{2} and \code{3} can be changed to any other non-zero integers.\cr
 #'        For (3), each term should be as above but in \code{"x1"}, ..., \code{"xp"} instead of \code{"x"}, following an optional double number and optionally a \code{"*"} sign.\cr
-#'        
+#'
 #'        Examples: For \code{p=10}, \cr
 #'           (1) \code{"x^2 > 2"} defines the domain \code{abs(x1) > sqrt(2) && ... && abs(x10) > sqrt(2)}.\cr
 #'           (2) \code{"sum(x^2) > 2"} defines the domain \code{x1^2 + ... + x10^2 > 2}.\cr
 #'           (3) \code{"2.3x3^(2/3)-3.4x4+x5^(-3/5)+3.7*x6^(-4)-1.9*log(x7)+1.3e5*exp(-3x8)}\cr
 #'           \code{-2*exp(x9)+0.5exp(2*x10) <= 2"} defines a domain using a polynomial in \code{x3} through \code{x10}, and \code{x1} and \code{x2} are thus allowed to vary freely.\cr
-#'           
+#'
 #'        Note that \code{">"} and \code{">="} are not differentiated, and so are \code{"<"} and \code{"<="}.
 #'    }}
 #' @examples
 #' p <- 30
 #' # The 30-dimensional real space R^30
 #' domain <- make_domain("R", p=p)
-#' 
+#'
 #' # The non-negative orthant of the 30-dimensional real space, R+^30
 #' domain <- make_domain("R+", p=p)
-#'  
+#'
 #' # x such that sum(x^2) > 10 && sum(x^(1/3)) > 10 with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p, rule="1 && 2",
 #'        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
@@ -270,8 +270,8 @@ update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
 #'                  larger=1, abs=FALSE, nonnegative=FALSE),
 #'                  list(uniform=FALSE, power_numers=1, power_denoms=3, const=10, coeffs=1,
 #'                  larger=1, abs=FALSE, nonnegative=FALSE)))
-#'                  
-#'                       
+#'
+#'
 #' # ([0, 1] v [2,3]) ^ p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 #'
@@ -282,14 +282,14 @@ update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 #' # Alternatively
 #' domain2 <- make_domain("polynomial", p=p, rule="1 && 2",
-#'        ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1, 
+#'        ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1,
 #'                  coeffs=c(1,rep(0,p-1)), larger=1, abs=FALSE, nonnegative=TRUE),
-#'                  list(uniform=FALSE, power_numers=1, power_denoms=1, const=1, 
+#'                  list(uniform=FALSE, power_numers=1, power_denoms=1, const=1,
 #'                  coeffs=c(0,1,rep(0,p-2)), larger=0, abs=FALSE, nonnegative=TRUE),
 #'                  list(uniform=TRUE, power_numers=1, power_denoms=0, const=1.3,
 #'                  larger=1, abs=FALSE, nonnegative=FALSE)))
-#'                       
-#'                       
+#'
+#'
 #' # x in R_+^p such that {sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 #' domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
 #'        ineqs=list(list("expression"="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
@@ -297,22 +297,22 @@ update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
 #'                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 #' # Alternatively
 #' domain2 <- make_domain("polynomial", p=p, rule="1 && 2",
-#'        ineqs=list(list(uniform=FALSE, power_numers=0, power_denoms=0, const=2, 
+#'        ineqs=list(list(uniform=FALSE, power_numers=0, power_denoms=0, const=2,
 #'                  coeffs=1, larger=0, abs=FALSE, nonnegative=TRUE),
-#'                  list(uniform=FALSE, power_numers=c(2,-3,rep(1,p-2)), power_denoms=c(3,rep(1,p-1)), 
+#'                  list(uniform=FALSE, power_numers=c(2,-3,rep(1,p-2)), power_denoms=c(3,rep(1,p-1)),
 #'                  const=1, coeffs=c(1.0,-1.3,rep(0,p-2)), larger=0, abs=FALSE, nonnegative=TRUE),
-#'                  list(uniform=FALSE, power_numers=c(1,2,rep(1,p-2)), power_denoms=c(0,rep(1,p-1)), 
+#'                  list(uniform=FALSE, power_numers=c(1,2,rep(1,p-2)), power_denoms=c(0,rep(1,p-1)),
 #'                  const=2, coeffs=c(1,2.3,rep(0,p-2)), larger=1, abs=FALSE, nonnegative=TRUE)))
-#'                       
-#'                       
+#'
+#'
 #' # x in R_+^p such that {x in R_+^p: sum_j j * xj <= 1}
-#' domain <- make_domain("polynomial", p=p, 
+#' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
 #' # Alternatively
 #' domain2 <- make_domain("polynomial", p=p,
-#'        ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1, 
+#'        ineqs=list(list(uniform=FALSE, power_numers=1, power_denoms=1, const=1,
 #'                  coeffs=1:p, larger=0, abs=FALSE, nonnegative=TRUE)))
 #'
 #'
@@ -320,7 +320,7 @@ update_finite_infinity_for_uniform <- function(lefts, rights, finite_infinity){
 #' domain <- make_domain("simplex", p=p)
 #'
 #' # The l-1 ball {sum(|x|) < 1}
-#' domain <- make_domain("polynomial", p=p, 
+#' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 #' @export
 make_domain <- function(type, p, lefts=NULL, rights=NULL, ineqs=NULL, rule=NULL) {
@@ -341,7 +341,7 @@ make_domain <- function(type, p, lefts=NULL, rights=NULL, ineqs=NULL, rule=NULL)
         return (make_domain("R+", p))
       }
     }
-    return (list("type"=type, "p"=p, "p_deemed"=p, "lefts"=lefts, "rights"=rights, 
+    return (list("type"=type, "p"=p, "p_deemed"=p, "lefts"=lefts, "rights"=rights,
                  "left_inf"=is.infinite(lefts[1]), "right_inf"=is.infinite(rights[length(rights)]),
                  "checked"=TRUE))
   } else if (type == "polynomial") {
@@ -476,9 +476,9 @@ beautify_rule <- function(rule) {
 }
 
 #' Changes a logical expression in infix notation to postfix notation using the shunting-yard algorithm.
-#' 
+#'
 #' Changes a logical expression in infix notation to postfix notation using the shunting-yard algorithm.
-#' 
+#'
 #' @param rule A string containing positive integers, parentheses, and \code{"&"} and \code{"|"} only. \code{"&&"} and \code{"&"} are not differentiated, and similarly for \code{"||"} and \code{"|"}. Chained operations are only allowed for the same operation (\code{"&"} or \code{"|"}), so instead of \code{"1 && 2 || 3"} one should write either \code{"(1 && 2) || 3"} or \code{"1 && (2 || 3)"} to avoid ambiguity.
 #' @param num_eqs An integer, must be larger than or equal to the largest integer appearing in \code{rule}.
 #' @details Applied to \code{domain$rule} if \code{domain$type == "polynomial"}, and internally calls \code{beautify_rule()}.
@@ -489,8 +489,8 @@ beautify_rule <- function(rule) {
 #' get_postfix_rule("(1 & 2) || 3 | (4 & (5 || 6) && 7) | 8 | (9 && (10 || 11 | 12) & 13)", 13)
 #' #get_postfix_rule("1 && 2 & 3 && 4", 3) # Error, ineq number 4 appearing in \code{rule}.
 #' # Error, ambigious rule. Change to either \code{"1 & (2 | 3)"} or \code{"(1 & 2) | 3"}.
-#' #get_postfix_rule("1 & 2 | 3", 3) 
-#' @useDynLib genscore shunting_yard
+#' #get_postfix_rule("1 & 2 | 3", 3)
+#' @useDynLib genscore, .registration = TRUE
 #' @export
 get_postfix_rule <- function(rule, num_eqs) {
   tmp <- .C("shunting_yard", num_eqs=as.integer(num_eqs),
@@ -501,28 +501,28 @@ get_postfix_rule <- function(rule, num_eqs) {
 }
 
 #' Returns whether a vector or each row of a matrix falls inside a domain.
-#' 
+#'
 #' Returns whether a vector or each row of a matrix falls inside a domain.
-#' 
+#'
 #' @param x A vector of length or a matrix of number of columns equal to \code{domain$p} if \code{domain$type != "simplex"}, or either \code{domain$p} or \code{domain$p-1} otherwise.
 #' @param domain A list returned from \code{make_domain()} that represents the domain.
-#' @details Returns whether a vector or each row of a matrix falls inside a domain. 
+#' @details Returns whether a vector or each row of a matrix falls inside a domain.
 #' If \code{domain$type == "simplex"}, if the length/number of columns is \code{domain$p}, returns \code{all(x > 0) && abs(sum(x) - 1) < domain$simplex_tol}; if the dimension is \code{domain$p-1}, returns \code{all(x > 0) && sum(x) < 1}.
 #' @return A logical vector of length equal to the number of rows in \code{x} (\code{1} if \code{x} is a vector).
 #' @examples
 #' p <- 30
 #' n <- 10
-#' 
-#' # The 30-dimensional real space R^30, assuming probability of 
+#'
+#' # The 30-dimensional real space R^30, assuming probability of
 #' domain <- make_domain("R", p=p)
 #' in_bound(1:p, domain)
 #' in_bound(matrix(1:(p*n), ncol=p), domain)
-#' 
+#'
 #' # The non-negative orthant of the 30-dimensional real space, R+^30
 #' domain <- make_domain("R+", p=p)
 #' in_bound(matrix(1:(p*n), ncol=p), domain)
 #' in_bound(matrix(1:(p*n) * (2*rbinom(p*n, 1, 0.98)-1), ncol=p), domain)
-#'  
+#'
 #' # x such that sum(x^2) > 10 && sum(x^(1/3)) > 10 with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p, rule="1 && 2",
 #'        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
@@ -533,7 +533,7 @@ get_postfix_rule <- function(rule, num_eqs) {
 #' in_bound(rep((5/p)^(1/2), p), domain)
 #' in_bound(rep((10/p)^(1/2), p), domain)
 #' in_bound(rep((15/p)^(1/2), p), domain)
-#'                       
+#'
 #' # ([0, 1] v [2,3]) ^ p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 #' in_bound(c(0.5, 2.5)[rbinom(p, 1, 0.5)+1], domain)
@@ -549,7 +549,7 @@ get_postfix_rule <- function(rule, num_eqs) {
 #' in_bound(c(0.5, (log(1.3)+1)/2, rep(log(1.3)*2, p-2)), domain)
 #' in_bound(c(1.5, log(1.3)/2, rep(log(1.3)*2, p-2)), domain)
 #' in_bound(c(1.5, (log(1.3)+1)/2, rep(log(1.3)/2, p-2)), domain)
-#'                       
+#'
 #' # x in R_+^p such that {sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 #' domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
 #'        ineqs=list(list("expression"="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
@@ -557,9 +557,9 @@ get_postfix_rule <- function(rule, num_eqs) {
 #'                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 #' in_bound(rep(exp(1/p), p), domain)
 #' in_bound(c(1, 1, rep(1e5, p-2)), domain)
-#'                       
+#'
 #' # x in R_+^p such that {x in R_+^p: sum_j j * xj <= 1}
-#' domain <- make_domain("polynomial", p=p, 
+#' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
@@ -572,7 +572,7 @@ get_postfix_rule <- function(rule, num_eqs) {
 #' domain <- make_domain("simplex", p=p)
 #' x <- abs(matrix(rnorm(p*n), ncol=p))
 #' x <- x / rowSums(x)
-#' in_bound(x, domain) # TRUE 
+#' in_bound(x, domain) # TRUE
 #' in_bound(x[,1:(p-1)], domain) # TRUE
 #' x2 <- x
 #' x2[,1] <- -x2[,1]
@@ -586,7 +586,7 @@ get_postfix_rule <- function(rule, num_eqs) {
 #' in_bound(x3[,1:(p-1)], domain) # FALSE since the first (p-1) elts in each row now sum to > 1
 #'
 #' # The l-1 ball {sum(|x|) < 1}
-#' domain <- make_domain("polynomial", p=p, 
+#' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 #' in_bound(rep(0.5/p, p)*(2*rbinom(p, 1, 0.5)-1), domain)
 #' in_bound(rep(1.5/p, p)*(2*rbinom(p, 1, 0.5)-1), domain)
@@ -617,7 +617,7 @@ in_bound <- function(x, domain) { # x: vector or 2-dimensional matrix (n x p)
       eq <- domain$ineqs[[eq_i]]
       if (eq$nonnegative && any(x < 0))
         in_bound_eq[eq_i] <- FALSE
-      else 
+      else
         in_bound_eq[eq_i] <- tryCatch(
           if (eq$uniform) {
             s <- frac_pow(x, eq$power_numers, eq$power_denoms, eq$abs)
@@ -667,9 +667,9 @@ in_bound <- function(x, domain) { # x: vector or 2-dimensional matrix (n x p)
 }
 
 #' Returns a list to be passed to C that represents the domain.
-#' 
+#'
 #' Returns a list to be passed to C that represents the domain.
-#' 
+#'
 #' @param domain A list returned from \code{make_domain()} that represents the domain.
 #' @details Construct a list to be read by C code that represents the domain.
 #' @return A list of the following elements.
@@ -684,17 +684,17 @@ in_bound <- function(x, domain) { # x: vector or 2-dimensional matrix (n x p)
 #' # The 30-dimensional real space R^30
 #' domain <- make_domain("R", p=p)
 #' domain_for_C(domain)
-#' 
+#'
 #' # The non-negative orthant of the 30-dimensional real space, R+^30
 #' domain <- make_domain("R+", p=p)
 #' domain_for_C(domain)
-#'  
+#'
 #' # x such that sum(x^2) > 10 && sum(x^(1/3)) > 10 with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p, rule="1 && 2",
 #'        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
 #'                       list("expression"="sum(x^(1/3))>10", abs=FALSE, nonnegative=FALSE)))
 #' domain_for_C(domain)
-#'                       
+#'
 #' # ([0, 1] v [2,3]) ^ p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 #' domain_for_C(domain)
@@ -705,27 +705,27 @@ in_bound <- function(x, domain) { # x: vector or 2-dimensional matrix (n x p)
 #'                       list("expression"="x2<1", abs=FALSE, nonnegative=TRUE),
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 #' domain_for_C(domain)
-#'                       
+#'
 #' # x in R_+^p such that {sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 #' domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
 #'        ineqs=list(list("expression"="sum(log(x))<2", abs=FALSE, nonnegative=TRUE),
 #'                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
 #'                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 #' domain_for_C(domain)
-#'                       
+#'
 #' # x in R_+^p such that {x in R_+^p: sum_j j * xj <= 1}
-#' domain <- make_domain("polynomial", p=p, 
+#' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
 #' domain_for_C(domain)
-#' 
+#'
 #' # The (p-1)-simplex
 #' domain <- make_domain("simplex", p=p)
 #' domain_for_C(domain)
 #'
 #' # The l-1 ball {sum(|x|) < 1}
-#' domain <- make_domain("polynomial", p=p, 
+#' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 #' domain_for_C(domain)
 #' @export
@@ -767,9 +767,9 @@ domain_for_C <- function(domain){
 }
 
 #' Parses an ineq expression into a list of elements that represents the ineq.
-#' 
+#'
 #' Parses an ineq expression into a list of elements that represents the ineq.
-#' 
+#'
 #' @param s A string, an ineq expression. Please refer \code{make_domain()}.
 #' @param p An integer, the dimension.
 #' @details Please refer \code{make_domain()} for the syntax of the expression.
@@ -794,7 +794,7 @@ domain_for_C <- function(domain){
 #' parse_ineq("exp(x1)+2.3*x2^2 > 2", p)
 #' parse_ineq(paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"), p)
-#' 
+#'
 #' parse_ineq("0.5*x1^(-2/3)-x3^3 + 2log(x2)- 1.3e4exp(-25*x6)+x8-.3x5^(-3/-4) >= 2", 8)
 #' parse_ineq("0.5*x1^(-2/3)-x2^(4/-6)+2e3x3^(-6/9) < 3.5e5", 3)
 #' parse_ineq("x^(-2/3)<=3e3", 5)
@@ -805,8 +805,6 @@ domain_for_C <- function(domain){
 #' parse_ineq("sum(exp(-23x))<=3e3", 5)
 #' @export
 parse_ineq <- function(s, p) {
-  if (!requireNamespace("stringr", quietly = TRUE))
-    install.packages("stringr")
   s <- base::gsub("[[:space:]]", "", s) # Remove space
   s <- base::gsub(">=", ">", base::gsub("<=", "<", s)) # Remove = from >= / <=
   const_loc <- stringr::str_locate(s, "[<>][-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$") # e.g. location of >2.34 or <-.3e6
@@ -866,12 +864,12 @@ parse_ineq <- function(s, p) {
 }
 
 #' Attempts to parse a single term in x into power_numer and power_denom.
-#' 
+#'
 #' Attempts to parse a single term in x into power_numer and power_denom.
-#' 
+#'
 #' @param s A string, the variable side of an inequality expression. Please refer to \code{make_domain()}.
 #' @details Returns \code{NULL} if \code{s} is not a single uniform term in \code{x} (e.g. \code{x^2} is uniform, while \code{x1^2+x2^2} is not uniform).
-#' @return 
+#' @return
 #'    \item{power_numers}{The uniform numerator in the power (e.g. \code{-2} for \code{x^(-2/3)}).}
 #'    \item{power_denoms}{The uniform denominator in the power (e.g. \code{3} for \code{x^(-2/3)}).}
 #' @examples
@@ -907,9 +905,9 @@ read_uniform_term <- function(s) {
 }
 
 #' Parses the exponent part into power_numer and power_denom.
-#' 
+#'
 #' Parses the exponent part into power_numer and power_denom.
-#' 
+#'
 #' @param s A string. Must be of the form "" (empty string), "^2", "^(-5/3)" followed by other terms (starting with "+" or "-").
 #' @details Parses the exponential part of the first term into power_numer and power_denom and returns the rest of the terms. Please refer to the examples. \code{s} must be of the form "", "^2", "^(-5/3)" followed by other terms, e.g. "+x2^2", "^2+x2^2", "^(-5/3)+x2^2". Assuming these come from "x1+x2^2", "x1^2+x2^2" and "x1^(-5/3)+x2^2", respectively, these will parsed into \code{power_numer=1, power_denom=1}, \code{power_numer=2, power_denom=1}, and \code{power_numer=-5, power_denom=3}, respectively.
 #' @return A list containing the following elements:
@@ -953,10 +951,10 @@ read_exponent <- function(s) { # "" (exponent=1), "^2", "^(-5/3)" followed by ot
   return (list("power_numer"=power_numer, "power_denom"=power_denom, "s"=s))
 }
 
-#' Parses the integer coefficient in an exponential term. 
-#' 
 #' Parses the integer coefficient in an exponential term.
-#' 
+#'
+#' Parses the integer coefficient in an exponential term.
+#'
 #' @param s A string that starts with one of the following forms: \code{exp(x)}, \code{exp(-x)}, \code{exp(2x)}, \code{exp(-2x)}, \code{exp(12*x)}, \code{exp(-123*x)}, followed by other terms. If \code{has_index == TRUE}, the first term should be rewritten in \code{x} with an index (e.g. \code{exp(x1)}, \code{exp(-2*x2)}).
 #' @param has_index A logical, indicates whether the term is written in a component (e.g. \code{x1}, \code{x2}) as opposed to a uniform term (i.e. \code{x}).
 #' @details Parses the coefficient in the first exponential term and returns the rest of the terms.
@@ -967,9 +965,9 @@ read_exponent <- function(s) { # "" (exponent=1), "^2", "^(-5/3)" followed by ot
 #' If parsing is unsuccessful, \code{NULL} is returned.
 #' @examples
 #' # Unsuccessful parsing, not starting with exponential, returns \code{NULL}.
-#' read_exponential("x", FALSE) 
+#' read_exponential("x", FALSE)
 #' # Unsuccessful parsing, not starting with exponential, returns \code{NULL}.
-#' read_exponential("x1^2+exp(2x2)", TRUE) 
+#' read_exponential("x1^2+exp(2x2)", TRUE)
 #' read_exponential("exp(x)", FALSE)
 #' read_exponential("exp(x1)", TRUE)
 #' read_exponential("exp(-x)", FALSE)
@@ -1014,9 +1012,9 @@ read_exponential <- function(s, has_index) {
 }
 
 #' Parses the first term of a non-uniform expression.
-#' 
+#'
 #' Parses the first term of a non-uniform expression.
-#' 
+#'
 #' @param s A string, the variable side of a non-uniform inequality expression (i.e. terms must be rewritten in e.g. \code{x1}, \code{x2} as opposed to \code{x}).
 #' @details Parses the first term in a non-uniform expression and returns the rest of the terms.
 #' @return A list containing the following elements:
@@ -1082,10 +1080,10 @@ read_one_term <- function(s) { # Assumes no whitespace, read one term from an in
                "coef"=coef, "s"=s))
 }
 
-#' Finds the intersection betweeen two unions of intervals.
-#' 
-#' Finds the intersection betweeen two unions of intervals.
-#' 
+#' Finds the intersection between two unions of intervals.
+#'
+#' Finds the intersection between two unions of intervals.
+#'
 #' @param A A list of vectors of size 2, each representing an interval. It is required that \code{A[[i]][1] <= A[[i]][2] <= A[[j]][1]} for any \code{i < j}.
 #' @param B A list of vectors of size 2, each representing an interval. It is required that \code{A[[i]][1] <= A[[i]][2] <= A[[j]][1]} for any \code{i < j}.
 #' @details Finds the intersection between the union of all intervals in \code{A} and the union of all intervals in \code{B}.
@@ -1116,9 +1114,9 @@ interval_intersection <- function(A, B) {
 }
 
 #' Finds the union betweeen two unions of intervals.
-#' 
+#'
 #' Finds the union betweeen two unions of intervals.
-#' 
+#'
 #' @param A A list of vectors of size 2, each representing an interval. It is required that \code{A[[i]][1] <= A[[i]][2] <= A[[j]][1]} for any \code{i < j}.
 #' @param B A list of vectors of size 2, each representing an interval. It is required that \code{A[[i]][1] <= A[[i]][2] <= A[[j]][1]} for any \code{i < j}.
 #' @details Finds the union between the union of all intervals in \code{A} and the union of all intervals in \code{B}.
