@@ -1,0 +1,5 @@
+library(knitr)
+setwd("vignettes")
+opts_chunk$set(fig.path="figs/")
+knitr::knit("gen_vignette.Rmd.orig", output="gen_vignette.Rmd")
+setwd("..")

@@ -34,8 +34,10 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 domain <- make_domain("R", p=p)
 x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 # Equivalently:
-#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+\donttest{
+x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+}
 dist <- get_dist(x, domain)
 # dx is all Inf and dpx is all 0 since each coordinate is unbounded with domain R
 c(all(is.infinite(dist$dx)), all(dist$dpx==0))

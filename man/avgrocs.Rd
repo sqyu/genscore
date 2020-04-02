@@ -29,7 +29,7 @@ K <- cov_cons(mode="sub", p=p, seed=1, spars=0.2, eig=0.1, subgraphs=10)
 true_edges <- which(abs(K) > tol & diag(p) == 0)
 dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 ROCs <- list()
-par(mfrow=c(2,2), mar=c(5,5,5,5))
+old.par <- par(mfrow=c(2,2), mar=c(5,5,5,5))
 for (i in 1:3){
   set.seed(i)
   x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
@@ -53,6 +53,7 @@ plot(c(), c(),  ylim=c(0,1), xlim=c(0,1), cex.lab=1,
   xlab="False Positives", ylab="True Positives")
 points(average_ROC[,2], average_ROC[,1], type="l")
 points(c(0,1), c(0,1), type = "l", lty = 2)
+par(old.par)
 }
 \references{
 \insertRef{faw06}{genscore}

@@ -141,12 +141,12 @@ cov_cons <- function(mode, p, seed=NULL, spars=1, eig=0.1, subgraphs=1){
 #'          param1=1, param2=3, diagonal_multiplier=dm,)
 #' # Apply tp_fp to each estimated edges set for each lambda
 #' TP_FP <- t(sapply(est$edgess, function(edges){tp_fp(edges, true_edges, p)}))
-#' par(mfrow=c(1,1), mar=c(5,5,5,5))
+#' old.par <- par(mfrow=c(1,1), mar=c(5,5,5,5))
 #' plot(c(), c(),  ylim=c(0,1), xlim=c(0,1), cex.lab=1, main = "ROC curve",
 #'   xlab="False Positives", ylab="True Positives")
 #' points(TP_FP[,2], TP_FP[,1], type="l")
 #' points(c(0,1), c(0,1), type = "l", lty = 2)
-#'
+#' par(old.par)
 #' @export
 tp_fp <- function(edges, true_edges, p){
   edges <- sort(edges); true_edges <- sort(true_edges)
@@ -186,13 +186,14 @@ tp_fp <- function(edges, true_edges, p){
 #'          param1=1, param2=3, diagonal_multiplier=dm)
 #' # Apply tp_fp to each estimated edges set for each lambda
 #' TP_FP <- t(sapply(est$edgess, function(edges){tp_fp(edges, true_edges, p)}))
-#' par(mfrow=c(1,1), mar=c(5,5,5,5))
+#' old.par <- par(mfrow=c(1,1), mar=c(5,5,5,5))
 #' auc <- AUC(TP_FP)
 #' plot(c(), c(),  ylim=c(0,1), xlim=c(0,1), cex.lab=1,
 #'   main=paste("ROC curve, AUC",round(auc,4)), xlab="False Positives",
 #'   ylab="True Positives")
 #' points(TP_FP[,2], TP_FP[,1], type="l")
 #' points(c(0,1), c(0,1), type = "l", lty = 2)
+#' par(old.par)
 #' @export
 AUC <- function(tpfp){
   if (!requireNamespace("zoo", quietly=TRUE))
@@ -254,7 +255,7 @@ find_max_ind <- function(vals, target, start=1){
 #' true_edges <- which(abs(K) > tol & diag(p) == 0)
 #' dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 #' ROCs <- list()
-#' par(mfrow=c(2,2), mar=c(5,5,5,5))
+#' old.par <- par(mfrow=c(2,2), mar=c(5,5,5,5))
 #' for (i in 1:3){
 #'   set.seed(i)
 #'   x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
@@ -278,6 +279,7 @@ find_max_ind <- function(vals, target, start=1){
 #'   xlab="False Positives", ylab="True Positives")
 #' points(average_ROC[,2], average_ROC[,1], type="l")
 #' points(c(0,1), c(0,1), type = "l", lty = 2)
+#' par(old.par)
 #' @export
 avgrocs <- function(rocs, num_true_edges, p){
   ### rocs: list of roc curves; each curve has 2 columns

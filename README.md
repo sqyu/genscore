@@ -32,3 +32,18 @@ vignette("gen_vignette")
 
 # References
 Some parts of the code were initially dervied from https://github.com/linlina/highscore and http://www1.maths.leeds.ac.uk/~wally.gilks/adaptive.rejection/web_page/Welcome.html.
+
+John Aitchison. A general class of distributions on the simplex. Journal of the Royal Statistical Society: Series B (Methodological), 47(1):136–146, 1985. <https://doi.org/10.1111/j.2517-6161.1985.tb01341.x>
+
+David Inouye, Pradeep Ravikumar, and Inderjit Dhillon. Square root graphical models: Multivariate generalizations of univariate exponential families that permit positive de- pendencies. In Proceedings of The 33rd International Conference on Machine Learning, volume 48 of Proceedings of Machine Learning Research, pages 2445–2453, 2016. <http://proceedings.mlr.press/v48/inouye16.html>
+
+Lina Lin, Mathias Drton, and Ali Shojaie. Estimation of high-dimensional graphical models using regularized score m    atching. Electron. J. Stat., 10(1):806–854, 2016. <https://doi.org/10.1214/16-EJS1126>
+
+Shiqing Yu, Mathias Drton, and Ali Shojaie. Graphical models for non-negative data using generalized score matching. In International Conference on Artificial Intelligence and Statistics, pages 1781–1790, 2018. <http://proceedings.mlr.press/v84/yu18b.html>
+
+Shiqing Yu, Mathias Drton, and Ali Shojaie. Generalized score matching for non-negative data. Journal of Machine Learning Research, 20(76):1–70, 2019. <http://jmlr.org/papers/v20/18-278.html>
+
+
+
+
+

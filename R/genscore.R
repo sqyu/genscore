@@ -4,6 +4,7 @@
 #library(knitr); library(rmarkdown); library(devtools); library(roxygen2)
 #tools::package_native_routine_registration_skeleton(".") // Manually add dist, rab_arms
 #document(); build(); install(); check()
+#knitr::knit("vignettes/gen_vignette.Rmd.orig", output="vignettes/gen_vignette.Rmd")
 #check_win_devel(); check_win_release(); check_rhub()
 
 
@@ -32,8 +33,10 @@
 #' domain <- make_domain("R", p=p)
 #' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 #' # Equivalently:
-#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' \donttest{
+#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' }
 #' h_hp <- get_h_hp("pow", 2) # For demonstration only
 #' hd <- h_of_dist(h_hp, x, domain)
 #' # hdx is all Inf and hpdx is all 0 since each coordinate is unbounded with domain R
@@ -560,8 +563,10 @@ get_elts_trun_gauss <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncent
 #' K <- diag(p)
 #' x <- mvtnorm::rmvnorm(n, mean=mu, sigma=solve(K))
 #' # Equivalently:
-#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=make_domain("R",p),
-#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' \donttest{
+#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=c(K%*%mu), K=K, domain=make_domain("R",p),
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' }
 #' get_elts_gauss(x, centered=TRUE, scale="norm", diag=1.5)
 #' get_elts_gauss(x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
 #' @export
@@ -874,8 +879,10 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' domain <- make_domain("R", p=p)
 #' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 #' # Equivalently:
-#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' \donttest{
+#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' }
 #' get_elts(NULL, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 #' get_elts(NULL, x, "gaussian", domain, FALSE, profiled=FALSE, scale="sd", diag=dm)
 #'
@@ -885,8 +892,10 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
 #'        burn.in.samples = 100, thinning = 10)
 #' # Equivalently:
-#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' \donttest{
+#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' }
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' get_elts(h_hp, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 #'
@@ -1391,7 +1400,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
   x <- t(matrix(res$xres, nrow=domain$p))
   if (remove_outofbound) {
     if (verbose)
-      cat("Testing if all samples are inside the domain.")
+      message("Testing if all samples are inside the domain.")
     inbound <- in_bound(x, domain)
     if (!all(inbound))
       warning("Row number(s) of generated samples not in domain: ", paste(which(!inbound), collapse=", "), ". Removed.")
@@ -1423,8 +1432,10 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' domain <- make_domain("R", p=p)
 #' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 #' # Equivalently:
-#' #x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#' #       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' \donttest{
+#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' }
 #' dist <- get_dist(x, domain)
 #' # dx is all Inf and dpx is all 0 since each coordinate is unbounded with domain R
 #' c(all(is.infinite(dist$dx)), all(dist$dpx==0))
@@ -1704,13 +1715,13 @@ get_h_hp_vector <- function(mode, para=NULL, para2=NULL){
     stop("Mode ", mode, " not supported.")
   }
   if (number_of_params[[mode]]){
-    if (is.null(para)) {cat("para not provided, default to 1.\n"); para <- 1
+    if (is.null(para)) {message("para not provided, default to 1.\n"); para <- 1
     } else if (para <= 0) {stop("para must be strictly positive.")}
   }
   if (number_of_params[[mode]] == 2){
     if (is.null(para2)) {
-      if (mode == "scad") {cat("para2 not provided, default to 2.\n"); para2 <- 2}
-      else {cat("para2 not provided, default to 1."); para2 <- 1}
+      if (mode == "scad") {message("para2 not provided, default to 2.\n"); para2 <- 2}
+      else {message("para2 not provided, default to 1."); para2 <- 1}
     } else if (para2 <= 0) {stop("para2 must be strictly positive.")}
   }
   if (mode == "1")
@@ -2049,10 +2060,10 @@ test_lambda_bounds <- function(elts, symmetric, lambda=1, lambda_ratio=1, step=2
   while (TRUE){
     lambda <- lambda * step ^ search_direction
     if (verbose)
-      cat("Testing lower bound for lambda:", lambda)
+      message("Testing lower bound for lambda:", lambda)
     cur_res <- get_results(elts, symmetric=symmetric, lambda1=lambda, lambda2=lambda/lambda_ratio, tol=tol, maxit=maxit, previous_res=cur_res)
     if (verbose)
-      cat(", number of edges=", length(cur_res$edges), "; want ", want_edges, ".\n", sep="")
+      message(", number of edges=", length(cur_res$edges), "; want ", want_edges, ".\n", sep="")
     if (length(cur_res$edges) == want_edges){ ## If this lambda gives the desired graph (complete/empty), it is necessarily the best lambda so far
       if (is.null(best_lambda)) ## If no previous lambda is good (i.e. the initial lambda is bad), return this, as the next lambda will necessarily give the right graph but will not be tight
         return (list("lambda"=lambda, "cur_res"=cur_res))
@@ -2061,7 +2072,7 @@ test_lambda_bounds <- function(elts, symmetric, lambda=1, lambda_ratio=1, step=2
       return (list("lambda"=best_lambda, "cur_res"=best_res))
     if (lambda <= 1e-10 || lambda >= 1e15){ ## If too small or too large, have to stop
       if (verbose)
-        cat("Stopped at ", max(1e-10, min(lambda, 1e15)), ".\n", sep = "")
+        message("Stopped at ", max(1e-10, min(lambda, 1e15)), ".\n", sep = "")
       return (list("lambda"=max(1e-10, min(lambda, 1e15)))) ## cur_res=NULL
     }
   }
@@ -2113,7 +2124,7 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
   step <- 10
   while (step >= 1.5^(1/4)){
     if (verbose)
-      cat("step =", step, "\n")
+      message("step =", step, "\n")
     lambda_cur_res <- test_lambda_bounds(elts, symmetric=symmetric, lambda=lambda_cur_res$lambda, lambda_ratio=lambda_ratio, step=step, lower=lower, verbose=verbose, tol=tol, maxit=maxit, cur_res=lambda_cur_res$cur_res)
     if (lambda_cur_res$lambda <= 1e-10 || lambda_cur_res$lambda >= 1e15) {
       return (max(1e-10, min(lambda_cur_res$lambda, 1e15)))
@@ -2121,7 +2132,7 @@ test_lambda_bounds2 <- function(elts, symmetric, lambda_ratio=Inf, lower = TRUE,
     step <- step ^ (1/4)
   }
   if (verbose)
-    cat("Final: ", lambda_cur_res$lambda, ", ", length(lambda_cur_res$cur_res$edges), " edges.\n", sep="")
+    message("Final: ", lambda_cur_res$lambda, ", ", length(lambda_cur_res$cur_res$edges), " edges.\n", sep="")
   return (lambda_cur_res$lambda)
 }
 
@@ -2306,7 +2317,7 @@ lambda_max <- function(elts, symmetric, lambda_ratio=Inf){
 #' @export
 s_output <- function(out, verbose, verbosetext){
   if (verbose)
-    cat(verbosetext, out, "\n")
+    message(verbosetext, out, "\n")
 }
 
 #' Helper function for making fold IDs for cross validation.
@@ -2808,14 +2819,17 @@ eBIC <- function(res, elts, BIC_refit=TRUE, gammas=c(0,0.5,1)){
 #'                 make_domain("R+", p=p),
 #'                 make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3)),
 #'                 make_domain("polynomial", p=p,
-#'                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))),
-#'                 #make_domain("polynomial", p=p,
-#'                 #  ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
-#'                 #make_domain("polynomial", p=p,
-#'                 #  ineqs=list(list("expression"=paste(paste(sapply(1:p,
-#'                 #     function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
-#'                 #     abs=FALSE, nonnegative=TRUE))),
-#'                 make_domain("simplex", p=p))
+#'                   ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))))
+#' \donttest{
+#' domains <- c(domains,
+#'              list(make_domain("polynomial", p=p,
+#'                     ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
+#'                   make_domain("polynomial", p=p,
+#'                     ineqs=list(list("expression"=paste(paste(sapply(1:p,
+#'                       function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
+#'                       abs=FALSE, nonnegative=TRUE))),
+#'                   make_domain("simplex", p=p)))
+#' }
 #' for (domain in domains) {
 #'   if (domain$type == "R" ||
 #'        (domain$type == "uniform" && any(domain$lefts < 0)) ||

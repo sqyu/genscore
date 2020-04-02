@@ -96,8 +96,10 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 domain <- make_domain("R", p=p)
 x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 # Equivalently:
-#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+\donttest{
+x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+}
 get_elts(NULL, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 get_elts(NULL, x, "gaussian", domain, FALSE, profiled=FALSE, scale="sd", diag=dm)
 
@@ -107,8 +109,10 @@ x <- tmvtnorm::rtmvnorm(n, mean = solve(K, eta), sigma = solve(K),
        lower = rep(0, p), upper = rep(Inf, p), algorithm = "gibbs",
        burn.in.samples = 100, thinning = 10)
 # Equivalently:
-#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+\donttest{
+x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+}
 h_hp <- get_h_hp("min_pow", 1, 3)
 get_elts(h_hp, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 

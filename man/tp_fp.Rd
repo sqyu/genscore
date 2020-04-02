@@ -37,10 +37,10 @@ est <- estimate(x, setting="gaussian", elts=NULL, domain=domain, centered=TRUE,
          param1=1, param2=3, diagonal_multiplier=dm,)
 # Apply tp_fp to each estimated edges set for each lambda
 TP_FP <- t(sapply(est$edgess, function(edges){tp_fp(edges, true_edges, p)}))
-par(mfrow=c(1,1), mar=c(5,5,5,5))
+old.par <- par(mfrow=c(1,1), mar=c(5,5,5,5))
 plot(c(), c(),  ylim=c(0,1), xlim=c(0,1), cex.lab=1, main = "ROC curve",
   xlab="False Positives", ylab="True Positives")
 points(TP_FP[,2], TP_FP[,1], type="l")
 points(c(0,1), c(0,1), type = "l", lty = 2)
-
+par(old.par)
 }

@@ -25,12 +25,14 @@ Suppose \code{lefts} and \code{rights} both have length l, [lefts[1], rights[1]]
 \examples{
 ## [-4,-3], [-2,-1], [0,1], [2,3], [4,5]
 check_endpoints(lefts=c(-4,-2,0,2,4), rights=c(-3,-1,1,3,5))
-#check_endpoints(lefts=c(), rights=c()) # Cannot be empty
-#check_endpoints(lefts=c(-4,-2,0,2,4), rights=c(-3,-1,1,3)) # Unequal length
-#check_endpoints(lefts=c(Inf), rights=c(Inf)) # No Inf in lefts, otherwise invalid interval
-#check_endpoints(lefts=c(-Inf), rights=c(-Inf)) # No -Inf in rights, otherwise invalid interval
-#check_endpoints(lefts=c(0, 1), rights=c(2, 3)) # [0,2] and [1,3] overlap, not allowed
-#check_endpoints(lefts=c(2, 0), rights=c(3, 1)) # [2,3], [0,1] not increasing, not allowed
+\dontrun{
+check_endpoints(lefts=c(), rights=c()) # Cannot be empty
+check_endpoints(lefts=c(-4,-2,0,2,4), rights=c(-3,-1,1,3)) # Unequal length
+check_endpoints(lefts=c(Inf), rights=c(Inf)) # No Inf in lefts, otherwise invalid interval
+check_endpoints(lefts=c(-Inf), rights=c(-Inf)) # No -Inf in rights, otherwise invalid interval
+check_endpoints(lefts=c(0, 1), rights=c(2, 3)) # [0,2] and [1,3] overlap, not allowed
+check_endpoints(lefts=c(2, 0), rights=c(3, 1)) # [2,3], [0,1] not increasing, not allowed
+}
 ## Singletons and overlapping at the boundary points allowed
 check_endpoints(lefts=c(0, 1, 2), rights=c(0, 2, 3))
 }

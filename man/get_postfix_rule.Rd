@@ -24,7 +24,11 @@ Applied to \code{domain$rule} if \code{domain$type == "polynomial"}, and interna
 get_postfix_rule("1 & 2 && 3", 3)
 get_postfix_rule("1 & (2 || 3)", 3)
 get_postfix_rule("(1 & 2) || 3 | (4 & (5 || 6) && 7) | 8 | (9 && (10 || 11 | 12) & 13)", 13)
-#get_postfix_rule("1 && 2 & 3 && 4", 3) # Error, ineq number 4 appearing in \code{rule}.
+\dontrun{
+get_postfix_rule("1 && 2 & 3 && 4", 3) # Error, ineq number 4 appearing in \code{rule}.
+}
+\dontrun{
 # Error, ambigious rule. Change to either \code{"1 & (2 | 3)"} or \code{"(1 & 2) | 3"}.
-#get_postfix_rule("1 & 2 | 3", 3)
+get_postfix_rule("1 & 2 | 3", 3)
+}
 }

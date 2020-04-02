@@ -37,8 +37,10 @@ dm <- 1 + (1-1/(1+4*exp(1)*max(6*log(p)/n, sqrt(6*log(p)/n))))
 domain <- make_domain("R", p=p)
 x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 # Equivalently:
-#x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+\donttest{
+x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
+       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+}
 h_hp <- get_h_hp("pow", 2) # For demonstration only
 hd <- h_of_dist(h_hp, x, domain)
 # hdx is all Inf and hpdx is all 0 since each coordinate is unbounded with domain R

@@ -39,14 +39,17 @@ domains <- list(make_domain("R", p=p),
                 make_domain("R+", p=p),
                 make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3)),
                 make_domain("polynomial", p=p,
-                  ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))),
-                #make_domain("polynomial", p=p,
-                #  ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
-                #make_domain("polynomial", p=p,
-                #  ineqs=list(list("expression"=paste(paste(sapply(1:p,
-                #     function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
-                #     abs=FALSE, nonnegative=TRUE))),
-                make_domain("simplex", p=p))
+                  ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=FALSE, abs=FALSE))))
+\donttest{
+domains <- c(domains,
+             list(make_domain("polynomial", p=p,
+                    ineqs=list(list("expression"="sum(x^2)<=1", nonnegative=TRUE, abs=FALSE))),
+                  make_domain("polynomial", p=p,
+                    ineqs=list(list("expression"=paste(paste(sapply(1:p,
+                      function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
+                      abs=FALSE, nonnegative=TRUE))),
+                  make_domain("simplex", p=p)))
+}
 for (domain in domains) {
   if (domain$type == "R" ||
        (domain$type == "uniform" && any(domain$lefts < 0)) ||

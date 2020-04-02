@@ -110,12 +110,14 @@ frac_pow <- Vectorize(function(x, a, b, abs){
 #' @examples
 #' ## [-4,-3], [-2,-1], [0,1], [2,3], [4,5]
 #' check_endpoints(lefts=c(-4,-2,0,2,4), rights=c(-3,-1,1,3,5))
-#' #check_endpoints(lefts=c(), rights=c()) # Cannot be empty
-#' #check_endpoints(lefts=c(-4,-2,0,2,4), rights=c(-3,-1,1,3)) # Unequal length
-#' #check_endpoints(lefts=c(Inf), rights=c(Inf)) # No Inf in lefts, otherwise invalid interval
-#' #check_endpoints(lefts=c(-Inf), rights=c(-Inf)) # No -Inf in rights, otherwise invalid interval
-#' #check_endpoints(lefts=c(0, 1), rights=c(2, 3)) # [0,2] and [1,3] overlap, not allowed
-#' #check_endpoints(lefts=c(2, 0), rights=c(3, 1)) # [2,3], [0,1] not increasing, not allowed
+#' \dontrun{
+#' check_endpoints(lefts=c(), rights=c()) # Cannot be empty
+#' check_endpoints(lefts=c(-4,-2,0,2,4), rights=c(-3,-1,1,3)) # Unequal length
+#' check_endpoints(lefts=c(Inf), rights=c(Inf)) # No Inf in lefts, otherwise invalid interval
+#' check_endpoints(lefts=c(-Inf), rights=c(-Inf)) # No -Inf in rights, otherwise invalid interval
+#' check_endpoints(lefts=c(0, 1), rights=c(2, 3)) # [0,2] and [1,3] overlap, not allowed
+#' check_endpoints(lefts=c(2, 0), rights=c(3, 1)) # [2,3], [0,1] not increasing, not allowed
+#' }
 #' ## Singletons and overlapping at the boundary points allowed
 #' check_endpoints(lefts=c(0, 1, 2), rights=c(0, 2, 3))
 #' @export
@@ -146,7 +148,7 @@ check_endpoints <- function(lefts, rights){
 #' @details
 #' Since we assume that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}, the function takes the maximum between \code{finite_infinity} and 10 times the absolute values of \code{lefts[1]}, \code{lefts[length(lefts)]}, \code{rights[1]}, and \code{rights[length(rights)]}, if they are finite.
 #' @examples
-#' # Does not change sincee 1000 > 12 * 10
+#' # Does not change since 1000 > 12 * 10
 #' update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 1000)
 #' # Changed to 12 * 10
 #' update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 10)
@@ -487,9 +489,13 @@ beautify_rule <- function(rule) {
 #' get_postfix_rule("1 & 2 && 3", 3)
 #' get_postfix_rule("1 & (2 || 3)", 3)
 #' get_postfix_rule("(1 & 2) || 3 | (4 & (5 || 6) && 7) | 8 | (9 && (10 || 11 | 12) & 13)", 13)
-#' #get_postfix_rule("1 && 2 & 3 && 4", 3) # Error, ineq number 4 appearing in \code{rule}.
+#' \dontrun{
+#' get_postfix_rule("1 && 2 & 3 && 4", 3) # Error, ineq number 4 appearing in \code{rule}.
+#' }
+#' \dontrun{
 #' # Error, ambigious rule. Change to either \code{"1 & (2 | 3)"} or \code{"(1 & 2) | 3"}.
-#' #get_postfix_rule("1 & 2 | 3", 3)
+#' get_postfix_rule("1 & 2 | 3", 3)
+#' }
 #' @useDynLib genscore, .registration = TRUE
 #' @export
 get_postfix_rule <- function(rule, num_eqs) {

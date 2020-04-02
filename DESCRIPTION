@@ -4,7 +4,7 @@ Title: Generalized Score Matching Estimators
 Version: 1.0.0
 Author: Shiqing Yu, Lina Lin, Wally Gilks
 Maintainer: Shiqing Yu <syu.phd@gmail.com>
-Description: Implementation of the Generalized Score Matching estimator in Yu et al. (2019) for non-negative graphical models (truncated Gaussian, exponential square-root, gamma, a-b models) and univariate truncated Gaussian distributions. Also includes the original estimator for untruncated Gaussian graphical models from Lin et al. (2016), with the addition of a diagonal multiplier. See papers listed in the URL below.
+Description: Implementation of the Generalized Score Matching estimator in Yu et al. (2019) <http://jmlr.org/papers/v20/18-278.html> for non-negative graphical models (truncated Gaussian, exponential square-root, gamma, a-b models) and univariate truncated Gaussian distributions. Also includes the original estimator for untruncated Gaussian graphical models from Lin et al. (2016) <doi:10.1214/16-EJS1126>, with the addition of a diagonal multiplier.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -23,8 +23,6 @@ Imports:
     stringr
 URL:
     https://github.com/sqyu/genscore
-    http://www.jmlr.org/papers/volume20/18-278/18-278.pdf
-    https://dx.doi.org/10.1214/16-EJS1126
 BugReports: https://github.com/sqyu/genscore/issues
 RdMacros: Rdpack
 RoxygenNote: 7.1.0

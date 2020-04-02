@@ -23,7 +23,7 @@ Maximum between \code{finite_infinity} and 10 times the max abs value of finite 
 Since we assume that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}, the function takes the maximum between \code{finite_infinity} and 10 times the absolute values of \code{lefts[1]}, \code{lefts[length(lefts)]}, \code{rights[1]}, and \code{rights[length(rights)]}, if they are finite.
 }
 \examples{
-# Does not change sincee 1000 > 12 * 10
+# Does not change since 1000 > 12 * 10
 update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 1000)
 # Changed to 12 * 10
 update_finite_infinity_for_uniform(c(-10,-5,0,5,9), c(-8,-3,2,7,12), 10)
