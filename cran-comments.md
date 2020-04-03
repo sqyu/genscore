@@ -1,3 +1,6 @@
+## Resubmission
+Removed utils from Imports in DESCRIPTION.
+
 ## Test environments
 * local OS X install, R 3.6.3
 * win-builder (devel and release)

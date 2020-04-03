@@ -17,7 +17,6 @@ Suggests:
     cubature
 Imports: 
     Rdpack,
-    utils,
     mvtnorm,
     tmvtnorm,
     stringr
