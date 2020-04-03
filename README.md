@@ -17,6 +17,9 @@ The distributions covered include
 1. "a-b models" (Yu et al, 2019), and
 1. the A^d model (Aitchison, 1985).
 
+# Installation from CRAN
+install.packages("genscore")
+
 # Installation from GitHub
 ```R
 install.packages(c("devtools", "knitr"))
