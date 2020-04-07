@@ -12,11 +12,9 @@ There was no NOTE on local OS X.
 
 There was 1 NOTE on win-builder:
 
-* New submission
-  Possibly mis-spelled words in DESCRIPTION:
-  Yu (7:76)
-  al (7:82, 7:373)
-  et (7:79, 7:370)
-  untruncated (7:323)
+* checking CRAN incoming feasibility ... NOTE
+  Maintainer: 'Shiqing Yu <syu.phd@gmail.com>'
 
-  "Yu et al" and "Lin et al" refer to the papers this implementation is based on. The word "untruncated" is the antonym of "truncated". These are therefore not mis-spelled words.
+  Days since last update: 0
+
+I am trying to fix the NOTE shown on <https://cran.r-project.org/web/checks/check_results_genscore.html>.

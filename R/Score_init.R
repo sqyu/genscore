@@ -427,8 +427,8 @@ compare_two_results <- function(res, res2){
 #' Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
 #' @return A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
 #' @examples
-#' n <- 30
-#' p <- 10
+#' n <- 15
+#' p <- 5
 #' K <- diag(p)
 #' eta <- numeric(p)
 #'
@@ -596,8 +596,8 @@ get_g0 <- function(domain, C) {
 #' Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
 #' @return A function that takes \code{x} and returns a list of a vector \code{g0} and a matrix \code{g0d}.
 #' @examples
-#' n <- 30
-#' p <- 10
+#' n <- 15
+#' p <- 5
 #' K <- diag(p)
 #' eta <- numeric(p)
 #'

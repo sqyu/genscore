@@ -22,8 +22,8 @@ Calculates the l2 distance to the boundary of the domain, with the distance trun
 Currently only R, R+, simplex, uniform and polynomial-type domains of the form sum(x^2) <= d or sum(x^2) >= d or sum(abs(x)) <= d are implemented.
 }
 \examples{
-n <- 30
-p <- 10
+n <- 15
+p <- 5
 K <- diag(p)
 eta <- numeric(p)
 

@@ -34,7 +34,7 @@
 #' # Equivalently:
 #' \donttest{
 #' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
 #' }
 #' h_hp <- get_h_hp("pow", 2) # For demonstration only
 #' hd <- h_of_dist(h_hp, x, domain)
@@ -44,8 +44,8 @@
 #'
 #' # exp on R_+^p:
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("pow", 2) # For demonstration only
 #' hd <- h_of_dist(h_hp, x, domain)
 #' # hdx is x^2 and hpdx is 2*x; with domain R+, the distance of x to the boundary is just x itself
@@ -55,8 +55,8 @@
 #' # Gaussian on sum(x^2) > p with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"=paste("sum(x^2)>", p), abs=FALSE, nonnegative=FALSE)))
-#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' quota <- p - (rowSums(x^2) - x^2) # How much should xij^2 at least be so that sum(xi^2) > p?
 #' # How far is xij from +/-sqrt(quota), if quota >= 0?
@@ -84,7 +84,7 @@
 #' # gamma on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 #' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' # If 0 <= xij <= 1, distance to boundary is min(x-0, 1-x)
 #' max(abs(dist$dx - pmin(x, 1-x))[x >= 0 & x <= 1])
@@ -112,8 +112,8 @@
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 #' set.seed(1)
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2)) + log(1.3))
-#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=xinit, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' # x_{i1} has uniform bound [1, +Inf), so its distance to its boundary is x_{i1} - 1
 #' max(abs(dist$dx[,1] - (x[,1] - 1)))
@@ -142,8 +142,8 @@
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
-#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' # Upper bound for j * xij so that sum_j j * xij <= 1
 #' quota <- 1 - (rowSums(t(t(x) * 1:p)) - t(t(x) * 1:p))
@@ -164,7 +164,7 @@
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
 #' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' # Note that dist$dx and dist$dpx only has p-1 columns -- excluding the last coordinate in x
 #' dist <- get_dist(x, domain)
 #' # Upper bound for x_{i,j} so that x_{i,1} + ... + x_{i,p-1} <= 1
@@ -285,15 +285,15 @@ parse_ab <- function(s) {
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, setting="ab_1/2_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_1/2_7/10", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
-#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
+#' elts <- get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
 #'             centered=TRUE, scale="norm", diag=1.5)
-#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
+#' elts <- get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
 #'             centered=FALSE, profiled_if_noncenter=TRUE, scale="norm", diag=1.7)
-#' get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
+#' elts <- get_elts_ab(h_hp_dx$hdx, h_hp_dx$hpdx, x, a=0.5, b=0.7, setting="ab_1/2_7/10",
 #'             centered=FALSE, profiled_if_noncenter=FALSE, scale="norm", diag=1.9)
 #' @export
 get_elts_ab <- function(hdx, hpdx, x, a, b, setting,
@@ -365,13 +365,13 @@ get_elts_ab <- function(hdx, hpdx, x, a, b, setting,
 #' K <- diag(p)
 #' domain <- make_domain("R+", p=p)
 #' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
-#' get_elts_exp(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
-#' get_elts_exp(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=TRUE,
+#' elts <- get_elts_exp(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
+#' elts <- get_elts_exp(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=TRUE,
 #'       scale="norm", diag=1.7)
-#' get_elts_exp(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=FALSE,
+#' elts <- get_elts_exp(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=FALSE,
 #'       scale="norm", diag=1.7)
 #' @export
 get_elts_exp <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncenter=TRUE, scale="", diagonal_multiplier=1){
@@ -434,14 +434,14 @@ get_elts_exp <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncenter=TRUE
 #' eta <- rep(0, p)
 #' K <- diag(p)
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100,
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
-#' get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
-#' get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=TRUE,
+#' elts <- get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
+#' elts <- get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=TRUE,
 #'        scale="norm", diag=1.7)
-#' get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=FALSE,
+#' elts <- get_elts_gamma(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE, profiled_if_noncenter=FALSE,
 #'        scale="norm", diag=1.9)
 #' @export
 get_elts_gamma <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncenter=TRUE, scale="", diagonal_multiplier=1){
@@ -503,14 +503,14 @@ get_elts_gamma <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncenter=TR
 #' K <- diag(p)
 #' eta <- K %*% mu
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
-#' get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
-#' get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE,
+#' elts <- get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=TRUE, scale="norm", diag=1.5)
+#' elts <- get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE,
 #'        profiled_if_noncenter=TRUE, scale="norm", diag=1.7)
-#' get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE,
+#' elts <- get_elts_trun_gauss(h_hp_dx$hdx, h_hp_dx$hpdx, x, centered=FALSE,
 #'        profiled_if_noncenter=FALSE, scale="norm", diag=1.9)
 #' @export
 get_elts_trun_gauss <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncenter=TRUE, scale="", diagonal_multiplier=1){
@@ -564,10 +564,10 @@ get_elts_trun_gauss <- function(hdx, hpdx, x, centered=TRUE, profiled_if_noncent
 #' # Equivalently:
 #' \donttest{
 #' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=c(K%*%mu), K=K, domain=make_domain("R",p),
-#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
 #' }
-#' get_elts_gauss(x, centered=TRUE, scale="norm", diag=1.5)
-#' get_elts_gauss(x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
+#' elts <- get_elts_gauss(x, centered=TRUE, scale="norm", diag=1.5)
+#' elts <- get_elts_gauss(x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
 #' @export
 get_elts_gauss <- function(x, centered=TRUE, profiled_if_noncenter=TRUE, scale="", diagonal_multiplier=1){
   n <- dim(x)[1]; p <- dim(x)[2]
@@ -621,14 +621,14 @@ get_elts_gauss <- function(x, centered=TRUE, profiled_if_noncenter=TRUE, scale="
 #' K <- diag(p)
 #' domain <- make_domain("uniform", p=p, lefts=c(0), rights=c(1))
 #' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
-#' get_elts_loglog(h_hp_dx$hdx, h_hp_dx$hpdx, x, setting="log_log", centered=TRUE,
+#' elts <- get_elts_loglog(h_hp_dx$hdx, h_hp_dx$hpdx, x, setting="log_log", centered=TRUE,
 #'        scale="", diag=1.5)
-#' get_elts_loglog(h_hp_dx$hdx, h_hp_dx$hpdx, x, setting="log_log", centered=FALSE,
+#' elts <- get_elts_loglog(h_hp_dx$hdx, h_hp_dx$hpdx, x, setting="log_log", centered=FALSE,
 #'        profiled_if_noncenter=TRUE, scale="", diag=1.7)
-#' get_elts_loglog(h_hp_dx$hdx, h_hp_dx$hpdx, x, setting="log_log", centered=FALSE,
+#' elts <- get_elts_loglog(h_hp_dx$hdx, h_hp_dx$hpdx, x, setting="log_log", centered=FALSE,
 #'        profiled_if_noncenter=FALSE, scale="", diag=1.9)
 #' @export
 get_elts_loglog <- function(hdx, hpdx, x, setting, centered=TRUE,
@@ -706,7 +706,7 @@ get_elts_loglog <- function(hdx, hpdx, x, setting, centered=TRUE,
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
 #' domain <- make_domain("simplex", p=p)
 #' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 2, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #'
@@ -879,11 +879,11 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 #' # Equivalently:
 #' \donttest{
-#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'         xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
 #' }
-#' get_elts(NULL, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
-#' get_elts(NULL, x, "gaussian", domain, FALSE, profiled=FALSE, scale="sd", diag=dm)
+#' elts <- get_elts(NULL, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
+#' elts <- get_elts(NULL, x, "gaussian", domain, FALSE, profiled=FALSE, scale="sd", diag=dm)
 #'
 #' # Gaussian on R_+^p:
 #' domain <- make_domain("R+", p=p)
@@ -893,29 +893,29 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' # Equivalently:
 #' \donttest{
 #' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
 #' }
 #' h_hp <- get_h_hp("min_pow", 1, 3)
-#' get_elts(h_hp, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
+#' elts <- get_elts(h_hp, x, "gaussian", domain, centered=TRUE, scale="norm", diag=dm)
 #'
 #' # Gaussian on sum(x^2) > 1 && sum(x^(1/3)) > 1 with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p, rule="1 && 2",
 #'        ineqs=list(list("expression"="sum(x^2)>1", abs=FALSE, nonnegative=FALSE),
 #'                       list("expression"="sum(x^(1/3))>1", abs=FALSE, nonnegative=FALSE)))
 #' xinit <- rep(sqrt(2/p), p)
-#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=xinit, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1, 3)
-#' get_elts(h_hp, x, "gaussian", domain, centered=FALSE,
+#' elts <- get_elts(h_hp, x, "gaussian", domain, centered=FALSE,
 #'        profiled_if_noncenter=TRUE, scale="", diag=dm)
 #'
 #' # exp on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 #' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
-#' get_elts(h_hp, x, "exp", domain, centered=TRUE, scale="", diag=dm)
-#' get_elts(h_hp, x, "exp", domain, centered=FALSE,
+#' elts <- get_elts(h_hp, x, "exp", domain, centered=TRUE, scale="", diag=dm)
+#' elts <- get_elts(h_hp, x, "exp", domain, centered=FALSE,
 #'        profiled_if_noncenter=FALSE, scale="", diag=dm)
 #'
 #' # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
@@ -925,11 +925,11 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=TRUE)))
 #' set.seed(1)
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
-#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=xinit, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1.5, 3)
-#' get_elts(h_hp, x, "gamma", domain, centered=TRUE, scale="", diag=dm)
-#' get_elts(h_hp, x, "gamma", domain, centered=FALSE,
+#' elts <- get_elts(h_hp, x, "gamma", domain, centered=TRUE, scale="", diag=dm)
+#' elts <- get_elts(h_hp, x, "gamma", domain, centered=FALSE,
 #'        profiled_if_noncenter=FALSE, scale="", diag=dm)
 #'
 #' # a0.6_b0.7 on {x in R_+^p: sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
@@ -938,11 +938,11 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
 #'                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 #' xinit <- rep(1, p)
-#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=xinit, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 1.4, 3)
-#' get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=TRUE, scale="", diag=dm)
-#' get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=FALSE,
+#' elts <- get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=TRUE, scale="", diag=dm)
+#' elts <- get_elts(h_hp, x, "ab_3/5_7/10", domain, centered=FALSE,
 #'        profiled_if_noncenter=TRUE, scale="", diag=dm)
 #'
 #' # log_log model on {x in R_+^p: sum_j j * xj <= 1}
@@ -952,10 +952,10 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'                      abs=FALSE, nonnegative=TRUE)))
 #' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
 #'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100,
-#'        verbose=TRUE)
+#'        verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 2, 3)
-#' get_elts(h_hp, x, "log_log", domain, centered=TRUE, scale="", diag=dm)
-#' get_elts(h_hp, x, "log_log", domain, centered=FALSE,
+#' elts <- get_elts(h_hp, x, "log_log", domain, centered=TRUE, scale="", diag=dm)
+#' elts <- get_elts(h_hp, x, "log_log", domain, centered=FALSE,
 #'        profiled_if_noncenter=FALSE, scale="", diag=dm)
 #' # Example of using the uniform distance function to boundary as in Liu (2019)
 #' g0 <- function(x) {
@@ -973,7 +973,7 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #'        }))
 #'        list("g0"=g0, "g0d"=g0d)
 #' }
-#' get_elts(NULL, x, "exp", domain, centered=TRUE, profiled_if_noncenter=FALSE,
+#' elts <- get_elts(NULL, x, "exp", domain, centered=TRUE, profiled_if_noncenter=FALSE,
 #'        scale="", diag=dm, unif_dist=g0)
 #'
 #' # log_log_sum0 model on the simplex with K having row and column sums 0 (Aitchison model)
@@ -982,7 +982,7 @@ get_elts_loglog_simplex <- function(hdx, hpdx, x, setting,
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
 #' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' h_hp <- get_h_hp("min_pow", 2, 3)
 #' h_hp_dx <- h_of_dist(h_hp, x, domain) # h and h' applied to distance from x to boundary
 #'
@@ -1229,13 +1229,13 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #'        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
 #'                       list("expression"="sum(x^(1/3))>10", abs=FALSE, nonnegative=FALSE)))
 #' xinit <- rep(sqrt(20/p), p)
-#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta,  K=K, domain=domain,
-#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta,  K=K, domain=domain, finite_infinity=100, 
+#'        xinit=xinit, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #'
 #' # exp on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, xinit=NULL, 
+#'        seed=2, burn_in=1000, thinning=100, verbose=TRUE, verbose=FALSE)
 #'
 #' # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
 #' domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
@@ -1244,8 +1244,8 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #'                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 #' set.seed(1)
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
-#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=xinit, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #'
 #' # a0.6_b0.7 on {x in R_+^p: sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 #' domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
@@ -1253,31 +1253,31 @@ get_elts <- function(h_hp, x, setting, domain, centered=TRUE, profiled_if_noncen
 #'                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
 #'                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 #' xinit <- rep(1, p)
-#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=1e4, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=1e4, 
+#'        xinit=xinit, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #'
 #' # log_log model exp(-log(x) %*% K %*% log(x)/2 + eta %*% log(x)) on {x in R_+^p: sum_j j * xj <= 1}
 #' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
-#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #'
 #' # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
 #' domain <- make_domain("simplex", p=p)
 #' K <- -cov_cons("band", p=p, spars=3, eig=1)
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-#' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, xinit=NULL, 
+#'        seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #'
 #' # Gumbel_Gumbel model exp(-exp(2x) %*% K %*% exp(2x)/2 + eta %*% exp(-3x)) on {sum(|x|) < 1}
 #' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 #' K <- diag(p)
-#' x <- gen(n, setting="ab_2/0_-3/0", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="ab_2/0_-3/0", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' @export
 #' @useDynLib genscore, .registration = TRUE
 gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
@@ -1432,8 +1432,8 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 #' # Equivalently:
 #' \donttest{
-#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+#' x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'         xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
 #' }
 #' dist <- get_dist(x, domain)
 #' # dx is all Inf and dpx is all 0 since each coordinate is unbounded with domain R
@@ -1441,8 +1441,8 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #'
 #' # exp on R_+^p:
 #' domain <- make_domain("R+", p=p)
-#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' # dx is x and dpx is 1; with domain R+, the distance of x to the boundary is just x itself
 #' c(max(abs(dist$dx - x))<.Machine$double.eps^0.5, all(dist$dpx == 1))
@@ -1450,8 +1450,8 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' # Gaussian on sum(x^2) > p with x allowed to be negative
 #' domain <- make_domain("polynomial", p=p,
 #'        ineqs=list(list("expression"=paste("sum(x^2)>", p), abs=FALSE, nonnegative=FALSE)))
-#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' quota <- p - (rowSums(x^2) - x^2) # How much should xij^2 at least be so that sum(xi^2) > p?
 #' # How far is xij from +/-sqrt(quota), if quota >= 0?
@@ -1466,7 +1466,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' # gamma on ([0, 1] v [2,3])^p
 #' domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 #' x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' # If 0 <= xij <= 1, distance to boundary is min(x-0, 1-x)
 #' max(abs(dist$dx - pmin(x, 1-x))[x >= 0 & x <= 1])
@@ -1488,7 +1488,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2)) + log(1.3))
 #' x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
 #'        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100,
-#'        verbose=TRUE)
+#'        verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' # x_{i1} has uniform bound [1, +Inf), so its distance to its boundary is x_{i1} - 1
 #' max(abs(dist$dx[,1] - (x[,1] - 1)))
@@ -1509,8 +1509,8 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #'        ineqs=list(list("expression"=paste(paste(sapply(1:p,
 #'                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
 #'                      abs=FALSE, nonnegative=TRUE)))
-#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
-#'        finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+#' x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+#'        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' dist <- get_dist(x, domain)
 #' # Upper bound for j * xij so that sum_j j * xij <= 1
 #' quota <- 1 - (rowSums(t(t(x) * 1:p)) - t(t(x) * 1:p))
@@ -1523,7 +1523,7 @@ gen <- function(n, setting, abs, eta, K, domain, finite_infinity=NULL,
 #' diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 #' eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
 #' x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
-#'         xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+#'         xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 #' # Note that dist$dx and dist$dpx only has p-1 columns -- excluding the last coordinate in x
 #' dist <- get_dist(x, domain)
 #' # Upper bound for x_{i,j} so that x_{i,1} + ... + x_{i,p-1} <= 1
@@ -2405,13 +2405,14 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #'
 #' ## Centered estimates, no elts or h provided, mode and params provided
 #' est1 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=TRUE,
-#'           symmetric="symmetric", lambda1s=lambda1s, mode="min_pow",
-#'           param1=1, param2=3, diag=dm, return_raw=TRUE)
+#'           symmetric="symmetric", lambda1s=lambda1s, mode="min_pow", 
+#'           param1=1, param2=3, diag=dm, return_raw=TRUE, verbose=FALSE)
 #'
 #' h_hp <- get_h_hp("min_pow", 1, 3)
 #' ## Centered estimates, no elts provided, h provided; equivalent to est1
 #' est2 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=TRUE,
-#'           symmetric="symmetric", lambda1s=lambda1s, h_hp=h_hp, diag=dm, return_raw=TRUE)
+#'           symmetric="symmetric", lambda1s=lambda1s, h_hp=h_hp, diag=dm, 
+#'           return_raw=TRUE, verbose=FALSE)
 #' compare_two_results(est1, est2) ## Should be almost all 0
 #'
 #' elts_gauss_c <- get_elts(h_hp, x, setting="gaussian", domain=domain,
@@ -2420,13 +2421,13 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #' ## Here diagonal_multiplier will be set to the default value, equal to dm above
 #' est3 <- estimate(x, "gaussian", domain=domain, elts=elts_gauss_c,
 #'           symmetric="symmetric", lambda1s=lambda1s, diag=NULL,
-#'           return_raw=TRUE)
+#'           return_raw=TRUE, verbose=FALSE)
 #' compare_two_results(est1, est3) ## Should be almost all 0
 #'
 #' ## Noncentered estimates with Inf penalty on eta; equivalent to est1~3
 #' est4 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
 #'           lambda_ratio=0, symmetric="symmetric", lambda1s=lambda1s,
-#'           h=h_hp, diag=dm, return_raw=TRUE)
+#'           h=h_hp, diag=dm, return_raw=TRUE, verbose=FALSE)
 #' sum(abs(est4$etas)) ## Should be 0 since non-centered with lambda ratio 0 is equivalent to centered
 #' est4$etas <- NULL ## But different from est1 in that the zero etas are returned in est4
 #' compare_two_results(est1, est4) ## Should be almost all 0
@@ -2434,13 +2435,13 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #'
 #' ## Profiled estimates, no elts or h provided, mode and params provided
 #' est5 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
-#'           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-#'           mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE)
+#'           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s, mode="min_pow", 
+#'           param1=1, param2=3, diag=dm, return_raw=TRUE, verbose=FALSE)
 #'
 #' ## Profiled estimates, no elts provided, h provided; equivalent to est5
 #' est6 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
 #'           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-#'           h_hp=h_hp, diag=dm, return_raw=TRUE)
+#'           h_hp=h_hp, diag=dm, return_raw=TRUE, verbose=FALSE)
 #' compare_two_results(est5, est6) ## Should be almost all 0
 #'
 #' elts_gauss_p <- get_elts(h_hp, x, setting="gaussian", domain=domain,
@@ -2448,7 +2449,7 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #' ## Profiled estimates, elts provided; equivalent to est5~6
 #' est7 <- estimate(x, "gaussian", domain=domain, elts=elts_gauss_p, centered=FALSE,
 #'           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-#'           diagonal_multiplier=NULL, return_raw=TRUE)
+#'           diagonal_multiplier=NULL, return_raw=TRUE, verbose=FALSE)
 #' compare_two_results(est5, est7) ## Should be almost all 0
 #'
 #'
@@ -2457,13 +2458,13 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #' est8 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
 #'           lambda_ratio=2, symmetric="and", lambda_length=100,
 #'           mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE,
-#'           BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
+#'           BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2, verbose=FALSE)
 #'
 #' ## Non-centered estimates, no elts provided, h provided; equivalent to est5
 #' ## Using 5-fold cross validation and no BIC refit
 #' est9 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
-#'           lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp,
-#'           diag=dm, return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
+#'           lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp, diag=dm, 
+#'           return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2, verbose=FALSE)
 #' compare_two_results(est8, est9) ## Should be almost all 0
 #'
 #' elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=FALSE,
@@ -2472,7 +2473,7 @@ make_folds <- function(nsamp, nfold, cv_fold_seed){
 #' ## Using 5-fold cross validation and no BIC refit
 #' est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np, centered=FALSE,
 #'            lambda_ratio=2, symmetric="and", lambda_length=100, diag=NULL,
-#'            return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
+#'            return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2, verbose=FALSE)
 #' compare_two_results(est8, est10) ## Should be almost all 0
 #'
 #' @export

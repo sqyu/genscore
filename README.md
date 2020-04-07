@@ -23,8 +23,7 @@ install.packages("genscore")
 # Installation from GitHub
 ```R
 install.packages(c("devtools", "knitr"))
-devtools::install_github("sqyu/genscore", build_vignettes=TRUE)
-# Set build_vignettes to FALSE if you do not wish to build the vignette (which takes a few minutes).
+devtools::install_github("sqyu/genscore")
 ```
 
 # Usage
