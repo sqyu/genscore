@@ -13,7 +13,7 @@ rlaplace_truncated(n, lefts, rights, m = 0, s = 1)
 
 \item{rights}{A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.}
 
-\item{m}{A number, the location parameter of the laplace distributionn.}
+\item{m}{A number, the location parameter of the laplace distribution.}
 
 \item{s}{A number, the scale/dispersion parameter of the laplace distribution.}
 }

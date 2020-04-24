@@ -18,7 +18,7 @@ A number, the loss of the refitted model.
 Refits an unpenalized model restricted to the estimated edges, with \code{lambda1=0}, \code{lambda2=0} and \code{diagonal_multiplier=1}. Returns \code{Inf} if no unique solution exists (when the loss is unbounded from below or has infinitely many minimizers).
 }
 \details{
-Currently the function only returns \code{Inf} when the maximum node degree is >= the sample size, which is a sufficient and necessary condition for inexistence of a unique solution with probability 1 if \code{symmetric != "symmetric"}. In practice it is also a sufficient and necessary condition for most cases and \code{symmetric == "symmetric"}.
+Currently the function only returns \code{Inf} when the maximum node degree is >= the sample size, which is a sufficient and necessary condition for nonexistence of a unique solution with probability 1 if \code{symmetric != "symmetric"}. In practice it is also a sufficient and necessary condition for most cases and \code{symmetric == "symmetric"}.
 }
 \examples{
 # Examples are shown for Gaussian truncated to R+^p only. For other distributions

@@ -2,18 +2,28 @@
 % Please edit documentation in R/genscore.R
 \name{get_safe_log_h_hp}
 \alias{get_safe_log_h_hp}
-\title{Asymptotic log of \code{h} and \code{hp} functions for large \code{x} for some modes.}
+\title{Asymptotic log of \code{h} and \code{hp} functions for large \code{x} for modes with an unbounded \code{h}.}
 \usage{
 get_safe_log_h_hp(mode, para)
 }
 \arguments{
-\item{mode}{A string, the class of the \code{h} function.}
+\item{mode}{A string, the class of the \code{h} function. Must be one of \code{"asinh"}, \code{"cosh"}, \code{"exp"}, \code{"identity"}, \code{"log_pow"}, \code{"pow"}, \code{"sinh"}, \code{"softplus"}, and \code{"tanh"}.}
 
 \item{para}{A number, the first parameter to the \code{h} function.}
 }
 \value{
-A list of two functions, \code{logh} and \code{loghp}.
+A list of two vectorized functions, \code{logh} and \code{loghp}.
 }
 \description{
-Asymptotic log of \code{h} and \code{hp} functions for large \code{x} for some modes.
+Asymptotic log of \code{h} and \code{hp} functions for large \code{x} for modes with an unbounded \code{h}.
+}
+\examples{
+para <- 2.3
+x <- seq(from=0.1, to=150, by=0.1)
+for (mode in c("asinh", "cosh", "exp", "identity", "log_pow", "pow", "sinh", "softplus", "tanh")) {
+  print(mode)
+  hx_hpx <- get_h_hp(mode, para)(x)
+  print(c(max(abs(get_safe_log_h_hp(mode, para)$logh(x) - log(hx_hpx$hx))), 
+          max(abs(get_safe_log_h_hp(mode, para)$loghp(x) - log(hx_hpx$hpx)))))
+}
 }

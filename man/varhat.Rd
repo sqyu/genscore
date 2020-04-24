@@ -2,9 +2,9 @@
 % Please edit documentation in R/genscore.R
 \name{varhat}
 \alias{varhat}
-\title{Asymptotic variance (times \code{n}) of the estimator for \code{mu} or \code{sigmasq} for the univariate truncated normal assuming the other parameter is known.}
+\title{Asymptotic variance (times \code{n}) of the estimator for \code{mu} or \code{sigmasq} for the univariate normal on a general domain assuming the other parameter is known.}
 \usage{
-varhat(mu, sigmasq, mode, param1, param2, est_mu)
+varhat(mu, sigmasq, mode, param1, param2, est_mu, domain, tol = 1e-10)
 }
 \arguments{
 \item{mu}{A number, the true \code{mu} parameter.}
@@ -18,12 +18,16 @@ varhat(mu, sigmasq, mode, param1, param2, est_mu)
 \item{param2}{A number, the second parameter (may be optional depending on \code{mode}) to the \code{h} function.}
 
 \item{est_mu}{A boolean. If \code{TRUE}, returns the asymptotic variance of muhat assuming sigmasq is known; if \code{FALSE}, returns the asymptotic variance of sigmasqhat assuming mu is known.}
+
+\item{domain}{A list returned from \code{make_domain()} that represents the domain.}
+
+\item{tol}{A positive number, tolerance for numerical integration. Defaults to \code{1e-10}.}
 }
 \value{
 A number, the asymptotic variance.
 }
 \description{
-Asymptotic variance (times \code{n}) of the estimator for \code{mu} or \code{sigmasq} for the univariate truncated normal assuming the other parameter is known.
+Asymptotic variance (times \code{n}) of the estimator for \code{mu} or \code{sigmasq} for the univariate normal on a general domain assuming the other parameter is known.
 }
 \details{
 The estimates may be off from the empirical variance, or may even be \code{Inf} or \code{NaN} if \code{"mode"} is one of \code{"cosh"}, \code{"exp"}, and \code{"sinh")} as the functions grow too fast.
@@ -34,6 +38,6 @@ and if \code{est_mu == FALSE}, the function numerically calculates
 where \eqn{E} is the expectation over the true distribution \eqn{TN(\mu,\sigma)} of \eqn{X}.
 }
 \examples{
-varhat(0, 1, "min_log_pow", 1, 1, TRUE)
-varhat(0.5, 4, "min_pow", 1, 1, TRUE)
+varhat(0, 1, "min_log_pow", 1, 1, TRUE, make_domain("R+", 1))
+varhat(0.5, 4, "min_pow", 1, 1, TRUE, make_domain("R+", 1))
 }

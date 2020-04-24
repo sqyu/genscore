@@ -120,7 +120,7 @@ search_bin <- function(arr, x){
 #' @param n An integer, the number of samples to return.
 #' @param lefts A vector of numbers, must have the same length as \code{rights}. A non-empty vector of numbers (may contain \code{-Inf}), the left endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
 #' @param rights A vector of numbers, must have the same length as \code{lefts}. A non-empty vector of numbers (may contain \code{Inf}), the right endpoints of a domain defined as a union of intervals. It is required that \code{lefts[i] <= rights[i] <= lefts[j]} for any \code{i < j}.
-#' @param m A number, the location parameter of the laplace distributionn.
+#' @param m A number, the location parameter of the laplace distribution.
 #' @param s A number, the scale/dispersion parameter of the laplace distribution.
 #' @details Returns \code{n} random variables from the truncated laplace distribution with density proportional to \eqn{\exp(-|x-m|/s)}{exp(-|x-m|/s)} truncated to the domain defined by the union of [\code{lefts[i]}, \code{rights[i]}].
 #' @return \code{n} random variables from the truncated laplace distribution.
@@ -304,11 +304,9 @@ random_init_polynomial <- function(domain) {
                  nonnegative=as.integer(eq$nonnegative),
                  num_intervals=as.integer(0),
                  lefts=as.double(c(0,0)), rights=as.double(c(0,0)),
-                 print=as.integer(FALSE), errno=as.integer(0))
+                 print=as.integer(FALSE))
     if (bounds$num_intervals == 0)
       stop("Domain is empty. Please check your boundary conditions. If you believe this is an error, please provide your own xinit.")
-    if (bounds$errno)
-      stop("Error occurred in C -> poly_domain_1d_for_R().")
     return (random_init_uniform(n, bounds$lefts[1:bounds$num_intervals],
                                 bounds$rights[1:bounds$num_intervals]))
   }

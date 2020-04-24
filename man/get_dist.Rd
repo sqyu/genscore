@@ -35,8 +35,8 @@ domain <- make_domain("R", p=p)
 x <- mvtnorm::rmvnorm(n, mean=solve(K, eta), sigma=solve(K))
 # Equivalently:
 \donttest{
-x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+x2 <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+        xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
 }
 dist <- get_dist(x, domain)
 # dx is all Inf and dpx is all 0 since each coordinate is unbounded with domain R
@@ -44,8 +44,8 @@ c(all(is.infinite(dist$dx)), all(dist$dpx==0))
 
 # exp on R_+^p:
 domain <- make_domain("R+", p=p)
-x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 dist <- get_dist(x, domain)
 # dx is x and dpx is 1; with domain R+, the distance of x to the boundary is just x itself
 c(max(abs(dist$dx - x))<.Machine$double.eps^0.5, all(dist$dpx == 1))
@@ -53,8 +53,8 @@ c(max(abs(dist$dx - x))<.Machine$double.eps^0.5, all(dist$dpx == 1))
 # Gaussian on sum(x^2) > p with x allowed to be negative
 domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste("sum(x^2)>", p), abs=FALSE, nonnegative=FALSE)))
-x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="gaussian", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 dist <- get_dist(x, domain)
 quota <- p - (rowSums(x^2) - x^2) # How much should xij^2 at least be so that sum(xi^2) > p?
 # How far is xij from +/-sqrt(quota), if quota >= 0?
@@ -69,7 +69,7 @@ all(quota[is.infinite(dist$dx)] < 0)
 # gamma on ([0, 1] v [2,3])^p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
 x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
-       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 dist <- get_dist(x, domain)
 # If 0 <= xij <= 1, distance to boundary is min(x-0, 1-x)
 max(abs(dist$dx - pmin(x, 1-x))[x >= 0 & x <= 1])
@@ -91,7 +91,7 @@ set.seed(1)
 xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2)) + log(1.3))
 x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
        finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100,
-       verbose=TRUE)
+       verbose=FALSE)
 dist <- get_dist(x, domain)
 # x_{i1} has uniform bound [1, +Inf), so its distance to its boundary is x_{i1} - 1
 max(abs(dist$dx[,1] - (x[,1] - 1)))
@@ -112,8 +112,8 @@ domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
-x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 dist <- get_dist(x, domain)
 # Upper bound for j * xij so that sum_j j * xij <= 1
 quota <- 1 - (rowSums(t(t(x) * 1:p)) - t(t(x) * 1:p))
@@ -126,7 +126,7 @@ K <- -cov_cons("band", p=p, spars=3, eig=1)
 diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
 x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
-        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+        xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=FALSE)
 # Note that dist$dx and dist$dpx only has p-1 columns -- excluding the last coordinate in x
 dist <- get_dist(x, domain)
 # Upper bound for x_{i,j} so that x_{i,1} + ... + x_{i,p-1} <= 1

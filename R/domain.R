@@ -499,11 +499,15 @@ beautify_rule <- function(rule) {
 #' @useDynLib genscore, .registration = TRUE
 #' @export
 get_postfix_rule <- function(rule, num_eqs) {
+  if (num_eqs >= 1000) stop("num_eqs cannot exceed 999.")
+  if (num_eqs < 10) eq_nums_len <- num_eqs
+  else if (num_eqs < 100) eq_nums_len <- (num_eqs - 9) * 2 + 9
+  else eq_nums_len <- (num_eqs - 99) * 3 + 189
   tmp <- .C("shunting_yard", num_eqs=as.integer(num_eqs),
-            infix_pt=beautify_rule(rule), postfix_pt="", errno=as.integer(0))
-  if (tmp$errno)
-    stop("Error occurred in C -> shunting_yard() called in get_postfix_rule().")
-  return (tmp$postfix_pt)
+            infix_pt=beautify_rule(rule), 
+            postfix_pt=paste(rep(" ", eq_nums_len + 2*num_eqs), collapse=""), # Length of postfix, add 1 for "\0"
+            postfix_length=as.integer(0))
+  return (substr(tmp$postfix_pt, 1, tmp$postfix_length))
 }
 
 #' Returns whether a vector or each row of a matrix falls inside a domain.
@@ -1119,9 +1123,9 @@ interval_intersection <- function(A, B) {
   return (res)
 }
 
-#' Finds the union betweeen two unions of intervals.
+#' Finds the union between two unions of intervals.
 #'
-#' Finds the union betweeen two unions of intervals.
+#' Finds the union between two unions of intervals.
 #'
 #' @param A A list of vectors of size 2, each representing an interval. It is required that \code{A[[i]][1] <= A[[i]][2] <= A[[j]][1]} for any \code{i < j}.
 #' @param B A list of vectors of size 2, each representing an interval. It is required that \code{A[[i]][1] <= A[[i]][2] <= A[[j]][1]} for any \code{i < j}.

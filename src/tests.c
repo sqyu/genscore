@@ -1,5 +1,4 @@
 #include <ctype.h>
-//#include <errno.h>
 #include <math.h>
 #include <R.h>
 #include <R_ext/BLAS.h>
@@ -16,19 +15,17 @@
 #include "domain.h"
 #include "set_ops.h"
 
-void shunting_yard_test(int *num_eqs, const char **infix, int *errno_status) {
-	char *postfix;
-	shunting_yard(num_eqs, infix, &postfix, errno_status);
-	if (*errno_status) {
-		Rprintf("!!!Error when calling shunting_yard() in shunting_yard_test()!!!\n");
-		return;
-	}
-	Rprintf("%s\n", postfix);
+void shunting_yard_test(int *num_eqs, const char **infix) {
+	char *postfix = (char*)malloc((eq_nums_len(num_eqs) + 2*(*num_eqs)) * sizeof(char));
+	int postfix_length;
+	shunting_yard(num_eqs, infix, &postfix, &postfix_length);
+	Rprintf("Length %d: %s\n", postfix_length, postfix);
+	free(postfix);
 }
 
 
 void logic_domain_test(int *num_eqs, const char **infix, int *num_intervals_list,
-					   double *lefts, double *rights, int *errno_status) {
+					   double *lefts, double *rights) {
 	double **lefts_list = (double**)malloc(*num_eqs * sizeof(double*));
 	double **rights_list = (double**)malloc(*num_eqs * sizeof(double*));
 	for (int i = 0; i < *num_eqs; i++) {
@@ -42,18 +39,15 @@ void logic_domain_test(int *num_eqs, const char **infix, int *num_intervals_list
 		rights += num_intervals_list[i];
 		Rprintf("\n");
 	}
-	char *postfix;
-	shunting_yard(num_eqs, infix, &postfix, errno_status);
-	if (*errno_status) {
-		Rprintf("!!!Error when calling shunting_yard() in logic_domain_test()!!!\n");
-		return;
-	}
+	char *postfix = (char*)malloc((eq_nums_len(num_eqs) + 2*(*num_eqs)) * sizeof(char));
+	int postfix_length;
+	shunting_yard(num_eqs, infix, &postfix, &postfix_length);
 	Rprintf("In-fix notation: %s\n", *infix);
-	Rprintf("Post-fix notation: %s\n", postfix);
+	Rprintf("Post-fix notation: %s, length %d.\n", postfix, postfix_length);
 	int res_num_intervals;
 	double *res_lefts, *res_rights;
 	evaluate_logic(num_eqs, postfix, num_intervals_list, lefts_list, rights_list,
-				   &res_num_intervals, &res_lefts, &res_rights, errno_status);
+				   &res_num_intervals, &res_lefts, &res_rights);
 	Rprintf("\n Resulting %d intervals:\n\t", res_num_intervals);
 	for (int j = 0; j < res_num_intervals; j++)
 		Rprintf("[%f, %f] ", res_lefts[j], res_rights[j]);
@@ -61,33 +55,32 @@ void logic_domain_test(int *num_eqs, const char **infix, int *num_intervals_list
 	free(lefts_list); free(rights_list);
 }
 
-void frac_pow_test(double *num, int *power_numer, int *power_denom, int *abs, int *errno_status) {
-	double res = frac_pow(*num, *power_numer, *power_denom, *abs, TRUE, errno_status);
-	if (*errno_status) {Rprintf("!!!Error encountered in frac_pow() called from frac_pow_test()!!!\n"); return;}
+void frac_pow_test(double *num, int *power_numer, int *power_denom, int *abs) {
+	double res = frac_pow(*num, *power_numer, *power_denom, *abs, TRUE);
 	Rprintf("Res = %f.\n", res);
 }
 
-void intersection_test(const int *A_num_intervals, const double *A_lefts, const double *A_rights, const int *B_num_intervals, const double *B_lefts, const double *B_rights, int *errno_status){
+void intersection_test(const int *A_num_intervals, const double *A_lefts, const double *A_rights, const int *B_num_intervals, const double *B_lefts, const double *B_rights){
 	int res_num_intervals = -1;
 	double *res_lefts, *res_rights;
-	intersection(A_num_intervals, A_lefts, A_rights, B_num_intervals, B_lefts, B_rights, &res_num_intervals, &res_lefts, &res_rights, errno_status);
+	intersection(A_num_intervals, A_lefts, A_rights, B_num_intervals, B_lefts, B_rights, &res_num_intervals, &res_lefts, &res_rights);
 	Rprintf("Num intervals: %d\n", res_num_intervals);
 	for (int i = 0; i < res_num_intervals; i++)
 		Rprintf("Interval %d: [%f, %f]\n", i, res_lefts[i], res_rights[i]);
 }
 
-void merge_sorted_test(const int *A_length, double *A, const int *B_length, double *B, int *errno_status){
+void merge_sorted_test(const int *A_length, double *A, const int *B_length, double *B){
 	double *res;
-	merge_sorted_arrays(A_length, A, B_length, B, &res, errno_status);
+	merge_sorted_arrays(A_length, A, B_length, B, &res);
 	for (int i = 0; i < *A_length + *B_length; i++)
 		Rprintf("%f, ", res[i]);
 	Rprintf("\n");
 }
 
-void setunion_test(const int *A_num_intervals, double *A_lefts, double *A_rights, const int *B_num_intervals, double *B_lefts, double *B_rights, int *errno_status){
+void setunion_test(const int *A_num_intervals, double *A_lefts, double *A_rights, const int *B_num_intervals, double *B_lefts, double *B_rights){
 	int res_num_intervals = -1;
 	double *res_lefts, *res_rights;
-	setunion(A_num_intervals, A_lefts, A_rights, B_num_intervals, B_lefts, B_rights, &res_num_intervals, &res_lefts, &res_rights, errno_status);
+	setunion(A_num_intervals, A_lefts, A_rights, B_num_intervals, B_lefts, B_rights, &res_num_intervals, &res_lefts, &res_rights);
 	Rprintf("Num intervals: %d\n", res_num_intervals);
 	for (int i = 0; i < res_num_intervals; i++)
 		Rprintf("Interval %d: [%f, %f]\n", i, res_lefts[i], res_rights[i]);
@@ -112,6 +105,7 @@ void laplace_center_test(double *A, double *B, double *C, int *a_numer, int *a_d
 	ab_data -> base.b_denom = *b_denom;
 	reduce_gcd(&(ab_data -> base.b_numer), &(ab_data -> base.b_denom));
 	*res = laplace_center(ab_data);
+	free(ab_data);
 }
 
 
@@ -124,37 +118,33 @@ void random_init_laplace_test(int *num_intervals, double *lefts, double *rights,
 void domain_1d_for_R_test(int *idx, int *m, double *x,
 						  const int *num_char_params, const char **char_params,
 						  const int *num_int_params, int *int_params,
-						  int *num_double_params, double *double_params, int *errno_status){
+						  int *num_double_params, double *double_params){
 	double *lefts, *rights;
 	int num_intervals;
 	domain_1d(idx, m, x, num_char_params, char_params,
 			  num_int_params, int_params, num_double_params, double_params,
-			  &num_intervals, &lefts, &rights, NULL, errno_status);
+			  &num_intervals, &lefts, &rights, NULL);
 	if (num_intervals == 0)
-		Rprintf("!!!No feasible point found using domain_1d()!!!\n");
-	if (*errno_status) {
-		Rprintf("!!!Error occurred when calling domain_1d() in domain_1d_for_R()!!!\n");
-		return;
-	}
+		error("In domain_1d_for_R_test(): No feasible point found using domain_1d().\n");
 	for (int i = 0; i < num_intervals; i++)
 		Rprintf("Interval %d: [%f, %f].\n", i, lefts[i], rights[i]);
 }
 
 
-void search_fused_test(const double *arr, const int *length, const double *x, int *res, int *errno_status) {
-	*res = (search_fused(arr, *length, *x, errno_status));
+void search_fused_test(const double *arr, const int *length, const double *x, int *res) {
+	*res = (search_fused(arr, *length, *x));
 }
 
-void translate_unfuse_test(const double *x, const  int *num_intervals, const double *fused, const double *disp, double *res, int *errno_status) {
-	*res = translate_unfuse(*x, *num_intervals, fused, disp, errno_status);
+void translate_unfuse_test(const double *x, const  int *num_intervals, const double *fused, const double *disp, double *res) {
+	*res = translate_unfuse(*x, *num_intervals, fused, disp);
 }
 
-void search_unfused_test(const double *lefts, const double *rights, const int *length, const double *x, int *res, int *errno_status) {
-	*res = search_unfused(lefts, rights, *length, *x, errno_status);
+void search_unfused_test(const double *lefts, const double *rights, const int *length, const double *x, int *res) {
+	*res = search_unfused(lefts, rights, *length, *x);
 }
 
-void translate_fuse_test(const double *x, const int *num_intervals, const double *lefts, const double *rights, const double *disp, double *res, int *errno_status) {
-	*res = translate_fuse(*x, *num_intervals, lefts, rights, disp, errno_status);
+void translate_fuse_test(const double *x, const int *num_intervals, const double *lefts, const double *rights, const double *disp, double *res) {
+	*res = translate_fuse(*x, *num_intervals, lefts, rights, disp);
 }
 
 

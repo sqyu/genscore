@@ -2,20 +2,34 @@
 % Please edit documentation in R/genscore.R
 \name{get_trun}
 \alias{get_trun}
-\title{The truncation point for \code{h}.}
+\title{The truncation point for \code{h} for \code{h} that is truncated (bounded but not naturally bounded).}
 \usage{
 get_trun(mode, param1, param2)
 }
 \arguments{
-\item{mode}{A string, the class of the \code{h} function.}
+\item{mode}{A string, the class of the \code{h} function. Must be one of \code{"mcp"}, \code{"scad"}, \code{"min_asinh"}, \code{"min_cosh"}, \code{"min_exp"}, \code{"min_log_pow"}, \code{"min_pow"}, \code{"min_sinh"}, \code{"min_softplus"}, \code{"truncated_sin"}, and \code{"truncated_tan"}.}
 
 \item{param1}{A number, the first parameter to the \code{h} function.}
 
 \item{param2}{A number, the second parameter (may be optional depending on \code{mode}) to the \code{h} function.}
 }
 \value{
-Returns the truncation point (the point where \code{h} becomes constant and \code{hp} becomes 0) for some selected modes.
+Returns the truncation point (the point \code{x0} such that \code{h} becomes constant and \code{hp} becomes 0 for \code{x >= x0}) for some selected modes.
 }
 \description{
-The truncation point for \code{h}.
+The truncation point for \code{h} for \code{h} that is truncated (bounded but not naturally bounded).
+}
+\examples{
+param1 <- 1.3; param2 <- 2.3
+for (mode in c("mcp", "scad", "min_asinh", "min_cosh", "min_exp", "min_log_pow",
+    "min_pow", "min_sinh", "min_softplus", "truncated_tan")) {
+  # Valgrind complains about "truncated_sin" for unknown reason; omitted
+  print(mode)
+  trun <- get_trun(mode, param1, param2)
+  x <- trun + -3:3 / 1e5
+  hx_hpx <- get_h_hp(mode, param1, param2)(x)
+  print(round(x, 6))
+  print(paste("hx:", paste(hx_hpx$hx, collapse=" ")))
+  print(paste("hpx:", paste(hx_hpx$hpx, collapse=" ")))
+}
 }

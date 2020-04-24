@@ -14,7 +14,7 @@ make_folds(nsamp, nfold, cv_fold_seed)
 \item{cv_fold_seed}{Seed for random shuffling.}
 }
 \value{
-A list of \code{nsamp} vectors, numbers 1 to \code{nsamp} shuffled and groupped into vectors of length \code{floor(nsamp/nfold)} followed by vectors of length \code{floor(nsamp/nfold)+1}.
+A list of \code{nsamp} vectors, numbers 1 to \code{nsamp} shuffled and grouped into vectors of length \code{floor(nsamp/nfold)} followed by vectors of length \code{floor(nsamp/nfold)+1}.
 }
 \description{
 Helper function for making fold IDs for cross validation.

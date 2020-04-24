@@ -20,10 +20,10 @@ double in_order_tri_dot_prod_pow(int len, const double *l, const double *m, cons
 
 int gcd(int a, int b);
 void reduce_gcd(int *a, int *b);
-double frac_pow(double num, int power_numer, int power_denom, int abs, int print_error, int* errno_status);
+double frac_pow(double num, int power_numer, int power_denom, int abs, int print_error);
 
-double in_order_sum_uniform_pow(int len, const double *arr, int power_numer, int power_denom, int abs, int* errno_status);
-double in_order_sum_different_pow(int len, const double *arr, int *power_numers, int *power_denoms, int abs, int* errno_status);
+double in_order_sum_uniform_pow(int len, const double *arr, int power_numer, int power_denom, int abs);
+double in_order_sum_different_pow(int len, const double *arr, int *power_numers, int *power_denoms, int abs);
 double dot_prod_by_row(int len, const double *m, const double *v);
 
 

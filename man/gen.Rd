@@ -74,13 +74,13 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2",
        ineqs=list(list("expression"="sum(x^2)>10", abs=FALSE, nonnegative=FALSE),
                       list("expression"="sum(x^(1/3))>10", abs=FALSE, nonnegative=FALSE)))
 xinit <- rep(sqrt(20/p), p)
-x <- gen(n, setting="gaussian", abs=FALSE, eta=eta,  K=K, domain=domain,
-       finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="gaussian", abs=FALSE, eta=eta,  K=K, domain=domain, finite_infinity=100, 
+       xinit=xinit, seed=2, burn_in=500, thinning=100, verbose=FALSE)
 
 # exp on ([0, 1] v [2,3])^p
 domain <- make_domain("uniform", p=p, lefts=c(0,2), rights=c(1,3))
-x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain,
-       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+x <- gen(n, setting="exp", abs=FALSE, eta=eta, K=K, domain=domain, xinit=NULL, 
+       seed=2, burn_in=500, thinning=100, verbose=TRUE)
 
 # gamma on {x1 > 1 && log(1.3) < x2 < 1 && x3 > log(1.3) && ... && xp > log(1.3)}
 domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
@@ -89,8 +89,8 @@ domain <- make_domain("polynomial", p=p, rule="1 && 2 && 3",
                       list("expression"="exp(x)>1.3", abs=FALSE, nonnegative=FALSE)))
 set.seed(1)
 xinit <- c(1.5, 0.5, abs(stats::rnorm(p-2))+log(1.3))
-x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=100, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="gamma", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+       xinit=xinit, seed=2, burn_in=500, thinning=100, verbose=FALSE)
 
 # a0.6_b0.7 on {x in R_+^p: sum(log(x))<2 || (x1^(2/3)-1.3x2^(-3)<1 && exp(x1)+2.3*x2>2)}
 domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
@@ -98,29 +98,29 @@ domain <- make_domain("polynomial", p=p, rule="1 || (2 && 3)",
                       list("expression"="x1^(2/3)-1.3x2^(-3)<1", abs=FALSE, nonnegative=TRUE),
                       list("expression"="exp(x1)+2.3*x2^2>2", abs=FALSE, nonnegative=TRUE)))
 xinit <- rep(1, p)
-x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=1e4, xinit=xinit, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="ab_3/5_7/10", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=1e4, 
+       xinit=xinit, seed=2, burn_in=500, thinning=100, verbose=FALSE)
 
 # log_log model exp(-log(x) \%*\% K \%*\% log(x)/2 + eta \%*\% log(x)) on {x in R_+^p: sum_j j * xj <= 1}
 domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"=paste(paste(sapply(1:p,
                            function(j){paste(j, "x", j, sep="")}), collapse="+"), "<1"),
                      abs=FALSE, nonnegative=TRUE)))
-x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="log_log", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+       xinit=NULL, seed=2, burn_in=500, thinning=100, verbose=FALSE)
 
 # log_log model on the simplex with K having row and column sums 0 (Aitchison model)
 domain <- make_domain("simplex", p=p)
 K <- -cov_cons("band", p=p, spars=3, eig=1)
 diag(K) <- diag(K) - rowSums(K) # So that rowSums(K) == colSums(K) == 0
 eigen(K)$val[(p-1):p] # Make sure K has one 0 and p-1 positive eigenvalues
-x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain,
-       xinit=NULL, seed=2, burn_in=1000, thinning=100, verbose=TRUE)
+x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, xinit=NULL, 
+       seed=2, burn_in=500, thinning=100, verbose=FALSE)
 
 # Gumbel_Gumbel model exp(-exp(2x) \%*\% K \%*\% exp(2x)/2 + eta \%*\% exp(-3x)) on {sum(|x|) < 1}
 domain <- make_domain("polynomial", p=p,
        ineqs=list(list("expression"="sum(x)<1", abs=TRUE, nonnegative=FALSE)))
 K <- diag(p)
-x <- gen(n, setting="ab_2/0_-3/0", abs=FALSE, eta=eta, K=K, domain=domain,
-       finite_infinity=100, xinit=NULL, seed=2, burn_in=1000, thinning=100)
+x <- gen(n, setting="ab_2/0_-3/0", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, 
+       xinit=NULL, seed=2, burn_in=500, thinning=100, verbose=FALSE)
 }

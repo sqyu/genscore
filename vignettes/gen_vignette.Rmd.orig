@@ -474,7 +474,7 @@ points(c(0,1), c(0,1), type="l", lty=2)
 ```
 
 One may not necessarily wish to impose the condition that $\mathbf{K}\mathbf{1}=\mathbf{K}^{\top}\mathbf{1}=\mathbf{0}$, in which case `estimate(x, setting="log_log_sum0", ...)` should be changed to `estimate(x, setting="log_log", ...)`. Performance is not guaranteed.
-```{r}
+```{r ROC_log_log}
 est_log_log <- estimate(x, setting="log_log", domain=domain, centered=FALSE, symmetric="symmetric", scale="", lambda_length=40, lambda_ratio=Inf, mode=h_mode, param1=h_param1, param2=NULL, verbose=FALSE, tol=tol, maxit=maxit, BIC_refit=TRUE, diagonal_multiplier=NULL,  return_raw=FALSE)
 ROC_log_log <- t(sapply(est_log_log$edgess, tp_fp, true_edges=true_edges, p=p)) # ROC curve
 AUC(ROC_log_log)
@@ -489,18 +489,19 @@ In this section, we explore univariate truncated normal distributions with proba
 
 ## Introduction
 To begin with, we fix an $h$ function, and estimate the parameters from a random sample.
-```{r}
+```{r univariate_normal_gen}
 mode <- "min_log_pow"
 param1 <- 1
 param2 <- 2
 n <- 1000
 mu <- 0
 sigma <- 1
+domain <- make_domain("R+", 1)
 set.seed(6)
 x <- tmvtnorm::rtmvnorm(n, mean=mu, sigma=sigma^2, lower=c(0), upper=c(Inf))
 ```
 We can choose to provide one of the parameters if the true value is known, or estimate both.
-```{r}
+```{r univariate_normal_mu_sigmasqhat}
 # Assuming sigma is known, estimated muhat should be close to the truth 0
 mu_sigmasqhat(x, mode, param1, param2, sigma=sigma^2)
 # Assuming mu is known, estimated sigmasqhat should be close to the truth 1
@@ -511,29 +512,29 @@ mu_sigmasqhat(x, mode, param1, param2)
 
 ## Variance Estimation and Confidence Intervals
 The `varhat()` function provides a numerical calculation of the asymptotic variance of the estimator of one parameter assuming knowing the other.
-```{r}
+```{r univariate_normal_varhat}
 # The asymptotic variance for mu assuming sigmasq known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)
 # The asymptotic variance for sigmasq assuming mu known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)
 ```
 Plugging in the estimated values, we can thus construct a confidence interval using the asymptotic variance evaluated at the estimates.
-```{r}
+```{r univariate_normal_CI}
 alpha <- 0.05
 muhat <- mu_sigmasqhat(x, mode, param1, param2, sigma=sigma^2)[1]
 # Assuming sigmasq is known, plug in muhat
-sdmu <- sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE)/n)
+sdmu <- sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)/n)
 # The 95% confidence interval for mu
 muhat + c(-1,1)*qnorm(1-alpha/2)*sdmu
 
 sigmasqhat <- mu_sigmasqhat(x, mode, param1, param2, mu=mu)[2]
 # Assuming mu is known, plug in sigmasqhat
-sdsigmasq <- sqrt(varhat(mu, sigmasqhat, mode, param1, param2, est_mu=FALSE)/n)
+sdsigmasq <- sqrt(varhat(mu, sigmasqhat, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)/n)
 # The 95% confidence interval for sigmasq
 sigmasqhat + c(-1,1)*qnorm(1-alpha/2)*sdsigmasq
 ```
 We now generate 10000 samples, each with sample size 1000, and test the coverage probability of the confidence intervals constructed as above.
-```{r}
+```{r univariate_normal_coverage_prob}
 samples <- 10000
 # 1000*10000 random samples from TN(mu, sigma)
 x <- matrix(tmvtnorm::rtmvnorm(n*samples, mean=mu, sigma=sigma^2, lower=c(0), upper=c(Inf)), nrow=n, ncol=samples)
@@ -541,38 +542,38 @@ x <- matrix(tmvtnorm::rtmvnorm(n*samples, mean=mu, sigma=sigma^2, lower=c(0), up
 # One muhat estimate for each of the 10000 samples
 muhats <- apply(x, 2, mu_sigmasqhat, mode=mode, param1=param1, param2=param2, sigmasq=sigma^2)[1,]
 # One standard error for each of the 10000 samples, plugging in the estimates for mu and true sigmasq
-ses_mu <- sapply(muhats, function(muhat){sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE)/n)})
+ses_mu <- sapply(muhats, function(muhat){sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)/n)})
 # Coverage probability of the confidence intervals for mu, should be close to 0.95
 mean(mu >= muhats - qnorm(1-alpha/2)*ses_mu & mu <= muhats + qnorm(1-alpha/2)*ses_mu)
 
 # One sigmasqhat estimate for each of the 10000 samples
 sigmasqhats <- apply(x, 2, mu_sigmasqhat, mode=mode, param1=param1, param2=param2, mu=mu)[2,]
 # One standard error for each of the 10000 samples, plugging in the estimates for sigmasq and true mu
-ses_sigmasq <- sapply(sigmasqhats, function(sigmasqhat){sqrt(varhat(mu, sigmasqhat^2, mode, param1, param2, est_mu=FALSE)/n)})
+ses_sigmasq <- sapply(sigmasqhats, function(sigmasqhat){sqrt(varhat(mu, sigmasqhat^2, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)/n)})
 # Coverage probability of the confidence intervals for sigmasq, should be close to 0.95
 mean(sigma^2 >= sigmasqhats - qnorm(1-alpha/2)*ses_sigmasq & sigma^2 <= sigmasqhats + qnorm(1-alpha/2)*ses_sigmasq)
 ```
 We can also compare the asymptotic variance of the estimator to the empirical variance, as well as the Cram\'er-Rao lower bound.
-```{r}
+```{r univariate_normal_asymp_var}
 trials <- 100
 # Reshape x into a 1000*100*100 array
 x <- array(x, dim=c(n,trials,samples/trials))
 # The asymptotic variance for mu assuming sigmasq known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)
 # Empirical variance by averaging 100 variance estimates over 100 samples, each with sample size 1000
 n*mean(apply(apply(x, c(2,3), mu_sigmasqhat, mode=mode, param1=param1, param2=param2, sigmasq=sigma^2)[1,,], 1, var))
 # The Cram\'er-Rao lower bound on the variance of unbiased estimators of mu
 crbound_mu(mu, sigma)
 
 # The asymptotic variance for sigmasq assuming mu known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)
 # Empirical variance by averaging 100 variance estimates over 100 samples, each with sample size 1000
 n*mean(apply(apply(x, c(2,3), mu_sigmasqhat, mode=mode, param1=param1, param2=param2, mu=mu)[2,,], 1, var))
 # The Cram\'er-Rao lower bound on the variance of unbiased estimators of sigmasq
 crbound_sigma(mu, sigma)
 ```
 ## Plots from Yu et al (2019)
-The following plot reproduces Figure 1 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\mu$ parameter, assuming $\sigma^2=1$ is known.
+The following plot reproduces Figure 1 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with different $h$ functions when estimating the $\mu$ parameter, assuming $\sigma^2=1$ is known.
 ```{r fig1_yu2019, fig.height=4, fig.width=8, fig.cap=""}
 modes <- c("min_log_pow", "min_log_pow", "log_pow", "min_pow", "min_pow", "min_pow", "pow", "pow")
 param1s <- c(1,1,1,1,1,2,1,2)
@@ -584,7 +585,7 @@ sigma <- 1
 curves <- matrix(NA, nrow=length(h_names)+1, ncol=length(mus))
 for (mu_i in 1:length(mus)){
   for (hi in 1:length(h_names))
-    curves[hi,mu_i] <- varhat(mus[mu_i],sigma^2,modes[hi],param1s[hi],param2s[hi],est_mu=TRUE)
+    curves[hi,mu_i] <- varhat(mus[mu_i], sigma^2, modes[hi], param1s[hi], param2s[hi], est_mu=TRUE, domain=domain, tol=1e-6)
   curves[length(h_names)+1,mu_i] <- crbound_mu(mus[mu_i],sigma^2)
 }
 
@@ -605,14 +606,14 @@ for (hi in 1:length(h_names)){
 }
 ```
 
-The following plot reproduces Figure 2 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\sigma^2$ parameter, assuming $\mu=0.5$ is known.
+The following plot reproduces Figure 2 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with different $h$ functions when estimating the $\sigma^2$ parameter, assuming $\mu=0.5$ is known.
 ```{r fig2_yu2019, fig.height=4, fig.width=8, fig.cap=""}
 sigmas <- exp(seq(log(0.1),log(10),length.out=100))
 mu <- 0.5
 curves2 <- matrix(NA, nrow=length(h_names)+1, ncol=length(sigmas))
 for (sigma_i in 1:length(sigmas)){
   for (hi in 1:length(h_names))
-    curves2[hi,sigma_i] <- varhat(mu,sigmas[sigma_i]^2,modes[hi],param1s[hi],param2s[hi],est_mu=FALSE)
+    curves2[hi,sigma_i] <- varhat(mu, sigmas[sigma_i]^2, modes[hi], param1s[hi], param2s[hi], est_mu=FALSE, domain=domain, tol=1e-6)
   curves2[length(h_names)+1,sigma_i] <- crbound_sigma(mu,sigmas[sigma_i]^2)
 }
 

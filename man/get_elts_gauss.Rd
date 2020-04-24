@@ -17,7 +17,7 @@ get_elts_gauss(
 
 \item{centered}{A boolean, whether in the centered setting (assume \eqn{\boldsymbol{\mu}=\boldsymbol{\eta}=0}{\mu=\eta=0}) or not. Default to \code{TRUE}.}
 
-\item{profiled_if_noncenter}{A boolean, whether in the profiled setting (\eqn{\lambda_{\boldsymbol{\eta}}=0}{\lambda_\eta=0}) if noncentered. Parameter ignored if \code{centered==TRUE}. Default to \code{TRUE}.}
+\item{profiled_if_noncenter}{A boolean, whether in the profiled setting (\eqn{\lambda_{\boldsymbol{\eta}}=0}{\lambda_\eta=0}) if non-centered. Parameter ignored if \code{centered==TRUE}. Default to \code{TRUE}.}
 
 \item{scale}{A string indicating the scaling method. Returned without being checked or used in the function body. Default to \code{"norm"}.}
 
@@ -51,8 +51,8 @@ x <- mvtnorm::rmvnorm(n, mean=mu, sigma=solve(K))
 # Equivalently:
 \donttest{
 x2 <- gen(n, setting="gaussian", abs=FALSE, eta=c(K\%*\%mu), K=K, domain=make_domain("R",p),
-       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100)
+       finite_infinity=100, xinit=NULL, burn_in=1000, thinning=100, verbose=FALSE)
 }
-get_elts_gauss(x, centered=TRUE, scale="norm", diag=1.5)
-get_elts_gauss(x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
+elts <- get_elts_gauss(x, centered=TRUE, scale="norm", diag=1.5)
+elts <- get_elts_gauss(x, centered=FALSE, profiled=FALSE, scale="sd", diag=1.9)
 }

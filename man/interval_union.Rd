@@ -2,7 +2,7 @@
 % Please edit documentation in R/domain.R
 \name{interval_union}
 \alias{interval_union}
-\title{Finds the union betweeen two unions of intervals.}
+\title{Finds the union between two unions of intervals.}
 \usage{
 interval_union(A, B)
 }
@@ -15,7 +15,7 @@ interval_union(A, B)
 A list of vectors of size 2, whose union represents the union between \code{A} and \code{B}.
 }
 \description{
-Finds the union betweeen two unions of intervals.
+Finds the union between two unions of intervals.
 }
 \details{
 Finds the union between the union of all intervals in \code{A} and the union of all intervals in \code{B}.

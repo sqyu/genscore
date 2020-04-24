@@ -51,7 +51,7 @@ Estimate \eqn{\mathbf{K}}{K} and \eqn{\boldsymbol{\eta}}{\eta} using elts from \
 }
 \details{
 If \code{elts$domain_type == "simplex"}, \code{symmetric != "symmetric"} or \code{elts$centered == FALSE && elts$profiled_if_noncenter} are currently not supported.
-If \code{elts$domain_type == "simplex"} and \code{elts$setting} constains substring \code{"sum0"}, it is assumed that the column and row sums of \code{K} are all 0 and estimation will be done by profiling out the diagonal entries.
+If \code{elts$domain_type == "simplex"} and \code{elts$setting} contains substring \code{"sum0"}, it is assumed that the column and row sums of \code{K} are all 0 and estimation will be done by profiling out the diagonal entries.
 }
 \examples{
 # Examples are shown for Gaussian truncated to R+^p only. For other distributions

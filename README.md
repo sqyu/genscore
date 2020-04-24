@@ -27,17 +27,17 @@ devtools::install_github("sqyu/genscore")
 ```
 
 # Usage
-For a complete guide to its usage, please consult the vignette [here](vignettes/gen_vignette.Rmd) (or [here](https://htmlpreview.github.io/?https://github.com/sqyu/genscore/blob/master/vignettes/gen_vignette.html) for the precompiled html).
+For a complete guide to its usage, please consult the vignette [here](vignettes/gen_vignette.Rmd) (or [here](https://htmlpreview.github.io/?https://github.com/sqyu/genscore/blob/master/vignettes/gen_vignette.html) for the pre-compiled html).
 ```R
 vignette("gen_vignette")
 ```
 
 # References
-Some parts of the code were initially dervied from https://github.com/linlina/highscore and http://www1.maths.leeds.ac.uk/~wally.gilks/adaptive.rejection/web_page/Welcome.html.
+Some parts of the code were initially derived from https://github.com/linlina/highscore and http://www1.maths.leeds.ac.uk/~wally.gilks/adaptive.rejection/web_page/Welcome.html.
 
 John Aitchison. A general class of distributions on the simplex. Journal of the Royal Statistical Society: Series B (Methodological), 47(1):136–146, 1985. <https://doi.org/10.1111/j.2517-6161.1985.tb01341.x>
 
-David Inouye, Pradeep Ravikumar, and Inderjit Dhillon. Square root graphical models: Multivariate generalizations of univariate exponential families that permit positive de- pendencies. In Proceedings of The 33rd International Conference on Machine Learning, volume 48 of Proceedings of Machine Learning Research, pages 2445–2453, 2016. <http://proceedings.mlr.press/v48/inouye16.html>
+David Inouye, Pradeep Ravikumar, and Inderjit Dhillon. Square root graphical models: Multivariate generalizations of univariate exponential families that permit positive dependencies. In Proceedings of The 33rd International Conference on Machine Learning, volume 48 of Proceedings of Machine Learning Research, pages 2445–2453, 2016. <http://proceedings.mlr.press/v48/inouye16.html>
 
 Lina Lin, Mathias Drton, and Ali Shojaie. Estimation of high-dimensional graphical models using regularized score m    atching. Electron. J. Stat., 10(1):806–854, 2016. <https://doi.org/10.1214/16-EJS1126>
 

@@ -112,6 +112,9 @@ void elts_loglog_simplex_np(int *nIn, int *pIn, double *hdx, double *hpdx, doubl
 		}
 		eliminate_vec(pIn, Gamma_K_eta + (p-1)*p, p-1);
 	}
+	free(logx); free(h_over_xsq_nop); free(minus_h_over_x_xp_nop);
+	free(sum_h_over_xmsq); free(hp_over_x_nop); free(sum_hp_over_xm);
+	free(mean_sum_h_over_xmsq);
 }
 
 double loss_loglog_simplex_profiled(int p, double *Gamma_K, double *g_K, double *Gamma_K_jp, double *K, double *diagonals_with_multiplier, double lambda1){

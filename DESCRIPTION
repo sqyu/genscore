@@ -1,7 +1,7 @@
 Package: genscore
 Type: Package
 Title: Generalized Score Matching Estimators
-Version: 1.0.1
+Version: 1.0.2
 Author: Shiqing Yu, Lina Lin, Wally Gilks
 Maintainer: Shiqing Yu <syu.phd@gmail.com>
 Description: Implementation of the Generalized Score Matching estimator in Yu et al. (2019) <http://jmlr.org/papers/v20/18-278.html> for non-negative graphical models (truncated Gaussian, exponential square-root, gamma, a-b models) and univariate truncated Gaussian distributions. Also includes the original estimator for untruncated Gaussian graphical models from Lin et al. (2016) <doi:10.1214/16-EJS1126>, with the addition of a diagonal multiplier.

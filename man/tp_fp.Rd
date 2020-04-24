@@ -34,7 +34,7 @@ x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
        burn.in.samples = 100, thinning = 10)
 est <- estimate(x, setting="gaussian", elts=NULL, domain=domain, centered=TRUE,
          symmetric="symmetric", lambda_length=100, mode="min_pow",
-         param1=1, param2=3, diagonal_multiplier=dm,)
+         param1=1, param2=3, diagonal_multiplier=dm, verbose=FALSE)
 # Apply tp_fp to each estimated edges set for each lambda
 TP_FP <- t(sapply(est$edgess, function(edges){tp_fp(edges, true_edges, p)}))
 old.par <- par(mfrow=c(1,1), mar=c(5,5,5,5))

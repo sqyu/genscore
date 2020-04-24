@@ -1,7 +1,7 @@
 ---
 title: "Generalized Score Matching on Generalized Domain Types"
 author: "Shiqing Yu"
-date: "2020-04-03"
+date: "2020-04-24"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{my-vignette}
@@ -132,11 +132,11 @@ If `rights` is just `Inf` and `lefts` is simply `-Inf` or `0`, this corresponds 
 
 ```r
 domain <- make_domain(type="uniform", p=p, lefts=-Inf, rights=Inf) # Changed to R
-#> Warning in make_domain(type = "uniform", p = p, lefts = -Inf, rights = Inf): Domain
-#> type automatically changed to R.
+#> Warning in make_domain(type = "uniform", p = p, lefts = -Inf, rights = Inf):
+#> Domain type automatically changed to R.
 domain <- make_domain(type="uniform", p=p, lefts=0, rights=Inf) # Changed to R+
-#> Warning in make_domain(type = "uniform", p = p, lefts = 0, rights = Inf): Domain type
-#> automatically changed to R+.
+#> Warning in make_domain(type = "uniform", p = p, lefts = 0, rights = Inf): Domain
+#> type automatically changed to R+.
 ```
 Of course, the domain can also be bounded, e.g. $[-1,1]^p$.
 
@@ -526,27 +526,30 @@ We can also take a look at the lambda values we used in the estimation. We only 
 
 ```r
 est$lambda1s # lambda_Ks used
-#>   [1] 1.305613e-01 1.181263e-01 1.068757e-01 9.669654e-02 8.748692e-02 7.915445e-02
-#>   [7] 7.161558e-02 6.479473e-02 5.862351e-02 5.304006e-02 4.798839e-02 4.341786e-02
-#>  [13] 3.928263e-02 3.554125e-02 3.215621e-02 2.909357e-02 2.632263e-02 2.381560e-02
-#>  [19] 2.154734e-02 1.949511e-02 1.763835e-02 1.595843e-02 1.443851e-02 1.306335e-02
-#>  [25] 1.181916e-02 1.069348e-02 9.675001e-03 8.753530e-03 7.919822e-03 7.165518e-03
-#>  [31] 6.483056e-03 5.865593e-03 5.306939e-03 4.801493e-03 4.344186e-03 3.930435e-03
-#>  [37] 3.556091e-03 3.217400e-03 2.910966e-03 2.633718e-03 2.382876e-03 2.155925e-03
-#>  [43] 1.950589e-03 1.764810e-03 1.596725e-03 1.444649e-03 1.307057e-03 1.182570e-03
-#>  [49] 1.069939e-03 9.680351e-04 8.758370e-04 7.924201e-04 7.169480e-04 6.486641e-04
-#>  [55] 5.868836e-04 5.309874e-04 4.804148e-04 4.346589e-04 3.932609e-04 3.558057e-04
-#>  [61] 3.219179e-04 2.912576e-04 2.635175e-04 2.384194e-04 2.157117e-04 1.951668e-04
-#>  [67] 1.765786e-04 1.597608e-04 1.445448e-04 1.307780e-04 1.183224e-04 1.070530e-04
-#>  [73] 9.685704e-05 8.763213e-05 7.928583e-05 7.173444e-05 6.490227e-05 5.872082e-05
-#>  [79] 5.312810e-05 4.806804e-05 4.348992e-05 3.934783e-05 3.560024e-05 3.220959e-05
-#>  [85] 2.914186e-05 2.636632e-05 2.385512e-05 2.158310e-05 1.952747e-05 1.766763e-05
-#>  [91] 1.598492e-05 1.446247e-05 1.308503e-05 1.183878e-05 1.071122e-05 9.691060e-06
-#>  [97] 8.768059e-06 7.932967e-06 7.177411e-06 6.493816e-06
+#>   [1] 1.305613e-01 1.181263e-01 1.068757e-01 9.669654e-02 8.748692e-02
+#>   [6] 7.915445e-02 7.161558e-02 6.479473e-02 5.862351e-02 5.304006e-02
+#>  [11] 4.798839e-02 4.341786e-02 3.928263e-02 3.554125e-02 3.215621e-02
+#>  [16] 2.909357e-02 2.632263e-02 2.381560e-02 2.154734e-02 1.949511e-02
+#>  [21] 1.763835e-02 1.595843e-02 1.443851e-02 1.306335e-02 1.181916e-02
+#>  [26] 1.069348e-02 9.675001e-03 8.753530e-03 7.919822e-03 7.165518e-03
+#>  [31] 6.483056e-03 5.865593e-03 5.306939e-03 4.801493e-03 4.344186e-03
+#>  [36] 3.930435e-03 3.556091e-03 3.217400e-03 2.910966e-03 2.633718e-03
+#>  [41] 2.382876e-03 2.155925e-03 1.950589e-03 1.764810e-03 1.596725e-03
+#>  [46] 1.444649e-03 1.307057e-03 1.182570e-03 1.069939e-03 9.680351e-04
+#>  [51] 8.758370e-04 7.924201e-04 7.169480e-04 6.486641e-04 5.868836e-04
+#>  [56] 5.309874e-04 4.804148e-04 4.346589e-04 3.932609e-04 3.558057e-04
+#>  [61] 3.219179e-04 2.912576e-04 2.635175e-04 2.384194e-04 2.157117e-04
+#>  [66] 1.951668e-04 1.765786e-04 1.597608e-04 1.445448e-04 1.307780e-04
+#>  [71] 1.183224e-04 1.070530e-04 9.685704e-05 8.763213e-05 7.928583e-05
+#>  [76] 7.173444e-05 6.490227e-05 5.872082e-05 5.312810e-05 4.806804e-05
+#>  [81] 4.348992e-05 3.934783e-05 3.560024e-05 3.220959e-05 2.914186e-05
+#>  [86] 2.636632e-05 2.385512e-05 2.158310e-05 1.952747e-05 1.766763e-05
+#>  [91] 1.598492e-05 1.446247e-05 1.308503e-05 1.183878e-05 1.071122e-05
+#>  [96] 9.691060e-06 8.768059e-06 7.932967e-06 7.177411e-06 6.493816e-06
 est$lambda2s # lambda_etas, all 0 since with lambda_ratio=Inf we are in the profiled setting
-#>   [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-#>  [42] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-#>  [83] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#>   [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#>  [38] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#>  [75] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ```
 If run with `centered=FALSE`, `etas` is also returned. The raw estimates of K are stored in `raw_estimates` if `return_raw=TRUE` in the function call.
 
@@ -785,15 +788,16 @@ eta <- rep(0.5, p)
 K <- -cov_cons("band", p, seed=1, spars=3)
 diag(K) <- diag(K) - rowSums(K) # So that K has row and column sums 0
 eigen(K)$val # Verify that K has one 0 and (p-1) positive eigenvalues 
-#>  [1] 3.995773e+00 3.991890e+00 3.991634e+00 3.983272e+00 3.968596e+00 3.967133e+00
-#>  [7] 3.962792e+00 3.937799e+00 3.929676e+00 3.928659e+00 3.905317e+00 3.881959e+00
-#> [13] 3.881949e+00 3.867834e+00 3.839155e+00 3.825743e+00 3.822008e+00 3.801489e+00
-#> [19] 3.774765e+00 3.773788e+00 3.760578e+00 3.743227e+00 3.727626e+00 3.724945e+00
-#> [25] 3.720342e+00 3.708350e+00 3.707014e+00 3.649237e+00 3.550263e+00 3.435336e+00
-#> [31] 3.306077e+00 3.162872e+00 3.007531e+00 2.842906e+00 2.669717e+00 2.484478e+00
-#> [37] 2.282468e+00 2.062499e+00 1.827943e+00 1.584732e+00 1.339562e+00 1.099097e+00
-#> [43] 8.697100e-01 6.573707e-01 4.675500e-01 3.051190e-01 1.742429e-01 7.828013e-02
-#> [49] 1.969680e-02 2.664535e-15
+#>  [1] 3.995773e+00 3.991890e+00 3.991634e+00 3.983272e+00 3.968596e+00
+#>  [6] 3.967133e+00 3.962792e+00 3.937799e+00 3.929676e+00 3.928659e+00
+#> [11] 3.905317e+00 3.881959e+00 3.881949e+00 3.867834e+00 3.839155e+00
+#> [16] 3.825743e+00 3.822008e+00 3.801489e+00 3.774765e+00 3.773788e+00
+#> [21] 3.760578e+00 3.743227e+00 3.727626e+00 3.724945e+00 3.720342e+00
+#> [26] 3.708350e+00 3.707014e+00 3.649237e+00 3.550263e+00 3.435336e+00
+#> [31] 3.306077e+00 3.162872e+00 3.007531e+00 2.842906e+00 2.669717e+00
+#> [36] 2.484478e+00 2.282468e+00 2.062499e+00 1.827943e+00 1.584732e+00
+#> [41] 1.339562e+00 1.099097e+00 8.697100e-01 6.573707e-01 4.675500e-01
+#> [46] 3.051190e-01 1.742429e-01 7.828013e-02 1.969680e-02 2.664535e-15
 true_edges <- which(abs(K) > tol & diag(p) == 0)
 domain <- make_domain(type="simplex", p=p)
 x <- gen(n, setting="log_log_sum0", abs=FALSE, eta=eta, K=K, domain=domain, finite_infinity=100, seed=6, burn_in=1000, thinning=1000, verbose=FALSE, remove_outofbound=TRUE)
@@ -841,6 +845,7 @@ param2 <- 2
 n <- 1000
 mu <- 0
 sigma <- 1
+domain <- make_domain("R+", 1)
 set.seed(6)
 x <- tmvtnorm::rtmvnorm(n, mean=mu, sigma=sigma^2, lower=c(0), upper=c(Inf))
 ```
@@ -863,10 +868,10 @@ The `varhat()` function provides a numerical calculation of the asymptotic varia
 
 ```r
 # The asymptotic variance for mu assuming sigmasq known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)
 #> [1] 2.795459
 # The asymptotic variance for sigmasq assuming mu known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)
 #> [1] 2.379507
 ```
 Plugging in the estimated values, we can thus construct a confidence interval using the asymptotic variance evaluated at the estimates.
@@ -875,14 +880,14 @@ Plugging in the estimated values, we can thus construct a confidence interval us
 alpha <- 0.05
 muhat <- mu_sigmasqhat(x, mode, param1, param2, sigma=sigma^2)[1]
 # Assuming sigmasq is known, plug in muhat
-sdmu <- sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE)/n)
+sdmu <- sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)/n)
 # The 95% confidence interval for mu
 muhat + c(-1,1)*qnorm(1-alpha/2)*sdmu
 #> [1] -0.09317385  0.11348043
 
 sigmasqhat <- mu_sigmasqhat(x, mode, param1, param2, mu=mu)[2]
 # Assuming mu is known, plug in sigmasqhat
-sdsigmasq <- sqrt(varhat(mu, sigmasqhat, mode, param1, param2, est_mu=FALSE)/n)
+sdsigmasq <- sqrt(varhat(mu, sigmasqhat, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)/n)
 # The 95% confidence interval for sigmasq
 sigmasqhat + c(-1,1)*qnorm(1-alpha/2)*sdsigmasq
 #> [1] 0.9155719 1.1091115
@@ -897,7 +902,7 @@ x <- matrix(tmvtnorm::rtmvnorm(n*samples, mean=mu, sigma=sigma^2, lower=c(0), up
 # One muhat estimate for each of the 10000 samples
 muhats <- apply(x, 2, mu_sigmasqhat, mode=mode, param1=param1, param2=param2, sigmasq=sigma^2)[1,]
 # One standard error for each of the 10000 samples, plugging in the estimates for mu and true sigmasq
-ses_mu <- sapply(muhats, function(muhat){sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE)/n)})
+ses_mu <- sapply(muhats, function(muhat){sqrt(varhat(muhat, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)/n)})
 # Coverage probability of the confidence intervals for mu, should be close to 0.95
 mean(mu >= muhats - qnorm(1-alpha/2)*ses_mu & mu <= muhats + qnorm(1-alpha/2)*ses_mu)
 #> [1] 0.9514
@@ -905,7 +910,7 @@ mean(mu >= muhats - qnorm(1-alpha/2)*ses_mu & mu <= muhats + qnorm(1-alpha/2)*se
 # One sigmasqhat estimate for each of the 10000 samples
 sigmasqhats <- apply(x, 2, mu_sigmasqhat, mode=mode, param1=param1, param2=param2, mu=mu)[2,]
 # One standard error for each of the 10000 samples, plugging in the estimates for sigmasq and true mu
-ses_sigmasq <- sapply(sigmasqhats, function(sigmasqhat){sqrt(varhat(mu, sigmasqhat^2, mode, param1, param2, est_mu=FALSE)/n)})
+ses_sigmasq <- sapply(sigmasqhats, function(sigmasqhat){sqrt(varhat(mu, sigmasqhat^2, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)/n)})
 # Coverage probability of the confidence intervals for sigmasq, should be close to 0.95
 mean(sigma^2 >= sigmasqhats - qnorm(1-alpha/2)*ses_sigmasq & sigma^2 <= sigmasqhats + qnorm(1-alpha/2)*ses_sigmasq)
 #> [1] 0.9472
@@ -917,7 +922,7 @@ trials <- 100
 # Reshape x into a 1000*100*100 array
 x <- array(x, dim=c(n,trials,samples/trials))
 # The asymptotic variance for mu assuming sigmasq known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=TRUE, domain=domain, tol=1e-6)
 #> [1] 2.795459
 # Empirical variance by averaging 100 variance estimates over 100 samples, each with sample size 1000
 n*mean(apply(apply(x, c(2,3), mu_sigmasqhat, mode=mode, param1=param1, param2=param2, sigmasq=sigma^2)[1,,], 1, var))
@@ -927,7 +932,7 @@ crbound_mu(mu, sigma)
 #> [1] 2.751938
 
 # The asymptotic variance for sigmasq assuming mu known
-varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE)
+varhat(mu, sigma^2, mode, param1, param2, est_mu=FALSE, domain=domain, tol=1e-6)
 #> [1] 2.379507
 # Empirical variance by averaging 100 variance estimates over 100 samples, each with sample size 1000
 n*mean(apply(apply(x, c(2,3), mu_sigmasqhat, mode=mode, param1=param1, param2=param2, mu=mu)[2,,], 1, var))
@@ -937,7 +942,7 @@ crbound_sigma(mu, sigma)
 #> [1] 2
 ```
 ## Plots from Yu et al (2019)
-The following plot reproduces Figure 1 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\mu$ parameter, assuming $\sigma^2=1$ is known.
+The following plot reproduces Figure 1 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with different $h$ functions when estimating the $\mu$ parameter, assuming $\sigma^2=1$ is known.
 
 ```r
 modes <- c("min_log_pow", "min_log_pow", "log_pow", "min_pow", "min_pow", "min_pow", "pow", "pow")
@@ -950,7 +955,7 @@ sigma <- 1
 curves <- matrix(NA, nrow=length(h_names)+1, ncol=length(mus))
 for (mu_i in 1:length(mus)){
   for (hi in 1:length(h_names))
-    curves[hi,mu_i] <- varhat(mus[mu_i],sigma^2,modes[hi],param1s[hi],param2s[hi],est_mu=TRUE)
+    curves[hi,mu_i] <- varhat(mus[mu_i], sigma^2, modes[hi], param1s[hi], param2s[hi], est_mu=TRUE, domain=domain, tol=1e-6)
   curves[length(h_names)+1,mu_i] <- crbound_mu(mus[mu_i],sigma^2)
 }
 
@@ -973,7 +978,7 @@ for (hi in 1:length(h_names)){
 
 ![](figs/fig1_yu2019-1.png)
 
-The following plot reproduces Figure 2 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with differnt $h$ functions when estimating the $\sigma^2$ parameter, assuming $\mu=0.5$ is known.
+The following plot reproduces Figure 2 from Yu et al (2019), in which we compare the asymptotic variances and efficiencies (relative to the Cram\'er-Rao lower bound) of our estimators with different $h$ functions when estimating the $\sigma^2$ parameter, assuming $\mu=0.5$ is known.
 
 ```r
 sigmas <- exp(seq(log(0.1),log(10),length.out=100))
@@ -981,7 +986,7 @@ mu <- 0.5
 curves2 <- matrix(NA, nrow=length(h_names)+1, ncol=length(sigmas))
 for (sigma_i in 1:length(sigmas)){
   for (hi in 1:length(h_names))
-    curves2[hi,sigma_i] <- varhat(mu,sigmas[sigma_i]^2,modes[hi],param1s[hi],param2s[hi],est_mu=FALSE)
+    curves2[hi,sigma_i] <- varhat(mu, sigmas[sigma_i]^2, modes[hi], param1s[hi], param2s[hi], est_mu=FALSE, domain=domain, tol=1e-6)
   curves2[length(h_names)+1,sigma_i] <- crbound_sigma(mu,sigmas[sigma_i]^2)
 }
 

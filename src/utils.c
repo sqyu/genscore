@@ -97,7 +97,7 @@ inline void reduce_gcd(int *a, int *b){
 	}
 }
 
-inline double frac_pow(double num, int power_numer, int power_denom, int abs, int print_error, int *errno_status) {
+inline double frac_pow(double num, int power_numer, int power_denom, int abs, int print_error) {
 /*
  Returns |num| ^ (power_numer / power_denom) if abs == 1 or else num ^ (power_numer / power_denom).
  When one of power_numer and power_denom is 0:
@@ -115,9 +115,8 @@ inline double frac_pow(double num, int power_numer, int power_denom, int abs, in
 		if (power_numer == 0) {
 			if (abs) return log(fabs(num));
 			if (num > 0) return (log(num));
-			*errno_status = 1;
 			if (print_error)
-				Rprintf("!!!x^(0/0) is treated as log(x), but x = %f < 0 is provided!!!\n", num);
+				error("In frac_pow(): x^(0/0) is treated as log(x), but x = %f < 0 is provided.\n", num);
 			return NAN;
 		} else
 			return abs ? exp(power_numer * fabs(num)) : exp(power_numer * num);
@@ -129,9 +128,8 @@ inline double frac_pow(double num, int power_numer, int power_denom, int abs, in
 		return (pow(num, power));
 	else if (num == 0) {
 		if (power <= 0) {
-			*errno_status = 1;
 			if (print_error)
-				Rprintf("!!!0^(%d/%d) encountered!!!\n", power_numer, power_denom);
+				error("In frac_pow(): 0^(%d/%d) encountered.\n", power_numer, power_denom);
 			return NAN;
 		}
 		return 0;
@@ -139,9 +137,8 @@ inline double frac_pow(double num, int power_numer, int power_denom, int abs, in
 	if (abs) // If use abs(num)
 		return (pow(-num, power));
 	if (power_denom % 2 == 0) { // If num < 0 but need to take an even root, error
-		*errno_status = 1;
 		if (print_error)
-			Rprintf("!!!A negative number (%f) cannot be raised to a power with even denominator (%d/%d)!! Returning NAN!!!\n", num, power_numer, power_denom);
+			error("In frac_pow(): A negative number (%f) cannot be raised to a power with even denominator (%d/%d). Returning NAN.\n", num, power_numer, power_denom);
 		return NAN;
 	}
 	if (power_numer % 2) // If power numerator is odd, returned value should be negative
@@ -150,43 +147,43 @@ inline double frac_pow(double num, int power_numer, int power_denom, int abs, in
 		return (pow(-num, power));
 }
 
-inline double in_order_sum_uniform_pow(int len, const double *arr, int power_numer, int power_denom, int abs, int *errno_status){
+inline double in_order_sum_uniform_pow(int len, const double *arr, int power_numer, int power_denom, int abs){
 	// Computes dot product between l^lpow and r^rpow; uses unrolled loops
 	double total0 = 0, total1 = 0, total2 = 0, total3 = 0, total4 = 0, total5 = 0, total6 = 0, total7 = 0;
 	int i = 0;
 	while (i < len - len % UNIT) {
-		total0 += frac_pow(arr[0], power_numer, power_denom, abs, TRUE, errno_status);
-		total1 += frac_pow(arr[1], power_numer, power_denom, abs, TRUE, errno_status);
-		total2 += frac_pow(arr[2], power_numer, power_denom, abs, TRUE, errno_status);
-		total3 += frac_pow(arr[3], power_numer, power_denom, abs, TRUE, errno_status);
-		total4 += frac_pow(arr[4], power_numer, power_denom, abs, TRUE, errno_status);
-		total5 += frac_pow(arr[5], power_numer, power_denom, abs, TRUE, errno_status);
-		total6 += frac_pow(arr[6], power_numer, power_denom, abs, TRUE, errno_status);
-		total7 += frac_pow(arr[7], power_numer, power_denom, abs, TRUE, errno_status);
+		total0 += frac_pow(arr[0], power_numer, power_denom, abs, TRUE);
+		total1 += frac_pow(arr[1], power_numer, power_denom, abs, TRUE);
+		total2 += frac_pow(arr[2], power_numer, power_denom, abs, TRUE);
+		total3 += frac_pow(arr[3], power_numer, power_denom, abs, TRUE);
+		total4 += frac_pow(arr[4], power_numer, power_denom, abs, TRUE);
+		total5 += frac_pow(arr[5], power_numer, power_denom, abs, TRUE);
+		total6 += frac_pow(arr[6], power_numer, power_denom, abs, TRUE);
+		total7 += frac_pow(arr[7], power_numer, power_denom, abs, TRUE);
 		i += UNIT; arr += UNIT;
 	}
 	for (; i < len; i++) // Leftovers
-		total7 += frac_pow(*(arr++), power_numer, power_denom, abs, TRUE, errno_status);
+		total7 += frac_pow(*(arr++), power_numer, power_denom, abs, TRUE);
 	return (total0 + total1 + total2 + total3 + total4 + total5 + total6 + total7);
 }
 
-inline double in_order_sum_different_pow(int len, const double *arr, int *power_numers, int *power_denoms, int abs, int *errno_status){
+inline double in_order_sum_different_pow(int len, const double *arr, int *power_numers, int *power_denoms, int abs){
 	// Computes dot product between l^lpow and r^rpow; uses unrolled loops
 	double total0 = 0, total1 = 0, total2 = 0, total3 = 0, total4 = 0, total5 = 0, total6 = 0, total7 = 0;
 	int i = 0;
 	while (i < len - len % UNIT) {
-		total0 += frac_pow(arr[0], power_numers[0], power_denoms[0], abs, TRUE, errno_status);
-		total1 += frac_pow(arr[1], power_numers[1], power_denoms[1], abs, TRUE, errno_status);
-		total2 += frac_pow(arr[2], power_numers[2], power_denoms[2], abs, TRUE, errno_status);
-		total3 += frac_pow(arr[3], power_numers[3], power_denoms[3], abs, TRUE, errno_status);
-		total4 += frac_pow(arr[4], power_numers[4], power_denoms[4], abs, TRUE, errno_status);
-		total5 += frac_pow(arr[5], power_numers[5], power_denoms[5], abs, TRUE, errno_status);
-		total6 += frac_pow(arr[6], power_numers[6], power_denoms[6], abs, TRUE, errno_status);
-		total7 += frac_pow(arr[7], power_numers[7], power_denoms[7], abs, TRUE, errno_status);
+		total0 += frac_pow(arr[0], power_numers[0], power_denoms[0], abs, TRUE);
+		total1 += frac_pow(arr[1], power_numers[1], power_denoms[1], abs, TRUE);
+		total2 += frac_pow(arr[2], power_numers[2], power_denoms[2], abs, TRUE);
+		total3 += frac_pow(arr[3], power_numers[3], power_denoms[3], abs, TRUE);
+		total4 += frac_pow(arr[4], power_numers[4], power_denoms[4], abs, TRUE);
+		total5 += frac_pow(arr[5], power_numers[5], power_denoms[5], abs, TRUE);
+		total6 += frac_pow(arr[6], power_numers[6], power_denoms[6], abs, TRUE);
+		total7 += frac_pow(arr[7], power_numers[7], power_denoms[7], abs, TRUE);
 		i += UNIT; arr += UNIT;
 	}
 	for (; i < len; i++) // Leftovers
-		total7 += frac_pow(*(arr++), *(power_numers++), *(power_denoms++), abs, TRUE, errno_status);
+		total7 += frac_pow(*(arr++), *(power_numers++), *(power_denoms++), abs, TRUE);
 	return (total0 + total1 + total2 + total3 + total4 + total5 + total6 + total7);
 }
 

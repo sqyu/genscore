@@ -130,13 +130,14 @@ x <- tmvtnorm::rtmvnorm(n, mean = mu, sigma = solve(K),
 
 ## Centered estimates, no elts or h provided, mode and params provided
 est1 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=TRUE,
-          symmetric="symmetric", lambda1s=lambda1s, mode="min_pow",
-          param1=1, param2=3, diag=dm, return_raw=TRUE)
+          symmetric="symmetric", lambda1s=lambda1s, mode="min_pow", 
+          param1=1, param2=3, diag=dm, return_raw=TRUE, verbose=FALSE)
 
 h_hp <- get_h_hp("min_pow", 1, 3)
 ## Centered estimates, no elts provided, h provided; equivalent to est1
 est2 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=TRUE,
-          symmetric="symmetric", lambda1s=lambda1s, h_hp=h_hp, diag=dm, return_raw=TRUE)
+          symmetric="symmetric", lambda1s=lambda1s, h_hp=h_hp, diag=dm, 
+          return_raw=TRUE, verbose=FALSE)
 compare_two_results(est1, est2) ## Should be almost all 0
 
 elts_gauss_c <- get_elts(h_hp, x, setting="gaussian", domain=domain,
@@ -145,13 +146,13 @@ elts_gauss_c <- get_elts(h_hp, x, setting="gaussian", domain=domain,
 ## Here diagonal_multiplier will be set to the default value, equal to dm above
 est3 <- estimate(x, "gaussian", domain=domain, elts=elts_gauss_c,
           symmetric="symmetric", lambda1s=lambda1s, diag=NULL,
-          return_raw=TRUE)
+          return_raw=TRUE, verbose=FALSE)
 compare_two_results(est1, est3) ## Should be almost all 0
 
-## Noncentered estimates with Inf penalty on eta; equivalent to est1~3
+## Non-centered estimates with Inf penalty on eta; equivalent to est1~3
 est4 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=0, symmetric="symmetric", lambda1s=lambda1s,
-          h=h_hp, diag=dm, return_raw=TRUE)
+          h=h_hp, diag=dm, return_raw=TRUE, verbose=FALSE)
 sum(abs(est4$etas)) ## Should be 0 since non-centered with lambda ratio 0 is equivalent to centered
 est4$etas <- NULL ## But different from est1 in that the zero etas are returned in est4
 compare_two_results(est1, est4) ## Should be almost all 0
@@ -159,13 +160,13 @@ compare_two_results(est1, est4) ## Should be almost all 0
 
 ## Profiled estimates, no elts or h provided, mode and params provided
 est5 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
-          lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-          mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE)
+          lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s, mode="min_pow", 
+          param1=1, param2=3, diag=dm, return_raw=TRUE, verbose=FALSE)
 
 ## Profiled estimates, no elts provided, h provided; equivalent to est5
 est6 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-          h_hp=h_hp, diag=dm, return_raw=TRUE)
+          h_hp=h_hp, diag=dm, return_raw=TRUE, verbose=FALSE)
 compare_two_results(est5, est6) ## Should be almost all 0
 
 elts_gauss_p <- get_elts(h_hp, x, setting="gaussian", domain=domain,
@@ -173,7 +174,7 @@ elts_gauss_p <- get_elts(h_hp, x, setting="gaussian", domain=domain,
 ## Profiled estimates, elts provided; equivalent to est5~6
 est7 <- estimate(x, "gaussian", domain=domain, elts=elts_gauss_p, centered=FALSE,
           lambda_ratio=Inf, symmetric="or", lambda1s=lambda1s,
-          diagonal_multiplier=NULL, return_raw=TRUE)
+          diagonal_multiplier=NULL, return_raw=TRUE, verbose=FALSE)
 compare_two_results(est5, est7) ## Should be almost all 0
 
 
@@ -182,13 +183,13 @@ compare_two_results(est5, est7) ## Should be almost all 0
 est8 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
           lambda_ratio=2, symmetric="and", lambda_length=100,
           mode="min_pow", param1=1, param2=3, diag=dm, return_raw=TRUE,
-          BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
+          BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2, verbose=FALSE)
 
 ## Non-centered estimates, no elts provided, h provided; equivalent to est5
 ## Using 5-fold cross validation and no BIC refit
 est9 <- estimate(x, "gaussian", domain=domain, elts=NULL, centered=FALSE,
-          lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp,
-          diag=dm, return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
+          lambda_ratio=2, symmetric="and", lambda_length=100, h_hp=h_hp, diag=dm, 
+          return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2, verbose=FALSE)
 compare_two_results(est8, est9) ## Should be almost all 0
 
 elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=FALSE,
@@ -197,7 +198,7 @@ elts_gauss_np <- get_elts(h_hp, x, setting="gaussian", domain=domain, centered=F
 ## Using 5-fold cross validation and no BIC refit
 est10 <- estimate(x, "gaussian", domain, elts=elts_gauss_np, centered=FALSE,
            lambda_ratio=2, symmetric="and", lambda_length=100, diag=NULL,
-           return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2)
+           return_raw=TRUE, BIC_refit=FALSE, cv_fold=5, cv_fold_seed=2, verbose=FALSE)
 compare_two_results(est8, est10) ## Should be almost all 0
 
 }
