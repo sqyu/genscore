@@ -1,37 +1,33 @@
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
 
-/* FIXME:
- Check these declarations against the C/Fortran source code.
- */
-
 /* .C calls */
-extern void dist(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_ab_c(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_ab_np(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_ab_p(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_exp_c(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_exp_np(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_exp_p(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_gamma_np(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_gamma_p(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_gauss_c(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_gauss_np(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_gauss_p(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_loglog_c(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_loglog_np(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_loglog_p(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_loglog_simplex_c(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void elts_loglog_simplex_np(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void full(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void full_asymm(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void poly_domain_1d_for_R(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void profiled(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void profiled_asymm(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void rab_arms(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void shunting_yard(void *, void *, void *, void *);
-extern void simplex_centered(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void simplex_full(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void dist(const int *, const int *, const double *, double *, int *, const int *, const char **, const int *, int *, int *, double *);
+extern void elts_ab_c(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_ab_np(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_ab_p(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_exp_c(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_exp_np(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_exp_p(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_gamma_np(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_gamma_p(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_gauss_c(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_gauss_np(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_gauss_p(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_loglog_c(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_loglog_np(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_loglog_p(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_loglog_simplex_c(int *, int *, double *, double *, double *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void elts_loglog_simplex_np(int *, int *, double *, double *, double *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *);
+extern void full(int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, int *, int *, int *, double *, int *, int *, double *, int *, double *, int *);
+extern void full_asymm(int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, int *, int *, int *, double *, int *, int *, double *, int *, double *, int *);
+extern void poly_domain_1d_for_R(int *, int *, double *, int *, int *, int *, int *, double *, double *, int *);
+extern void profiled(int *, double *, double *, double *, double *, double *, int *, int *, int *, double *, int *, double *, int *, double *, int *);
+extern void profiled_asymm(int *, double *, double *, double *, double *, double *, int *, int *, int *, double *, int *, double *, int *, double *, int *);
+extern void rab_arms(const int *, const int *, const int *, const int *, const int *, const int *, const int *, const int *, const int *, double *, double *, const double *, const double *, double *, const int *, const char **, const int *, int *, int *, double *, int *);
+extern void shunting_yard(int *, const char **, char **, int *);
+extern void simplex_centered(int *, int *, double *, double *, double *, double *, double *, double *, int *, int *, int *, double *, int *, double *, int *, double *);
+extern void simplex_full(int *, int *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, double *, int *, int *, int *, double *, int *, int *, double *, int *, double *);
 
 static const R_CMethodDef CEntries[] = {
 	{"dist",                   (DL_FUNC) &dist,                   11},
